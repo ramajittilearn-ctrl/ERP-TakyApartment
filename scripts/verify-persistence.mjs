@@ -4,12 +4,12 @@ import assert from "node:assert/strict";
 import { config } from "dotenv";
 config({ path: ".env.test", quiet: true });
 if (!process.env.DATABASE_URL?.endsWith("/taky_phase2_test")) throw new Error("Isolated test database required");
-const compose = ["compose", "--env-file", ".env.test", "-p", "taky-phase2-test", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml"];
+const compose = ["compose", "--env-file", ".env.test", "-p", process.env.TEST_PROJECT || "taky-phase2-test", "-f", "docker-compose.yml", "-f", "docker-compose.test.yml"];
 function run(args) { return execFileSync("docker", [...compose, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim(); }
 const query = 'SELECT (SELECT count(*) FROM "Room"), (SELECT count(*) FROM "User"), (SELECT md5(string_agg(t::text,\'\' ORDER BY id)) FROM "Room" t), (SELECT md5(string_agg(t::text,\'\' ORDER BY id)) FROM "Tenant" t), (SELECT md5(string_agg(t::text,\'\' ORDER BY id)) FROM "Lease" t);';
 const snapshot = () => run(["exec", "-T", "db", "psql", "-U", "taky", "-d", "taky_phase2_test", "-Atc", query]);
 const before = snapshot();
-const origin = "http://127.0.0.1:3300";
+const origin = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3300";
 const login = await fetch(`${origin}/api/auth/login/`, { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify({ identifier: "test-admin", password: process.env.TEST_ADMIN_PASSWORD }) });
 assert.equal(login.status, 200);
 const cookie = login.headers.get("set-cookie")?.split(";")[0]; assert.ok(cookie);

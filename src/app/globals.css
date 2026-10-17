@@ -1060,8 +1060,31 @@ th.numeric {
 .room-card.vacant {
   background: #fafbfd;
 }
+.room-card.reserved,
 .room-card.maintenance {
   background: #fffcf6;
+}
+.text-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--primary, #2563eb);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  font: inherit;
+}
+.detail-grid a,
+.table-scroll a {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.form-grid input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  accent-color: #1473e6;
 }
 .room-number {
   display: flex;

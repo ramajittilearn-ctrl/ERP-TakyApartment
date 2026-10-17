@@ -17,7 +17,7 @@ export default defineConfig({
   use: {
     ...devices["Desktop Chrome"],
     channel: process.platform === "darwin" ? "chrome" : undefined,
-    baseURL: "http://127.0.0.1:3300",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3300",
     viewport: { width: 1440, height: 1000 },
     locale: "th-TH",
     timezoneId: "Asia/Bangkok",

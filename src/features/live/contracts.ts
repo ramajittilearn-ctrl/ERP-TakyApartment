@@ -26,7 +26,7 @@ const roomBase = z.object({
   floorId: z.uuid(),
   number: z.string(),
   rent: z.string(),
-  status: z.enum(["AVAILABLE", "MAINTENANCE"]),
+  status: z.enum(["AVAILABLE", "RESERVED", "MAINTENANCE"]),
   notes: z.string(),
 });
 const leaseBase = z.object({

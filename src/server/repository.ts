@@ -54,7 +54,7 @@ export function getRecord(resource: Resource, id: string) {
     case "tenants":
       return db.tenant.findUniqueOrThrow({
         where: { id },
-        include: { leases: true },
+        include: { leases: { include: { room: true } } },
       });
     case "leases":
       return db.lease.findUniqueOrThrow({

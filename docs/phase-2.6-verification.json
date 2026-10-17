@@ -1,0 +1,49 @@
+{
+  "phase": "2.6",
+  "verifiedAt": "2026-10-17T08:21:07.538Z",
+  "checks": [
+    {
+      "name": "HTTPS Compose startup preserves room, tenant and lease records",
+      "status": "PASS",
+      "result": {
+        "project": "taky-phase26-test",
+        "origin": "https://127.0.0.1:3543"
+      }
+    },
+    {
+      "name": "trusted local CA HTTPS login, secure session and exact-origin rejection",
+      "status": "PASS",
+      "result": "Secure, HttpOnly, SameSite=strict; 15 authenticated rooms; HTTP-origin write rejected"
+    },
+    {
+      "name": "database and application ports remain private behind HTTPS",
+      "status": "PASS",
+      "result": "Only Caddy publishes localhost:3543"
+    },
+    {
+      "name": "all five preserved/additive migrations applied",
+      "status": "PASS",
+      "result": [
+        "202610160001_foundation",
+        "202610160002_constraints",
+        "202610170001_backup_operations",
+        "202610170002_room_reserved",
+        "202610170003_occupancy_integrity"
+      ]
+    },
+    {
+      "name": "Phase 2.5 encrypted backup restores the Phase 2.6 schema and linked records",
+      "status": "PASS",
+      "result": {
+        "status": "SUCCEEDED",
+        "bytes": 33582,
+        "verifiedAt": "2026-10-17T08:21:07.244Z",
+        "checksum": "e5182ed214cac2b540fedf5baa4bc914f26727bf5cfdada792eef0bbdeed33ac"
+      }
+    }
+  ],
+  "limitations": [
+    "Google Drive OAuth/upload and physical second-device certificate trust were not tested.",
+    "Normal deployment and the original demonstration database were not migrated by this test."
+  ]
+}

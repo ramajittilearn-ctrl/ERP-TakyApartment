@@ -1,6 +1,9 @@
 "use client";
 import { useState } from "react";
-import { Building2, DoorOpen, Plus } from "lucide-react";
+import Link from "next/link";
+import { date } from "@/lib/format";
+import { paymentStatusLabels } from "./payment-status";
+import { Building2, DoorOpen } from "lucide-react";
 import {
   Badge,
   Button,
@@ -11,15 +14,20 @@ import {
   SearchField,
 } from "@/components/ui";
 import { useLiveWorkspace, baht } from "./workspace";
-import { RecordEditor, DeleteRecord, type Draft } from "./editor";
-export function LiveRooms({ admin }: { admin: boolean }) {
+import { RecordEditor, type Draft } from "./editor";
+export function LiveRooms({
+  admin,
+  initialId = "",
+}: {
+  admin: boolean;
+  initialId?: string;
+}) {
   const { data, error, reload } = useLiveWorkspace();
   const [floor, setFloor] = useState("all");
   const [status, setStatus] = useState("all");
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(initialId || null);
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [deleting, setDeleting] = useState(false);
   if (!data)
     return (
       <Card>
@@ -35,7 +43,9 @@ export function LiveRooms({ admin }: { admin: boolean }) {
       ? "occupied"
       : r.status === "MAINTENANCE"
         ? "maintenance"
-        : "vacant";
+        : r.status === "RESERVED"
+          ? "reserved"
+          : "vacant";
   const rooms = data.rooms.filter(
     (r) =>
       (floor === "all" || r.floorId === floor) &&
@@ -54,25 +64,7 @@ export function LiveRooms({ admin }: { admin: boolean }) {
           ทั้งหมด {data.rooms.length} ห้อง{" "}
           <span className="muted-text">/ {data.floors.length} ชั้น</span>
         </p>
-        {admin && (
-          <Button
-            onClick={() =>
-              setDraft({
-                entity: "rooms",
-                values: {
-                  floorId: data.floors[0]?.id || "",
-                  number: "",
-                  rent: "0.00",
-                  status: "AVAILABLE",
-                  notes: "",
-                },
-              })
-            }
-          >
-            <Plus size={16} />
-            เพิ่มห้องพัก
-          </Button>
-        )}
+        <span className="muted-text">ใช้ห้องพักที่มีอยู่ ไม่สร้างห้องซ้ำ</span>
       </div>
       <Card>
         <div className="filter-bar">
@@ -96,6 +88,7 @@ export function LiveRooms({ admin }: { admin: boolean }) {
             <option value="all">สถานะทั้งหมด</option>
             <option value="occupied">มีผู้เช่า</option>
             <option value="vacant">ว่าง</option>
+            <option value="reserved">จอง</option>
             <option value="maintenance">ซ่อมบำรุง</option>
           </select>
           <SearchField
@@ -109,6 +102,7 @@ export function LiveRooms({ admin }: { admin: boolean }) {
           {[
             { value: "occupied", label: "มีผู้เช่า", color: "#18b48a" },
             { value: "vacant", label: "ว่าง", color: "#9cafc5" },
+            { value: "reserved", label: "จอง", color: "#e6b555" },
             { value: "maintenance", label: "ซ่อมบำรุง", color: "#e6b555" },
           ].map((s) => (
             <span key={s.value}>
@@ -179,7 +173,9 @@ export function LiveRooms({ admin }: { admin: boolean }) {
                               ? "มีผู้เช่า"
                               : state(r) === "vacant"
                                 ? "ว่าง"
-                                : "ซ่อมบำรุง"}
+                                : state(r) === "reserved"
+                                  ? "จอง"
+                                  : "ซ่อมบำรุง"}
                           </Badge>
                           <span className="room-tenant">
                             {r.leases[0]?.tenant.name ||
@@ -201,7 +197,7 @@ export function LiveRooms({ admin }: { admin: boolean }) {
         </div>
       </Card>
       <Modal
-        open={!!room && !draft && !deleting}
+        open={!!room && !draft}
         onOpenChange={(open) => {
           if (!open) setSelected(null);
         }}
@@ -228,7 +224,51 @@ export function LiveRooms({ admin }: { admin: boolean }) {
                 </div>
                 <div>
                   <dt>ผู้เช่า</dt>
-                  <dd>{lease?.tenant.name || "ไม่มีผู้เช่า"}</dd>
+                  <dd>
+                    {lease ? (
+                      <Link href={`/tenants/?tenant=${lease.tenantId}`}>
+                        {lease.tenant.name}
+                      </Link>
+                    ) : (
+                      "ไม่มีผู้เช่า"
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt>สถานะห้อง</dt>
+                  <dd>
+                    {lease
+                      ? "มีผู้เช่า"
+                      : room.status === "RESERVED"
+                        ? "จอง"
+                        : room.status === "MAINTENANCE"
+                          ? "ซ่อมบำรุง"
+                          : "ว่าง"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>สัญญาปัจจุบัน</dt>
+                  <dd>
+                    {lease ? (
+                      <Link href={`/leases/?lease=${lease.id}`}>
+                        {lease.number}
+                      </Link>
+                    ) : (
+                      "ไม่มีสัญญาปัจจุบัน"
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt>วันเริ่มสัญญา</dt>
+                  <dd>{lease ? date(lease.startDate.slice(0, 10)) : "—"}</dd>
+                </div>
+                <div>
+                  <dt>วันสิ้นสุดสัญญา</dt>
+                  <dd>{lease ? date(lease.endDate.slice(0, 10)) : "—"}</dd>
+                </div>
+                <div>
+                  <dt>สถานะการชำระเงิน</dt>
+                  <dd>{paymentStatusLabels.UNAVAILABLE}</dd>
                 </div>
                 <div>
                   <dt>หมายเหตุ</dt>
@@ -238,9 +278,6 @@ export function LiveRooms({ admin }: { admin: boolean }) {
               <div className="form-actions">
                 {admin && (
                   <>
-                    <Button variant="danger" onClick={() => setDeleting(true)}>
-                      ลบห้องพัก
-                    </Button>
                     <Button
                       variant="secondary"
                       onClick={() =>
@@ -274,18 +311,6 @@ export function LiveRooms({ admin }: { admin: boolean }) {
           data={data}
           onClose={() => setDraft(null)}
           onSaved={reload}
-        />
-      )}
-      {deleting && room && (
-        <DeleteRecord
-          entity="rooms"
-          id={room.id}
-          name={`ห้อง ${room.number}`}
-          onClose={() => setDeleting(false)}
-          onSaved={async () => {
-            await reload();
-            setSelected(null);
-          }}
         />
       )}
     </>

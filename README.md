@@ -25,7 +25,7 @@ Fresh installations seed exactly 15 rooms: 101–105, 201–205 and 301–305, a
 
 - Local username/email/password login, Argon2id hashing, ADMIN/STAFF permissions, expiring opaque sessions, logout revocation, origin validation and persistent login throttling.
 - Protected pages and authenticated APIs. Sensitive mutations produce append-only audit records in the same transaction.
-- Room management reads PostgreSQL, with floor/status/search filters, details and ADMIN create/edit/delete.
+- Room management reads PostgreSQL, with floor/status/search filters, linked profiles and ADMIN edits. The UI preserves the 15 seeded room identities instead of creating or deleting them.
 - Tenant and lease create/read/update flows; ADMIN can delete unreferenced tenants and draft leases. Constraints enforce one active lease per room and preserve referenced history.
 - Validated property/floor CRUD APIs and ADMIN account-creation API.
 - Docker app/database with health checks, restart policies, private attachment storage and persistent database volume. PostgreSQL has no published port.
@@ -86,3 +86,29 @@ After browser tests, run `node scripts/verify-persistence.mjs` with Docker on PA
 - [Original phased plan](docs/implementation-plan.md) and [Phase 1 evidence](docs/verification.md)
 
 `src/server` owns authentication, validation, services and repositories. `prisma` owns schema/migrations/seed. `src/features/live` owns persistent UI; `src/demo` retains the separate fictional frontend. Protected pages live under `src/app/(erp)` without changing URLs. This workspace originally had no Git metadata. The original three upstream commits have now been imported and their object hashes verified. Phase 1 and Phase 2 are integrated on `main` as a descendant of `7f4652837b89b1b35af5d3cbb4de9d7146ac78f8`, preserving the private repository's history. No public deployment or Phase 3 implementation is included. The original implementation prompt, HTML prototype and UX/UI PDF are preserved.
+# Phase 2.6 room and tenant integration
+
+Tenant creation can optionally assign an existing room and create a complete ACTIVE lease in the same transaction. Choose a floor, then an available room. Enter the lease number, dates, monthly rent and contractual deposit. Tenants can also be saved without a room.
+
+Tenant, room and lease profiles have links in both directions. Editing the current assignment updates that lease. Moving rooms requires a new lease number, an explicit end date for the previous lease and confirmation. The previous contract remains in history. To remove an assignment, end the lease in Lease Management. Clearing a selection or setting a room to operationally available does not end a lease.
+
+Room occupancy comes from ACTIVE leases. AVAILABLE, RESERVED and MAINTENANCE describe operational availability; Occupied is not a separately stored room status. Reserved and maintenance rooms cannot receive an ACTIVE lease. Payment status remains `Not Available — Phase 3`. Lease dates do not automatically activate or end contracts; operators manage their lifecycle explicitly.
+
+The UI edits existing room inventory instead of offering duplicate room creation. Seeded room numbers/floors are fixed and the 15 principal rooms cannot be deleted through the service. Existing admin configuration APIs remain available for integrations and retain unique room constraints.
+
+## Isolated Phase 2.6 verification
+
+Use an existing private `.env.test` generated through the test setup documented above. Never point these tests at the normal database. The project name below creates separate database and attachment volumes, preserving the original demo on port 3300.
+
+```sh
+APP_PORT=3400 APP_ORIGIN=http://127.0.0.1:3400 docker compose --env-file .env.test -p taky-phase26-test -f docker-compose.yml -f docker-compose.test.yml up -d --build --wait
+docker compose --env-file .env.test -p taky-phase26-test -f docker-compose.yml -f docker-compose.test.yml exec -T app node --import tsx scripts/test-users.ts
+docker compose --env-file .env.test -p taky-phase26-test -f docker-compose.yml -f docker-compose.test.yml exec -T app npm run test:integration
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3400 SCREENSHOT_DIR=tmp/phase26/screenshots npm run test:e2e
+APP_PORT=3400 APP_ORIGIN=http://127.0.0.1:3400 TEST_PROJECT=taky-phase26-test PLAYWRIGHT_BASE_URL=http://127.0.0.1:3400 node scripts/verify-persistence.mjs
+node scripts/verify-phase26.mjs
+```
+
+The last command switches only that isolated project to HTTPS on localhost:3543, checks its Caddy CA, secure cookies and exact origin, and verifies an encrypted backup with an automatic temporary PostgreSQL restore. It creates private test keys and archives under ignored `.local/phase26/`. It does not authorize Google Drive or install certificates on other devices. Run the HTTP browser tests before this HTTPS switch; rerunning the first command restores the HTTP test configuration. The two additional migrations apply through the existing `npm run db:migrate` startup process. No reset, destructive migration or normal-deployment restore is required.
+
+See `PHASE_2_6_IMPLEMENTATION_REPORT.md` for executed results, screenshots and limitations.

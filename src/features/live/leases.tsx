@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
+import { paymentStatusLabels } from "./payment-status";
 import { Download, FileText, CalendarClock, ShieldCheck } from "lucide-react";
 import { Kpi } from "@/components/charts";
 import { date, exportCsv } from "@/lib/format";
@@ -16,15 +18,23 @@ import {
   ErrorMessage,
   SearchField,
   Notice,
+  Modal,
 } from "@/components/ui";
 import { useLiveWorkspace, baht } from "./workspace";
 import { RecordEditor, DeleteRecord, type Draft } from "./editor";
-export function LiveLeases({ admin }: { admin: boolean }) {
+export function LiveLeases({
+  admin,
+  initialId = "",
+}: {
+  admin: boolean;
+  initialId?: string;
+}) {
   const { data, error, reload } = useLiveWorkspace();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [selected, setSelected] = useState(initialId);
   if (!data)
     return (
       <Card>
@@ -48,6 +58,7 @@ export function LiveLeases({ admin }: { admin: boolean }) {
         .includes(query.toLowerCase()),
   );
   const deleted = data.leases.find((l) => l.id === deleting);
+  const detail = data.leases.find((l) => l.id === selected);
   return (
     <>
       <ErrorMessage>{error}</ErrorMessage>
@@ -180,13 +191,24 @@ export function LiveLeases({ admin }: { admin: boolean }) {
           {leases.map((l) => (
             <tr key={l.id}>
               <td>
-                {l.number}
+                <button
+                  className="text-button"
+                  onClick={() => setSelected(l.id)}
+                >
+                  {l.number}
+                </button>
                 {l.isDemo && <Badge tone="amber">Demo</Badge>}
               </td>
               <td>
-                <span className="room-label">{l.room.number}</span>
+                <Link className="room-label" href={`/rooms/?room=${l.roomId}`}>
+                  {l.room.number}
+                </Link>
               </td>
-              <td>{l.tenant.name}</td>
+              <td>
+                <Link href={`/tenants/?tenant=${l.tenantId}`}>
+                  {l.tenant.name}
+                </Link>
+              </td>
               <td>
                 {date(l.startDate.slice(0, 10))}
                 <br />
@@ -238,6 +260,64 @@ export function LiveLeases({ admin }: { admin: boolean }) {
         เงินประกันแสดงยอดตามสัญญา การรับ /
         คืนเงินประกันและบัญชีการเงินจะพัฒนาในระยะถัดไป
       </Notice>
+      <Modal
+        open={!!detail}
+        onOpenChange={(open) => {
+          if (!open) setSelected("");
+        }}
+        title={`รายละเอียดสัญญา ${detail?.number || ""}`}
+        description="ข้อมูลตามสัญญาจาก PostgreSQL"
+      >
+        {detail && (
+          <>
+            <dl className="detail-grid">
+              <div>
+                <dt>ผู้เช่า</dt>
+                <dd>
+                  <Link href={`/tenants/?tenant=${detail.tenantId}`}>
+                    {detail.tenant.name}
+                  </Link>
+                </dd>
+              </div>
+              <div>
+                <dt>ห้องพัก</dt>
+                <dd>
+                  <Link href={`/rooms/?room=${detail.roomId}`}>
+                    ห้อง {detail.room.number}
+                  </Link>
+                </dd>
+              </div>
+              <div>
+                <dt>สถานะสัญญา</dt>
+                <dd>{labels[detail.status]}</dd>
+              </div>
+              <div>
+                <dt>วันเริ่มสัญญา</dt>
+                <dd>{date(detail.startDate.slice(0, 10))}</dd>
+              </div>
+              <div>
+                <dt>วันสิ้นสุดสัญญา</dt>
+                <dd>{date(detail.endDate.slice(0, 10))}</dd>
+              </div>
+              <div>
+                <dt>ค่าเช่าตามสัญญา</dt>
+                <dd>{baht(detail.rent)}</dd>
+              </div>
+              <div>
+                <dt>เงินประกันตามสัญญา</dt>
+                <dd>{baht(detail.deposit)}</dd>
+              </div>
+              <div>
+                <dt>สถานะการชำระเงิน</dt>
+                <dd>{paymentStatusLabels.UNAVAILABLE}</dd>
+              </div>
+            </dl>
+            <div className="form-actions">
+              <Button onClick={() => setSelected("")}>ปิด</Button>
+            </div>
+          </>
+        )}
+      </Modal>
       {draft && (
         <RecordEditor
           key={draft.id || "new"}

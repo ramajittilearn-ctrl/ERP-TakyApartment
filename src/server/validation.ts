@@ -28,10 +28,26 @@ export const roomInput = z
     floorId: uuid,
     number: text(12).regex(/^[A-Za-z0-9-]+$/),
     rent: moneyInput,
-    status: z.enum(["AVAILABLE", "MAINTENANCE"]),
+    status: z.enum(["AVAILABLE", "RESERVED", "MAINTENANCE"]),
     notes: text(1000).default(""),
   })
   .strict();
+export const assignmentInput = z
+  .object({
+    leaseId: uuid.optional(),
+    roomId: uuid,
+    number: text(40).min(1),
+    startDate: z.iso.date(),
+    endDate: z.iso.date(),
+    rent: moneyInput,
+    deposit: moneyInput,
+    previousEndDate: z.iso.date().optional(),
+  })
+  .strict()
+  .refine((v) => v.endDate >= v.startDate, {
+    message: "วันสิ้นสุดต้องไม่น้อยกว่าวันเริ่มสัญญา",
+    path: ["endDate"],
+  });
 export const tenantInput = z
   .object({
     name: text(160).min(1),
@@ -40,6 +56,7 @@ export const tenantInput = z
     address: text(500).default(""),
     notes: text(1000).default(""),
     isDemo: z.boolean().default(false),
+    assignment: assignmentInput.optional(),
   })
   .strict();
 const calendarDate = z.iso.date();

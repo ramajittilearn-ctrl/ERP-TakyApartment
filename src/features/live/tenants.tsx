@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { date } from "@/lib/format";
 import { leaseLabels } from "./lease-summary";
 import { ChevronRight, UserRound } from "lucide-react";
@@ -16,10 +18,17 @@ import {
 } from "@/components/ui";
 import { useLiveWorkspace, baht } from "./workspace";
 import { RecordEditor, DeleteRecord, type Draft } from "./editor";
-export function LiveTenants({ admin }: { admin: boolean }) {
+export function LiveTenants({
+  admin,
+  initialId = "",
+}: {
+  admin: boolean;
+  initialId?: string;
+}) {
+  const router = useRouter();
   const { data, error, reload } = useLiveWorkspace();
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState(initialId);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [deleting, setDeleting] = useState(false);
   if (!data)
@@ -133,7 +142,20 @@ export function LiveTenants({ admin }: { admin: boolean }) {
             <dl className="detail-grid">
               <div>
                 <dt>ห้องพัก</dt>
-                <dd>{active?.room.number || "—"}</dd>
+                <dd>
+                  {leases
+                    .filter((l) => l.status === "ACTIVE")
+                    .map((l) => (
+                      <div key={l.id}>
+                        <Link href={`/rooms/?room=${l.roomId}`}>
+                          ห้อง {l.room.number}
+                        </Link>{" "}
+                        ·{" "}
+                        <Link href={`/leases/?lease=${l.id}`}>{l.number}</Link>
+                      </div>
+                    ))}
+                  {!active && "ยังไม่กำหนดห้อง"}
+                </dd>
               </div>
               <div>
                 <dt>เบอร์โทรศัพท์</dt>
@@ -194,8 +216,16 @@ export function LiveTenants({ admin }: { admin: boolean }) {
                   >
                     {leases.map((l) => (
                       <tr key={l.id}>
-                        <td>{l.number}</td>
-                        <td>{l.room.number}</td>
+                        <td>
+                          <Link href={`/leases/?lease=${l.id}`}>
+                            {l.number}
+                          </Link>
+                        </td>
+                        <td>
+                          <Link href={`/rooms/?room=${l.roomId}`}>
+                            {l.room.number}
+                          </Link>
+                        </td>
                         <td>{date(l.startDate.slice(0, 10))}</td>
                         <td>{date(l.endDate.slice(0, 10))}</td>
                         <td>{leaseLabels[l.status]}</td>
@@ -230,7 +260,14 @@ export function LiveTenants({ admin }: { admin: boolean }) {
           draft={draft}
           data={data}
           onClose={() => setDraft(null)}
-          onSaved={reload}
+          onSaved={async (id) => {
+            await reload();
+            if (id) {
+              setSelected(id);
+              setQuery("");
+              router.replace(`/tenants/?tenant=${id}`, { scroll: false });
+            }
+          }}
         />
       )}
       {deleting && tenant && (

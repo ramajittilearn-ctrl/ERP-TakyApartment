@@ -2,7 +2,7 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-const origin = "http://127.0.0.1:3300";
+const origin = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3300";
 async function signIn(request: APIRequestContext, staff = false) {
   const response = await request.post("/api/auth/login/", {
     headers: { Origin: origin },
@@ -27,7 +27,7 @@ test("unauthenticated pages redirect and all CRUD APIs reject access", async ({
       .violations,
   ).toEqual([]);
   await page.screenshot({
-    path: "docs/phase-2-screenshots/login.png",
+    path: `${process.env.SCREENSHOT_DIR || "docs/phase-2-screenshots"}/login.png`,
     fullPage: true,
   });
   for (const resource of [
@@ -224,6 +224,9 @@ test("tenant and lease UI create, update and delete draft", async ({
   ).toBeVisible();
   await page.goto("/leases/");
   await page.getByRole("button", { name: "เพิ่มสัญญาเช่า" }).click();
+  await page
+    .getByLabel("ชั้นสำหรับเลือกห้อง")
+    .selectOption({ label: "ชั้น 1" });
   await page.getByLabel("เลขที่สัญญา").fill(`UI-${suffix}`);
   await page
     .getByLabel("ห้องพัก", { exact: true })
@@ -322,7 +325,7 @@ for (const width of [1440, 768, 390]) {
         ).violations,
       ).toEqual([]);
       await page.screenshot({
-        path: `docs/phase-2-screenshots/${width}/${route || "dashboard"}.png`,
+        path: `${process.env.SCREENSHOT_DIR || "docs/phase-2-screenshots"}/${width}/${route || "dashboard"}.png`,
         fullPage: true,
       });
       expect(errors).toEqual([]);
