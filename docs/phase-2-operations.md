@@ -1,5 +1,7 @@
 # Mac deployment and operations
 
+This is the historical Phase 2 base/development guide. For current operational deployment, use [Phase 2.5 secure LAN](secure-lan-deployment.md) and [backup/recovery](backup-restore.md). The operations wrapper applies the required HTTPS/backup overlays; the base commands below do not.
+
 ## Prerequisites
 
 macOS on Apple Silicon or Intel, Docker Desktop running with Compose, at least 4 GB assigned to Docker, free disk for images/database/attachments. Node 22.13+ and npm are needed for local development and generating configuration. Internet is needed to install dependencies/pull/build images; normal operation is local. Do not place a live PostgreSQL data directory in iCloud/Dropbox; Compose named volumes live in Docker's Linux VM.

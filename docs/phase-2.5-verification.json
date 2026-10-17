@@ -1,0 +1,86 @@
+{
+  "startedAt": "2026-10-17T01:39:33.729Z",
+  "project": "taky-phase25-test",
+  "tests": [
+    {
+      "name": "trusted HTTPS readiness",
+      "result": "PASS",
+      "detail": "Certificate chain and 127.0.0.1 name validated using exported public root; validation never disabled"
+    },
+    {
+      "name": "HTTPS admin login, Secure/HttpOnly/SameSite cookie and CSRF",
+      "result": "PASS",
+      "detail": "Demo credentials used only in separate test database; all 15 rooms returned"
+    },
+    {
+      "name": "HTTPS staff authorization and logout revocation",
+      "result": "PASS",
+      "detail": "Configuration mutation denied; revoked cookie rejected"
+    },
+    {
+      "name": "backup history metadata and database size constraint",
+      "result": "PASS",
+      "detail": "Persisted encrypted checksum/size/status/verification time match; negative archive size rejected"
+    },
+    {
+      "name": "encrypted consistent backup and automatic isolated PostgreSQL restore",
+      "result": "PASS",
+      "detail": {
+        "file": "taky-20261017T013936Z-f737d445-bd37-4948-8227-ec1cfab778cf.taky.enc",
+        "checksum": "0505b8f139a002e23fbd0d6603fd03f22a0b6a158ec0a41fa586f57281911e3f",
+        "bytes": 14853,
+        "rooms": 15,
+        "tenants": 2,
+        "leases": 2,
+        "attachments": 1
+      }
+    },
+    {
+      "name": "backup preserves normal application operation",
+      "result": "PASS",
+      "detail": "HTTPS readiness and source domain fingerprints unchanged"
+    },
+    {
+      "name": "failed backup creation records failure and preserves last known-good archive",
+      "result": "PASS",
+      "detail": "Missing key deliberately injected only in isolated worker invocation"
+    },
+    {
+      "name": "restore into separate Docker volumes without changing source",
+      "result": "PASS",
+      "detail": {
+        "rooms": 15,
+        "tenants": 2,
+        "leases": 2,
+        "attachments": 1
+      }
+    },
+    {
+      "name": "failed cloud delivery preserves verified local archive and retry state",
+      "result": "PASS",
+      "detail": "Missing remote deliberately injected; local archive unchanged"
+    },
+    {
+      "name": "rclone retry, atomic final name and remote ciphertext verification",
+      "result": "PASS",
+      "detail": "Real rclone local backend used; Google Drive authorization/upload NOT RUN"
+    },
+    {
+      "name": "overlapping backup rejected by kernel lock",
+      "result": "PASS",
+      "detail": "Second command exits 75 while the first lock is held"
+    },
+    {
+      "name": "only private HTTPS listener published",
+      "result": "PASS",
+      "detail": "App HTTP and PostgreSQL have no host port; test proxy binds loopback"
+    },
+    {
+      "name": "HTTPS/database/session/attachments survive container restarts",
+      "result": "PASS",
+      "detail": "Certificate trust, pre-restart session and exact domain data hashes retained"
+    }
+  ],
+  "status": "PASS",
+  "finishedAt": "2026-10-17T01:39:59.354Z"
+}

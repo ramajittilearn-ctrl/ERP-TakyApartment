@@ -8,3 +8,6 @@ playwright-report/
 .DS_Store
 .env*
 !.env.example
+.local/
+*.taky.enc
+*.backup-key

@@ -1,0 +1,16 @@
+{
+    auto_https disable_redirects
+    skip_install_trust
+    default_sni {$LAN_HOST}
+    servers {
+        protocols h1 h2
+    }
+}
+
+https://{$LAN_HOST} {
+    tls internal {
+        protocols tls1.2 tls1.3
+    }
+    reverse_proxy app:3000
+    header Strict-Transport-Security "max-age=31536000"
+}

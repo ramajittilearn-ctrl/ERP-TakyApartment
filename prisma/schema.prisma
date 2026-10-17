@@ -403,6 +403,11 @@ model BackupHistory {
   status        BackupStatus
   storageKey    String?      @db.VarChar(200)
   checksum      String?      @db.Char(64)
+  bytes         BigInt?
+  error         String?      @db.VarChar(1000)
+  verifiedAt    DateTime?    @db.Timestamptz(3)
+  uploadedAt    DateTime?    @db.Timestamptz(3)
+  kind          String       @default("manual") @db.VarChar(20)
   finishedAt    DateTime?    @db.Timestamptz(3)
   createdAt     DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime     @updatedAt @db.Timestamptz(3)

@@ -2,6 +2,8 @@
 
 Local-first apartment ERP for a MacBook or Mac mini. Phase 2 adds PostgreSQL, Prisma, local login and persistent room/tenant/lease management to the approved Thai frontend. The navy sidebar, pale-blue background, white cards, room grid and responsive layouts are retained.
 
+Phase 2.5 adds encrypted, restore-verified backups and Caddy HTTPS for the private LAN. Follow [backup and recovery](docs/backup-restore.md) and [secure LAN commissioning](docs/secure-lan-deployment.md) before entering sensitive data. Google Drive OAuth and certificate trust on other devices require owner setup. See [the Phase 2.5 review report](PHASE_2_5_IMPLEMENTATION_REPORT.md) for actual verification results.
+
 ## Quick start on macOS
 
 Prerequisites: Docker Desktop with Compose running, Node.js 22.13+ / npm, and free disk space for images and persistent volumes. Initial installation needs internet; normal use does not.
@@ -9,12 +11,13 @@ Prerequisites: Docker Desktop with Compose running, Node.js 22.13+ / npm, and fr
 ```sh
 npm ci
 node scripts/configure.mjs
-docker compose up -d --build
-docker compose ps
-docker compose exec app npm run admin:setup
+node scripts/ops.mjs init
+node scripts/ops.mjs up
+node scripts/ops.mjs export-ca
+node scripts/ops.mjs ps
 ```
 
-Open [local login](http://127.0.0.1:3000/login/). Setup asks for your own username/email and a hidden password of at least 12 characters. There is no default password or public registration. It works only before the first user exists. Generated `.env` is private, ignored and never overwritten. If Docker is not on PATH, enable Docker Desktop CLI tools or add `/Applications/Docker.app/Contents/Resources/bin` to PATH.
+Complete the public CA trust steps in the secure LAN guide, then open `https://<LAN_HOST>/login/` using the exact private host configured in `.local/operations.env`. Run first-admin setup with the full Compose command in that guide. Setup asks for your own username/email and a hidden password of at least 12 characters. There is no default password or public registration. It works only before the first user exists. Generated `.env`, `.local` keys/configuration and backups are private and ignored. Initializers preserve existing files. If Docker is not on PATH, enable Docker Desktop CLI tools or add `/Applications/Docker.app/Contents/Resources/bin` to PATH.
 
 Fresh installations seed exactly 15 rooms: 101–105, 201–205 and 301–305, across three floors. Rent starts at zero and must be configured. No sample tenants, financial transactions or users are inserted. Existing data is preserved on startup. Initializing an already configured property does not recreate intentionally deleted rooms.
 
@@ -27,7 +30,7 @@ Fresh installations seed exactly 15 rooms: 101–105, 201–205 and 301–305, a
 - Validated property/floor CRUD APIs and ADMIN account-creation API.
 - Docker app/database with health checks, restart policies, private attachment storage and persistent database volume. PostgreSQL has no published port.
 
-Dashboard, billing, payments, expenses, reports, maintenance and settings retain explicitly labeled Phase 1 demonstrations. They are separate from live tenant/lease records; their figures are not operational accounting. Full billing/payment workflows, file upload, account-management UI, password recovery and automated backup/restore are deferred.
+Dashboard, billing, payments, expenses, reports, maintenance and settings retain explicitly labeled Phase 1 demonstrations. They are separate from live tenant/lease records; their figures are not operational accounting. Full billing/payment workflows, file upload, account-management UI and password recovery are deferred. Backup/status/recovery are operator commands, not a redesigned settings screen.
 
 ## Environment and LAN access
 
@@ -35,7 +38,7 @@ See [`.env.example`](.env.example). `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PA
 
 Default access is loopback only. For trusted local Wi-Fi, reserve the Mac's private IP in your router, set `APP_BIND_IP` to it and `APP_ORIGIN` to its matching URL, then run `docker compose up -d app`. Find the IP in System Settings → Wi-Fi → Details → TCP/IP, or `ipconfig getifaddr en0` for the Wi-Fi interface. Keep macOS Firewall enabled and allow Docker Desktop incoming connections as needed. Do not add router port forwarding, public tunnels or a PostgreSQL port mapping.
 
-Plain HTTP is not encrypted. Use a locally trusted HTTPS reverse proxy and Secure cookies for sensitive records on shared LANs. [The operations guide](docs/phase-2-operations.md) covers private IP configuration, firewall, certificate considerations, secrets, development and troubleshooting. Physical second-device verification depends on the deployment network.
+The base Compose file retains the Phase 2 development HTTP configuration. For normal use, run `scripts/ops.mjs up` or `reload`, which applies the HTTPS overlay, removes that HTTP mapping and enforces Secure cookies and the exact HTTPS origin. [The secure LAN guide](docs/secure-lan-deployment.md) covers certificate trust, firewall and IP changes. Physical second-device verification requires owner commissioning.
 
 ## Commands
 
@@ -78,6 +81,7 @@ After browser tests, run `node scripts/verify-persistence.mjs` with Docker on PA
 - [Verified gap analysis and Phase 2 plan](docs/phase-2-plan.md)
 - [Database relationships, architecture and API contract](docs/phase-2-architecture.md)
 - [Mac deployment and troubleshooting](docs/phase-2-operations.md)
+- [Phase 2.5 plan](docs/phase-2.5-plan.md), [backup/recovery](docs/backup-restore.md) and [secure LAN](docs/secure-lan-deployment.md)
 - [Final implementation and verification report](IMPLEMENTATION_REVIEW_REPORT.md)
 - [Original phased plan](docs/implementation-plan.md) and [Phase 1 evidence](docs/verification.md)
 

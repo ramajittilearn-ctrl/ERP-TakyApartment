@@ -1,10 +1,10 @@
 .PHONY: up down logs migrate seed test
 up:
-	docker compose up -d --build
+	node scripts/ops.mjs up
 down:
-	docker compose down
+	node scripts/ops.mjs down
 logs:
-	docker compose logs --tail=100 app
+	node scripts/ops.mjs logs
 migrate:
 	docker compose exec app npm run db:migrate
 seed:
