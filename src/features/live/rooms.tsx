@@ -1,0 +1,293 @@
+"use client";
+import { useState } from "react";
+import { Building2, DoorOpen, Plus } from "lucide-react";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorMessage,
+  Modal,
+  SearchField,
+} from "@/components/ui";
+import { useLiveWorkspace, baht } from "./workspace";
+import { RecordEditor, DeleteRecord, type Draft } from "./editor";
+export function LiveRooms({ admin }: { admin: boolean }) {
+  const { data, error, reload } = useLiveWorkspace();
+  const [floor, setFloor] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  if (!data)
+    return (
+      <Card>
+        <ErrorMessage>{error}</ErrorMessage>
+        <p role="status">
+          {error ? "โหลดข้อมูลไม่สำเร็จ" : "กำลังโหลดห้องพัก…"}
+        </p>
+        {error && <Button onClick={reload}>ลองอีกครั้ง</Button>}
+      </Card>
+    );
+  const state = (r: (typeof data.rooms)[number]) =>
+    r.leases.length
+      ? "occupied"
+      : r.status === "MAINTENANCE"
+        ? "maintenance"
+        : "vacant";
+  const rooms = data.rooms.filter(
+    (r) =>
+      (floor === "all" || r.floorId === floor) &&
+      (status === "all" || state(r) === status) &&
+      `${r.number} ${r.leases[0]?.tenant.name || ""}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+  const room = data.rooms.find((r) => r.id === selected);
+  const lease = room?.leases[0];
+  return (
+    <>
+      <ErrorMessage>{error}</ErrorMessage>
+      <div className="screen-toolbar">
+        <p className="toolbar-label">
+          ทั้งหมด {data.rooms.length} ห้อง{" "}
+          <span className="muted-text">/ {data.floors.length} ชั้น</span>
+        </p>
+        {admin && (
+          <Button
+            onClick={() =>
+              setDraft({
+                entity: "rooms",
+                values: {
+                  floorId: data.floors[0]?.id || "",
+                  number: "",
+                  rent: "0.00",
+                  status: "AVAILABLE",
+                  notes: "",
+                },
+              })
+            }
+          >
+            <Plus size={16} />
+            เพิ่มห้องพัก
+          </Button>
+        )}
+      </div>
+      <Card>
+        <div className="filter-bar">
+          <select
+            aria-label="ชั้น"
+            value={floor}
+            onChange={(e) => setFloor(e.target.value)}
+          >
+            <option value="all">ทุกชั้น</option>
+            {data.floors.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="สถานะห้อง"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            <option value="all">สถานะทั้งหมด</option>
+            <option value="occupied">มีผู้เช่า</option>
+            <option value="vacant">ว่าง</option>
+            <option value="maintenance">ซ่อมบำรุง</option>
+          </select>
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            label="ค้นหาห้องหรือผู้เช่า"
+            placeholder="ค้นหาห้อง / ผู้เช่า..."
+          />
+        </div>
+        <div className="room-summary">
+          {[
+            { value: "occupied", label: "มีผู้เช่า", color: "#18b48a" },
+            { value: "vacant", label: "ว่าง", color: "#9cafc5" },
+            { value: "maintenance", label: "ซ่อมบำรุง", color: "#e6b555" },
+          ].map((s) => (
+            <span key={s.value}>
+              <span className="legend-swatch" style={{ background: s.color }} />
+              {s.label} {data.rooms.filter((r) => state(r) === s.value).length}{" "}
+              ห้อง
+            </span>
+          ))}
+        </div>
+        <div className="paragraph-gap">
+          {rooms.length === 0 ? (
+            <EmptyState
+              action={
+                <Button
+                  onClick={() => {
+                    setFloor("all");
+                    setStatus("all");
+                    setQuery("");
+                  }}
+                >
+                  ล้างตัวกรอง
+                </Button>
+              }
+            />
+          ) : (
+            data.floors
+              .filter((f) => rooms.some((r) => r.floorId === f.id))
+              .map((f) => (
+                <section
+                  className="floor-section"
+                  key={f.id}
+                  aria-label={`ห้องพัก${f.name}`}
+                >
+                  <div className="floor-heading">
+                    <Building2 size={15} className="muted-text" />
+                    <h3>{f.name}</h3>
+                    <small>
+                      {rooms.filter((r) => r.floorId === f.id).length} ห้อง
+                    </small>
+                    <span />
+                  </div>
+                  <div className="room-grid">
+                    {rooms
+                      .filter((r) => r.floorId === f.id)
+                      .map((r) => (
+                        <button
+                          className={`room-card ${state(r)}`}
+                          key={r.id}
+                          onClick={() => setSelected(r.id)}
+                        >
+                          <span className="room-number">
+                            <strong>
+                              <span className="sr-only">ห้อง </span>
+                              {r.number}
+                            </strong>
+                            <DoorOpen size={15} />
+                          </span>
+                          <Badge
+                            tone={
+                              state(r) === "occupied"
+                                ? "green"
+                                : state(r) === "vacant"
+                                  ? "gray"
+                                  : "amber"
+                            }
+                          >
+                            {state(r) === "occupied"
+                              ? "มีผู้เช่า"
+                              : state(r) === "vacant"
+                                ? "ว่าง"
+                                : "ซ่อมบำรุง"}
+                          </Badge>
+                          <span className="room-tenant">
+                            {r.leases[0]?.tenant.name ||
+                              `${baht(r.rent)} / เดือน`}
+                          </span>
+                          <span className="room-meta">
+                            {r.leases[0]
+                              ? `ถึง ${r.leases[0].endDate.slice(0, 10)}`
+                              : state(r) === "vacant"
+                                ? "พร้อมเข้าพัก"
+                                : "อยู่ระหว่างเตรียมห้อง"}
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                </section>
+              ))
+          )}
+        </div>
+      </Card>
+      <Modal
+        open={!!room && !draft && !deleting}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+        title={`รายละเอียดห้อง ${room?.number || ""}`}
+        description="ข้อมูลจาก PostgreSQL"
+      >
+        <>
+          {room && (
+            <>
+              <div className="room-detail-title">
+                <span className="avatar">
+                  <Building2 size={24} />
+                </span>
+                <strong>{room.number}</strong>
+              </div>
+              <dl className="detail-grid">
+                <div>
+                  <dt>ชั้น</dt>
+                  <dd>{room.floor.name}</dd>
+                </div>
+                <div>
+                  <dt>ค่าเช่ารายเดือน</dt>
+                  <dd>{baht(lease?.rent || room.rent)}</dd>
+                </div>
+                <div>
+                  <dt>ผู้เช่า</dt>
+                  <dd>{lease?.tenant.name || "ไม่มีผู้เช่า"}</dd>
+                </div>
+                <div>
+                  <dt>หมายเหตุ</dt>
+                  <dd>{room.notes || "—"}</dd>
+                </div>
+              </dl>
+              <div className="form-actions">
+                {admin && (
+                  <>
+                    <Button variant="danger" onClick={() => setDeleting(true)}>
+                      ลบห้องพัก
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        setDraft({
+                          entity: "rooms",
+                          id: room.id,
+                          values: {
+                            floorId: room.floorId,
+                            number: room.number,
+                            rent: room.rent,
+                            status: room.status,
+                            notes: room.notes,
+                          },
+                        })
+                      }
+                    >
+                      แก้ไขห้องพัก
+                    </Button>
+                  </>
+                )}
+                <Button onClick={() => setSelected(null)}>ปิด</Button>
+              </div>
+            </>
+          )}
+        </>
+      </Modal>
+      {draft && (
+        <RecordEditor
+          key={`${draft.id || "new"}`}
+          draft={draft}
+          data={data}
+          onClose={() => setDraft(null)}
+          onSaved={reload}
+        />
+      )}
+      {deleting && room && (
+        <DeleteRecord
+          entity="rooms"
+          id={room.id}
+          name={`ห้อง ${room.number}`}
+          onClose={() => setDeleting(false)}
+          onSaved={async () => {
+            await reload();
+            setSelected(null);
+          }}
+        />
+      )}
+    </>
+  );
+}
