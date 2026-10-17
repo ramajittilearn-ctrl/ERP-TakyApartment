@@ -2,6 +2,7 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { availableRooms, getLeases, getRooms, getTenants } from "./fixtures";
 const origin = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3300";
 async function signIn(request: APIRequestContext, staff = false) {
   const response = await request.post("/api/auth/login/", {
@@ -204,131 +205,169 @@ test("tenant and lease UI create, update and delete draft", async ({
   await signIn(page.request);
   const suffix = randomUUID().slice(0, 8);
   const name = `Demo UI ${suffix}`;
-  await page.goto("/tenants/");
-  await page.getByRole("button", { name: "เพิ่มผู้เช่า", exact: true }).click();
-  await page.getByLabel("ชื่อผู้เช่า", { exact: true }).fill(name);
-  await page.getByLabel("ข้อมูลตัวอย่าง (Demo)").check();
-  await page.getByRole("button", { name: "บันทึกข้อมูล" }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByLabel("ค้นหาผู้เช่า").fill(name);
-  await page.getByRole("button", { name: "แก้ไขข้อมูล", exact: true }).click();
-  await page
-    .getByLabel("หมายเหตุ", { exact: true })
-    .fill("Demo persisted contact");
-  await page.getByRole("button", { name: "บันทึกข้อมูล" }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.reload();
-  await page.getByLabel("ค้นหาผู้เช่า").fill(name);
-  await expect(
-    page.getByText("Demo persisted contact", { exact: true }),
-  ).toBeVisible();
-  await page.goto("/leases/");
-  await page.getByRole("button", { name: "เพิ่มสัญญาเช่า" }).click();
-  await page
-    .getByLabel("ชั้นสำหรับเลือกห้อง")
-    .selectOption({ label: "ชั้น 1" });
-  await page.getByLabel("เลขที่สัญญา").fill(`UI-${suffix}`);
-  await page
-    .getByLabel("ห้องพัก", { exact: true })
-    .selectOption({ label: "102" });
-  await page
-    .getByLabel("ผู้เช่า", { exact: true })
-    .selectOption({ label: name });
-  await page.getByLabel("วันเริ่มสัญญา").fill("2026-10-01");
-  await page.getByLabel("วันสิ้นสุดสัญญา").fill("2027-09-30");
-  await page.getByLabel("ค่าเช่าตามสัญญา").fill("3500");
-  await page.getByLabel("เงินประกันตามสัญญา").fill("7000");
-  await page.getByLabel("ข้อมูลตัวอย่าง (Demo)").check();
-  await page.getByRole("button", { name: "บันทึกข้อมูล" }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  const row = page.getByRole("row").filter({ hasText: `UI-${suffix}` });
-  await expect(row).toBeVisible();
-  await row.getByRole("button", { name: "แก้ไข", exact: true }).click();
-  await page.getByLabel("ค่าเช่าตามสัญญา").fill("3600");
-  await page.getByRole("button", { name: "บันทึกข้อมูล" }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.reload();
-  await expect(row).toContainText("3,600");
-  await expect(page.locator(".metric-grid .kpi")).toHaveCount(4);
-  await page.getByLabel("สถานะสัญญา").selectOption("DRAFT");
-  await expect(row).toBeVisible();
-  await page.getByLabel("สถานะสัญญา").selectOption("expiring");
-  await expect(row).toHaveCount(0);
-  await page.getByLabel("สถานะสัญญา").selectOption("all");
-  await page.getByLabel("ค้นหาสัญญา").fill(`UI-${suffix}`);
-  await expect(row).toBeVisible();
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "ส่งออก CSV" }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("taky-leases.csv");
-  const csvPath = await download.path();
-  if (!csvPath) throw new Error("CSV download did not produce a file");
-  const csv = await readFile(csvPath, "utf8");
-  expect(csv).toContain(`UI-${suffix}`);
-  expect(csv).toContain(name);
-  expect(csv).toContain("3600");
-  expect(csv).toContain("ฉบับร่าง");
-  await row.getByRole("button", { name: "ลบ", exact: true }).click();
-  await page.getByRole("button", { name: "ยืนยันลบ" }).click();
-  await expect(row).toHaveCount(0);
-  await page.goto("/tenants/");
-  await page.getByLabel("ค้นหาผู้เช่า").fill(name);
-  await page.getByRole("button", { name: "ลบผู้เช่า" }).click();
-  await page.getByRole("button", { name: "ยืนยันลบ" }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-});
-for (const width of [1440, 768, 390]) {
-  for (const route of [
-    "",
-    "rooms",
-    "tenants",
-    "leases",
-    "billing",
-    "payments",
-    "expenses",
-    "reports",
-    "maintenance",
-    "settings",
-  ]) {
-    test(`${width}px ${route || "dashboard"}: protected responsive smoke and accessibility`, async ({
-      page,
-    }) => {
-      await signIn(page.request);
-      await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
-      const errors: string[] = [];
-      page.on("pageerror", (e) => errors.push(e.message));
-      const response = await page.goto(`/${route ? `${route}/` : ""}`);
-      expect(response?.status()).toBe(200);
-      await expect(page.locator("h1")).toBeVisible();
-      await expect(page.locator(".app-shell")).toBeVisible();
-      await expect(page).toHaveURL(`${origin}/${route ? `${route}/` : ""}`);
-      if (route === "rooms")
-        await expect(page.locator(".room-card")).toHaveCount(15);
-      if (["tenants", "leases"].includes(route))
-        await expect(
-          page.getByRole("button", {
-            name: route === "tenants" ? "เพิ่มผู้เช่า" : "เพิ่มสัญญาเช่า",
-            exact: true,
-          }),
-        ).toBeVisible();
-      await page.evaluate(() => document.fonts.ready);
-      expect(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth <= window.innerWidth,
-        ),
-      ).toBe(true);
+  const leaseNumber = `UI-${suffix}`;
+  const room = availableRooms(await getRooms(page.request))[0];
+  expect(room, "an available database room is required").toBeDefined();
+  try {
+    await page.goto("/tenants/");
+    await page
+      .getByRole("button", { name: "เพิ่มผู้เช่า", exact: true })
+      .click();
+    await page.getByLabel("ชื่อผู้เช่า", { exact: true }).fill(name);
+    await page.getByLabel("ข้อมูลตัวอย่าง (Demo)").check();
+    await page.getByRole("button", { name: "บันทึกข้อมูล" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.getByLabel("ค้นหาผู้เช่า").fill(name);
+    await page
+      .getByRole("button", { name: "แก้ไขข้อมูล", exact: true })
+      .click();
+    await page
+      .getByLabel("หมายเหตุ", { exact: true })
+      .fill("Demo persisted contact");
+    await page.getByRole("button", { name: "บันทึกข้อมูล" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.reload();
+    await page.getByLabel("ค้นหาผู้เช่า").fill(name);
+    await expect(
+      page.getByText("Demo persisted contact", { exact: true }),
+    ).toBeVisible();
+    await page.goto("/leases/");
+    await page.getByRole("button", { name: "เพิ่มสัญญาเช่า" }).click();
+    await page
+      .getByLabel("ชั้นสำหรับเลือกห้อง")
+      .selectOption({ label: `ชั้น ${room.floor.number}` });
+    await page.getByLabel("เลขที่สัญญา").fill(leaseNumber);
+    await page
+      .getByLabel("ห้องพัก", { exact: true })
+      .selectOption({ label: room.number });
+    await page
+      .getByLabel("ผู้เช่า", { exact: true })
+      .selectOption({ label: name });
+    await page.getByLabel("วันเริ่มสัญญา").fill("2026-10-01");
+    await page.getByLabel("วันสิ้นสุดสัญญา").fill("2027-09-30");
+    await page.getByLabel("ค่าเช่าตามสัญญา").fill("3500");
+    await page.getByLabel("เงินประกันตามสัญญา").fill("7000");
+    await page.getByLabel("ข้อมูลตัวอย่าง (Demo)").check();
+    await page.getByRole("button", { name: "บันทึกข้อมูล" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const row = page.getByRole("row").filter({ hasText: `UI-${suffix}` });
+    await expect(row).toBeVisible();
+    await row.getByRole("button", { name: "แก้ไข", exact: true }).click();
+    await page.getByLabel("ค่าเช่าตามสัญญา").fill("3600");
+    await page.getByRole("button", { name: "บันทึกข้อมูล" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.reload();
+    await expect(row).toContainText("3,600");
+    await expect(page.locator(".metric-grid .kpi")).toHaveCount(4);
+    await page.getByLabel("สถานะสัญญา").selectOption("DRAFT");
+    await expect(row).toBeVisible();
+    await page.getByLabel("สถานะสัญญา").selectOption("expiring");
+    await expect(row).toHaveCount(0);
+    await page.getByLabel("สถานะสัญญา").selectOption("all");
+    await page.getByLabel("ค้นหาสัญญา").fill(`UI-${suffix}`);
+    await expect(row).toBeVisible();
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "ส่งออก CSV" }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe("taky-leases.csv");
+    const csvPath = await download.path();
+    if (!csvPath) throw new Error("CSV download did not produce a file");
+    const csv = await readFile(csvPath, "utf8");
+    expect(csv).toContain(`UI-${suffix}`);
+    expect(csv).toContain(name);
+    expect(csv).toContain("3600");
+    expect(csv).toContain("ฉบับร่าง");
+    await row.getByRole("button", { name: "ลบ", exact: true }).click();
+    await page.getByRole("button", { name: "ยืนยันลบ" }).click();
+    await expect(row).toHaveCount(0);
+    await page.goto("/tenants/");
+    await page.getByLabel("ค้นหาผู้เช่า").fill(name);
+    await page.getByRole("button", { name: "ลบผู้เช่า" }).click();
+    await page.getByRole("button", { name: "ยืนยันลบ" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  } finally {
+    const tenant = (await getTenants(page.request)).find(
+      (candidate) => candidate.name === name && candidate.isDemo,
+    );
+    if (tenant) {
+      const lease = (await getLeases(page.request)).find(
+        (candidate) =>
+          candidate.number === leaseNumber &&
+          candidate.tenantId === tenant.id &&
+          candidate.status === "DRAFT",
+      );
+      if (lease)
+        expect(
+          (
+            await page.request.delete(`/api/v1/leases/${lease.id}/`, {
+              headers: { Origin: origin },
+            })
+          ).status(),
+        ).toBe(200);
       expect(
         (
-          await new AxeBuilder({ page })
-            .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-            .analyze()
-        ).violations,
-      ).toEqual([]);
-      await page.screenshot({
-        path: `${process.env.SCREENSHOT_DIR || "docs/phase-2-screenshots"}/${width}/${route || "dashboard"}.png`,
-        fullPage: true,
-      });
-      expect(errors).toEqual([]);
-    });
+          await page.request.delete(`/api/v1/tenants/${tenant.id}/`, {
+            headers: { Origin: origin },
+          })
+        ).status(),
+      ).toBe(200);
+    }
   }
+});
+for (const width of [1440, 768, 390]) {
+  test(`${width}px protected responsive smoke and accessibility`, async ({
+    page,
+  }) => {
+    await signIn(page.request);
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+    for (const route of [
+      "",
+      "rooms",
+      "tenants",
+      "leases",
+      "billing",
+      "payments",
+      "expenses",
+      "reports",
+      "maintenance",
+      "settings",
+    ]) {
+      await test.step(route || "dashboard", async () => {
+        const errors: string[] = [];
+        page.on("pageerror", (e) => errors.push(e.message));
+        const response = await page.goto(`/${route ? `${route}/` : ""}`);
+        expect(response?.status()).toBe(200);
+        await expect(page.locator("h1")).toBeVisible();
+        await expect(page.locator(".app-shell")).toBeVisible();
+        await expect(page).toHaveURL(`${origin}/${route ? `${route}/` : ""}`);
+        if (route === "rooms")
+          await expect(page.locator(".room-card")).toHaveCount(15);
+        if (["tenants", "leases"].includes(route))
+          await expect(
+            page.getByRole("button", {
+              name: route === "tenants" ? "เพิ่มผู้เช่า" : "เพิ่มสัญญาเช่า",
+              exact: true,
+            }),
+          ).toBeVisible();
+        await page.evaluate(() => document.fonts.ready);
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+          ),
+        ).toBe(true);
+        expect(
+          (
+            await new AxeBuilder({ page })
+              .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+              .analyze()
+          ).violations,
+        ).toEqual([]);
+        await page.screenshot({
+          path: `${process.env.SCREENSHOT_DIR || "docs/phase-2-screenshots"}/${width}/${route || "dashboard"}.png`,
+          fullPage: true,
+        });
+        expect(errors).toEqual([]);
+      });
+    }
+  });
 }
