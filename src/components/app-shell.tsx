@@ -15,7 +15,7 @@ export function AppShell({
   actor: { name: string; role: "ADMIN" | "STAFF" };
 }) {
   const path = usePathname();
-  const live = ["/rooms", "/tenants", "/leases"].some((route) =>
+  const live = ["/rooms", "/tenants", "/leases", "/meters"].some((route) =>
     path.startsWith(route),
   );
   const [menu, setMenu] = useState(false);
@@ -145,8 +145,8 @@ export function AppShell({
           การแก้ไขจะอยู่ในหน่วยความจำของแท็บนี้และรีเซ็ตเมื่อโหลดหน้าใหม่
         </p>
         <p className="paragraph-gap">
-          ห้องพัก ผู้เช่า และสัญญาเช่าบันทึกในฐานข้อมูลจริง ส่วนการเงิน แจ้งซ่อม
-          และการตั้งค่ายังเป็นหน้าจอสาธิตแยกจากข้อมูลจริง
+          ห้องพัก ผู้เช่า สัญญาเช่า และมิเตอร์บันทึกในฐานข้อมูลจริง ส่วนการเงิน
+          แจ้งซ่อม และการตั้งค่ายังเป็นหน้าจอสาธิตแยกจากข้อมูลจริง
         </p>
       </Modal>
     </div>

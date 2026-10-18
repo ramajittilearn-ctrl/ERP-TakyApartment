@@ -2214,3 +2214,182 @@ th.numeric {
 .live-actions .btn {
   padding: 8px 12px;
 }
+
+.meter-period-select {
+  min-width: 230px;
+}
+.meter-floor-select {
+  min-width: 140px;
+}
+.meter-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.meter-summary .card {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 15px 18px;
+}
+.meter-summary strong {
+  color: var(--blue);
+  font-size: 25px;
+}
+.meter-summary span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.meter-workspace {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.5fr);
+  gap: 20px;
+  align-items: start;
+}
+.meter-room-list {
+  display: grid;
+  gap: 7px;
+  max-height: 680px;
+  overflow-y: auto;
+}
+.meter-room-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: white;
+  color: var(--ink);
+  text-align: left;
+}
+.meter-room-button:hover,
+.meter-room-button.active {
+  border-color: #9bbfed;
+  background: #f1f6fd;
+}
+.meter-room-button strong,
+.meter-room-button small,
+.meter-slot-heading strong,
+.meter-slot-heading small,
+.history-row strong,
+.history-row small {
+  display: block;
+}
+.meter-room-button small,
+.meter-slot-heading small,
+.history-row small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.meter-room-statuses {
+  display: flex;
+  gap: 5px;
+}
+.meter-entry .field {
+  max-width: 260px;
+}
+.meter-slot-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+.meter-slot {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.meter-slot-heading {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.meter-utility-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8f2ff;
+  color: var(--blue);
+}
+.meter-values {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.meter-values > div,
+.meter-values > label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.meter-values strong {
+  color: var(--ink);
+  font-size: 17px;
+}
+.meter-number-input {
+  min-height: 54px;
+  border-color: #8db6eb;
+  font-size: 20px;
+  font-weight: 700;
+}
+.meter-slot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 15px;
+}
+.meter-history {
+  display: grid;
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+@media (max-width: 800px) {
+  .meter-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .meter-workspace {
+    grid-template-columns: 1fr;
+  }
+  .meter-room-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
+  }
+}
+@media (max-width: 600px) {
+  .meter-period-select,
+  .meter-floor-select,
+  .meter-workspace > .card,
+  .meter-entry {
+    width: 100%;
+  }
+  .meter-room-list {
+    grid-template-columns: 1fr;
+  }
+  .meter-values {
+    grid-template-columns: 1fr 1.4fr;
+  }
+  .meter-slot-actions .btn {
+    flex: 1 1 auto;
+  }
+}

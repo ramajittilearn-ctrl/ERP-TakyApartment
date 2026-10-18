@@ -4,6 +4,7 @@ import {
   Users,
   FileText,
   ReceiptText,
+  Gauge,
   CreditCard,
   Wallet,
   ChartNoAxesCombined,
@@ -39,6 +40,13 @@ export const navigation = [
     title: "สัญญาเช่า",
     subtitle: "ติดตามสัญญาที่ใช้งานและเงินประกัน",
     icon: FileText,
+  },
+  {
+    href: "/meters/",
+    label: "จดมิเตอร์น้ำไฟ",
+    title: "จดมิเตอร์ประจำเดือน",
+    subtitle: "บันทึก ตรวจสอบ และยืนยันเลขมิเตอร์ของแต่ละห้อง",
+    icon: Gauge,
   },
   {
     href: "/billing/",

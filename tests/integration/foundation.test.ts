@@ -51,7 +51,10 @@ describe("PostgreSQL foundation", () => {
     });
     await seed();
     await seed();
-    const rooms = await db.room.findMany({ orderBy: { number: "asc" } });
+    const rooms = await db.room.findMany({
+      where: { floor: { property: { code: "TAKY" } } },
+      orderBy: { number: "asc" },
+    });
     expect(rooms.map((r) => r.number)).toEqual([
       "101",
       "102",

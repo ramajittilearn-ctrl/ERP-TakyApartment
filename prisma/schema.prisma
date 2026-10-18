@@ -69,6 +69,17 @@ enum BillingPeriodStatus {
   CLOSED
 }
 
+enum MeterReadingStatus {
+  DRAFT
+  CONFIRMED
+}
+
+enum MeterReadingType {
+  OPENING
+  NORMAL
+  FINAL
+}
+
 model Property {
   id             String          @id @default(uuid()) @db.Uuid
   code           String          @unique @db.VarChar(40)
@@ -96,18 +107,19 @@ model Floor {
 }
 
 model Room {
-  id          String               @id @default(uuid()) @db.Uuid
-  floorId     String               @db.Uuid
-  floor       Floor                @relation(fields: [floorId], references: [id], onDelete: Restrict)
-  number      String               @db.VarChar(12)
-  rent        Decimal              @db.Decimal(14, 2)
-  status      RoomStatus           @default(AVAILABLE)
-  notes       String               @default("") @db.VarChar(1000)
-  createdAt   DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime             @updatedAt @db.Timestamptz(3)
-  leases      Lease[]
-  meters      UtilityMeter[]
-  maintenance MaintenanceRequest[]
+  id                String               @id @default(uuid()) @db.Uuid
+  floorId           String               @db.Uuid
+  floor             Floor                @relation(fields: [floorId], references: [id], onDelete: Restrict)
+  number            String               @db.VarChar(12)
+  rent              Decimal              @db.Decimal(14, 2)
+  status            RoomStatus           @default(AVAILABLE)
+  notes             String               @default("") @db.VarChar(1000)
+  createdAt         DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime             @updatedAt @db.Timestamptz(3)
+  leases            Lease[]
+  meters            UtilityMeter[]
+  meterReplacements MeterReplacement[]
+  maintenance       MaintenanceRequest[]
 
   @@unique([floorId, number])
   @@index([status])
@@ -169,32 +181,98 @@ model SecurityDeposit {
 }
 
 model UtilityMeter {
-  id        String         @id @default(uuid()) @db.Uuid
-  roomId    String         @db.Uuid
-  room      Room           @relation(fields: [roomId], references: [id], onDelete: Restrict)
-  kind      MeterKind
-  serial    String         @db.VarChar(80)
-  createdAt DateTime       @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime       @updatedAt @db.Timestamptz(3)
-  readings  MeterReading[]
+  id               String             @id @default(uuid()) @db.Uuid
+  roomId           String             @db.Uuid
+  room             Room               @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  kind             MeterKind
+  serial           String             @db.VarChar(80)
+  activeFrom       DateTime?          @db.Date
+  activeUntil      DateTime?          @db.Date
+  createdAt        DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime           @updatedAt @db.Timestamptz(3)
+  readings         MeterReading[]
+  replacementAsOld MeterReplacement[] @relation("ReplacementOldMeter")
+  replacementAsNew MeterReplacement[] @relation("ReplacementNewMeter")
 
-  @@unique([roomId, kind])
+  @@unique([roomId, kind, serial])
+  @@index([roomId, kind, activeFrom, activeUntil])
 }
 
 model MeterReading {
-  id           String       @id @default(uuid()) @db.Uuid
-  meterId      String       @db.Uuid
-  meter        UtilityMeter @relation(fields: [meterId], references: [id], onDelete: Restrict)
-  period       DateTime     @db.Date
-  value        Decimal      @db.Decimal(14, 3)
-  recordedById String       @db.Uuid
-  recordedBy   User         @relation(fields: [recordedById], references: [id], onDelete: Restrict)
-  isDemo       Boolean      @default(false)
-  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
+  id                    String                   @id @default(uuid()) @db.Uuid
+  meterId               String                   @db.Uuid
+  meter                 UtilityMeter             @relation(fields: [meterId], references: [id], onDelete: Restrict)
+  period                DateTime                 @db.Date
+  billingPeriodId       String?                  @db.Uuid
+  billingPeriod         BillingPeriod?           @relation(fields: [billingPeriodId], references: [id], onDelete: Restrict)
+  readingDate           DateTime?                @db.Date
+  value                 Decimal                  @db.Decimal(14, 3)
+  consumption           Decimal?                 @db.Decimal(14, 3)
+  status                MeterReadingStatus       @default(CONFIRMED)
+  type                  MeterReadingType         @default(NORMAL)
+  previousReadingId     String?                  @db.Uuid
+  previousReading       MeterReading?            @relation("ReadingPredecessor", fields: [previousReadingId], references: [id], onDelete: Restrict)
+  nextReadings          MeterReading[]           @relation("ReadingPredecessor")
+  recordedById          String                   @db.Uuid
+  recordedBy            User                     @relation("MeterReadingRecordedBy", fields: [recordedById], references: [id], onDelete: Restrict)
+  confirmedById         String?                  @db.Uuid
+  confirmedBy           User?                    @relation("MeterReadingConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
+  confirmedAt           DateTime?                @db.Timestamptz(3)
+  isDemo                Boolean                  @default(false)
+  createdAt             DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime                 @updatedAt @db.Timestamptz(3)
+  corrections           MeterReadingCorrection[]
+  finalForReplacement   MeterReplacement?        @relation("ReplacementFinalReading")
+  initialForReplacement MeterReplacement?        @relation("ReplacementInitialReading")
 
-  @@unique([meterId, period])
+  @@index([meterId, period])
+  @@unique([meterId, billingPeriodId])
   @@index([recordedById])
+  @@index([confirmedById])
+  @@index([billingPeriodId, status])
+  @@index([previousReadingId])
+}
+
+model MeterReadingCorrection {
+  id             String       @id @default(uuid()) @db.Uuid
+  readingId      String       @db.Uuid
+  reading        MeterReading @relation(fields: [readingId], references: [id], onDelete: Restrict)
+  oldValue       Decimal      @db.Decimal(14, 3)
+  newValue       Decimal      @db.Decimal(14, 3)
+  oldConsumption Decimal?     @db.Decimal(14, 3)
+  newConsumption Decimal?     @db.Decimal(14, 3)
+  reason         String       @db.VarChar(1000)
+  correctedById  String       @db.Uuid
+  correctedBy    User         @relation(fields: [correctedById], references: [id], onDelete: Restrict)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@index([readingId, createdAt])
+  @@index([correctedById])
+}
+
+model MeterReplacement {
+  id               String       @id @default(uuid()) @db.Uuid
+  roomId           String       @db.Uuid
+  room             Room         @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  kind             MeterKind
+  oldMeterId       String       @db.Uuid
+  oldMeter         UtilityMeter @relation("ReplacementOldMeter", fields: [oldMeterId], references: [id], onDelete: Restrict)
+  newMeterId       String       @db.Uuid
+  newMeter         UtilityMeter @relation("ReplacementNewMeter", fields: [newMeterId], references: [id], onDelete: Restrict)
+  finalReadingId   String       @unique @db.Uuid
+  finalReading     MeterReading @relation("ReplacementFinalReading", fields: [finalReadingId], references: [id], onDelete: Restrict)
+  initialReadingId String       @unique @db.Uuid
+  initialReading   MeterReading @relation("ReplacementInitialReading", fields: [initialReadingId], references: [id], onDelete: Restrict)
+  replacementDate  DateTime     @db.Date
+  reason           String       @db.VarChar(1000)
+  replacedById     String       @db.Uuid
+  replacedBy       User         @relation(fields: [replacedById], references: [id], onDelete: Restrict)
+  createdAt        DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@unique([oldMeterId])
+  @@unique([newMeterId])
+  @@index([roomId, kind, replacementDate])
+  @@index([replacedById])
 }
 
 model UtilityRate {
@@ -214,19 +292,20 @@ model UtilityRate {
 }
 
 model BillingPeriod {
-  id          String              @id @default(uuid()) @db.Uuid
-  propertyId  String              @db.Uuid
-  property    Property            @relation(fields: [propertyId], references: [id], onDelete: Restrict)
-  startsOn    DateTime            @db.Date
-  endsOn      DateTime            @db.Date
-  status      BillingPeriodStatus @default(OPEN)
-  closedAt    DateTime?           @db.Timestamptz(3)
-  createdById String              @db.Uuid
-  createdBy   User                @relation("BillingPeriodCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  closedById  String?             @db.Uuid
-  closedBy    User?               @relation("BillingPeriodClosedBy", fields: [closedById], references: [id], onDelete: Restrict)
-  createdAt   DateTime            @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime            @updatedAt @db.Timestamptz(3)
+  id            String              @id @default(uuid()) @db.Uuid
+  propertyId    String              @db.Uuid
+  property      Property            @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  startsOn      DateTime            @db.Date
+  endsOn        DateTime            @db.Date
+  status        BillingPeriodStatus @default(OPEN)
+  closedAt      DateTime?           @db.Timestamptz(3)
+  createdById   String              @db.Uuid
+  createdBy     User                @relation("BillingPeriodCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  closedById    String?             @db.Uuid
+  closedBy      User?               @relation("BillingPeriodClosedBy", fields: [closedById], references: [id], onDelete: Restrict)
+  createdAt     DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime            @updatedAt @db.Timestamptz(3)
+  meterReadings MeterReading[]
 
   @@unique([propertyId, startsOn])
   @@index([propertyId, status, startsOn])
@@ -345,24 +424,27 @@ model MaintenanceRequest {
 }
 
 model User {
-  id                    String               @id @default(uuid()) @db.Uuid
-  username              String               @unique @db.VarChar(80)
-  email                 String               @unique @db.VarChar(254)
-  name                  String               @db.VarChar(160)
+  id                    String                   @id @default(uuid()) @db.Uuid
+  username              String                   @unique @db.VarChar(80)
+  email                 String                   @unique @db.VarChar(254)
+  name                  String                   @db.VarChar(160)
   passwordHash          String
-  role                  Role                 @default(STAFF)
-  disabled              Boolean              @default(false)
-  createdAt             DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt             DateTime             @updatedAt @db.Timestamptz(3)
+  role                  Role                     @default(STAFF)
+  disabled              Boolean                  @default(false)
+  createdAt             DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime                 @updatedAt @db.Timestamptz(3)
   sessions              Session[]
   audits                AuditLog[]
-  readings              MeterReading[]
+  readingsRecorded      MeterReading[]           @relation("MeterReadingRecordedBy")
+  readingsConfirmed     MeterReading[]           @relation("MeterReadingConfirmedBy")
+  readingCorrections    MeterReadingCorrection[]
+  meterReplacements     MeterReplacement[]
   maintenance           MaintenanceRequest[]
   attachments           Attachment[]
   backups               BackupHistory[]
   utilityRates          UtilityRate[]
-  billingPeriodsCreated BillingPeriod[]      @relation("BillingPeriodCreatedBy")
-  billingPeriodsClosed  BillingPeriod[]      @relation("BillingPeriodClosedBy")
+  billingPeriodsCreated BillingPeriod[]          @relation("BillingPeriodCreatedBy")
+  billingPeriodsClosed  BillingPeriod[]          @relation("BillingPeriodClosedBy")
 }
 
 model Session {
