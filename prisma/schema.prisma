@@ -64,16 +64,22 @@ enum BackupStatus {
   FAILED
 }
 
+enum BillingPeriodStatus {
+  OPEN
+  CLOSED
+}
+
 model Property {
-  id        String        @id @default(uuid()) @db.Uuid
-  code      String        @unique @db.VarChar(40)
-  name      String        @db.VarChar(160)
-  address   String        @default("") @db.VarChar(500)
-  createdAt DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime      @updatedAt @db.Timestamptz(3)
-  floors    Floor[]
-  rates     UtilityRate[]
-  expenses  Expense[]
+  id             String          @id @default(uuid()) @db.Uuid
+  code           String          @unique @db.VarChar(40)
+  name           String          @db.VarChar(160)
+  address        String          @default("") @db.VarChar(500)
+  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+  floors         Floor[]
+  rates          UtilityRate[]
+  expenses       Expense[]
+  billingPeriods BillingPeriod[]
 }
 
 model Floor {
@@ -198,10 +204,34 @@ model UtilityRate {
   kind          MeterKind
   unitPrice     Decimal   @db.Decimal(14, 4)
   effectiveFrom DateTime  @db.Date
+  createdById   String?   @db.Uuid
+  createdBy     User?     @relation(fields: [createdById], references: [id], onDelete: Restrict)
   createdAt     DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
 
   @@unique([propertyId, kind, effectiveFrom])
+  @@index([createdById])
+}
+
+model BillingPeriod {
+  id          String              @id @default(uuid()) @db.Uuid
+  propertyId  String              @db.Uuid
+  property    Property            @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  startsOn    DateTime            @db.Date
+  endsOn      DateTime            @db.Date
+  status      BillingPeriodStatus @default(OPEN)
+  closedAt    DateTime?           @db.Timestamptz(3)
+  createdById String              @db.Uuid
+  createdBy   User                @relation("BillingPeriodCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  closedById  String?             @db.Uuid
+  closedBy    User?               @relation("BillingPeriodClosedBy", fields: [closedById], references: [id], onDelete: Restrict)
+  createdAt   DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime            @updatedAt @db.Timestamptz(3)
+
+  @@unique([propertyId, startsOn])
+  @@index([propertyId, status, startsOn])
+  @@index([createdById])
+  @@index([closedById])
 }
 
 model Invoice {
@@ -315,21 +345,24 @@ model MaintenanceRequest {
 }
 
 model User {
-  id           String               @id @default(uuid()) @db.Uuid
-  username     String               @unique @db.VarChar(80)
-  email        String               @unique @db.VarChar(254)
-  name         String               @db.VarChar(160)
-  passwordHash String
-  role         Role                 @default(STAFF)
-  disabled     Boolean              @default(false)
-  createdAt    DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime             @updatedAt @db.Timestamptz(3)
-  sessions     Session[]
-  audits       AuditLog[]
-  readings     MeterReading[]
-  maintenance  MaintenanceRequest[]
-  attachments  Attachment[]
-  backups      BackupHistory[]
+  id                    String               @id @default(uuid()) @db.Uuid
+  username              String               @unique @db.VarChar(80)
+  email                 String               @unique @db.VarChar(254)
+  name                  String               @db.VarChar(160)
+  passwordHash          String
+  role                  Role                 @default(STAFF)
+  disabled              Boolean              @default(false)
+  createdAt             DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime             @updatedAt @db.Timestamptz(3)
+  sessions              Session[]
+  audits                AuditLog[]
+  readings              MeterReading[]
+  maintenance           MaintenanceRequest[]
+  attachments           Attachment[]
+  backups               BackupHistory[]
+  utilityRates          UtilityRate[]
+  billingPeriodsCreated BillingPeriod[]      @relation("BillingPeriodCreatedBy")
+  billingPeriodsClosed  BillingPeriod[]      @relation("BillingPeriodClosedBy")
 }
 
 model Session {
