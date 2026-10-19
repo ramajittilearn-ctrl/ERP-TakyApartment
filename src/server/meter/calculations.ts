@@ -31,6 +31,13 @@ export function calculateConsumption(input: {
   return current.minus(previous).toFixed(3);
 }
 
+export function isChronologicalConfirmationAllowed(input: {
+  hasEarlierDraft: boolean;
+  hasLaterConfirmed: boolean;
+}) {
+  return !input.hasEarlierDraft && !input.hasLaterConfirmed;
+}
+
 export function calculateReplacementConsumption(input: {
   previousOldMeterReading: string;
   finalOldMeterReading: string;

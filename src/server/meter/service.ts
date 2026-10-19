@@ -6,6 +6,7 @@ import {
   assertReadingDateNotFuture,
   calculateConsumption,
   canonicalReading,
+  isChronologicalConfirmationAllowed,
 } from "./calculations";
 import {
   correctionInput,
@@ -303,6 +304,7 @@ export async function getReadingOverview(input: unknown) {
 
 export async function upsertDraftReading(actor: Actor, input: unknown) {
   const data = draftInput.parse(input);
+  if (data.type === "OPENING") requireAdmin(actor);
   const value = canonicalReading(data.value);
   assertReadingDateNotFuture(data.readingDate);
   const readingDate = new Date(`${data.readingDate}T00:00:00.000Z`);
@@ -345,6 +347,12 @@ export async function upsertDraftReading(actor: Actor, input: unknown) {
         409,
         "CHRONOLOGY",
         "ค่ามิเตอร์สูงกว่าค่าที่บันทึกในภายหลัง",
+      );
+    if (following)
+      throw new AppError(
+        409,
+        "READING_ORDER",
+        "ต้องบันทึกและยืนยันค่ามิเตอร์ตามลำดับวันที่",
       );
     const record = await tx.meterReading.upsert({
       where: {
@@ -390,28 +398,87 @@ export async function upsertDraftReading(actor: Actor, input: unknown) {
 
 export async function confirmReading(actor: Actor, idInput: unknown) {
   const id = uuid.parse(idInput);
+  const pointer = await db.meterReading.findUnique({
+    where: { id },
+    select: { meterId: true },
+  });
+  if (!pointer) throw new AppError(404, "READING_NOT_FOUND", "ไม่พบค่ามิเตอร์");
   return db.$transaction(async (tx) => {
-    const rows = await tx.$queryRaw<
-      { id: string }[]
-    >`SELECT id FROM "MeterReading" WHERE id = ${id}::uuid FOR UPDATE`;
-    if (!rows.length)
-      throw new AppError(404, "READING_NOT_FOUND", "ไม่พบค่ามิเตอร์");
+    const meter = await lockMeter(tx, pointer.meterId);
     const existing = await tx.meterReading.findUniqueOrThrow({
       where: { id },
       include: readingInclude,
     });
     if (existing.status === "CONFIRMED") return readingDto(existing);
+    if (existing.type === "OPENING") requireAdmin(actor);
     if (!existing.billingPeriodId)
       throw new AppError(
         409,
         "LEGACY_READING",
         "ข้อมูลเดิมไม่รองรับขั้นตอนนี้",
       );
-    await lockPeriod(tx, existing.billingPeriodId);
+    const period = await lockPeriod(tx, existing.billingPeriodId);
+    if (meter.room.floor.propertyId !== period.propertyId)
+      throw new AppError(
+        409,
+        "PROPERTY_MISMATCH",
+        "มิเตอร์และรอบเรียกเก็บอยู่คนละอาคาร",
+      );
+    const readingDate = existing.readingDate;
+    if (!readingDate)
+      throw new AppError(
+        409,
+        "LEGACY_READING",
+        "ข้อมูลเดิมไม่รองรับขั้นตอนนี้",
+      );
+    assertDateInPeriod(readingDate, period);
+    assertMeterActive(meter, readingDate);
+    const previous = await previousConfirmed(
+      tx,
+      meter.id,
+      readingDate,
+      existing.id,
+    );
+    const following = await nextConfirmed(
+      tx,
+      meter.id,
+      readingDate,
+      existing.id,
+    );
+    const earlierDraft = await tx.meterReading.findFirst({
+      where: {
+        meterId: meter.id,
+        status: "DRAFT",
+        id: { not: existing.id },
+        OR: [
+          { readingDate: { lt: readingDate } },
+          { readingDate: null, period: { lt: readingDate } },
+        ],
+      },
+      select: { id: true },
+    });
+    if (
+      !isChronologicalConfirmationAllowed({
+        hasEarlierDraft: Boolean(earlierDraft),
+        hasLaterConfirmed: Boolean(following),
+      })
+    )
+      throw new AppError(
+        409,
+        "READING_ORDER",
+        "ต้องบันทึกและยืนยันค่ามิเตอร์ตามลำดับวันที่",
+      );
+    const consumption = usage(
+      previous,
+      existing.value.toFixed(3),
+      existing.type,
+    );
     const record = await tx.meterReading.update({
       where: { id },
       data: {
         status: "CONFIRMED",
+        previousReadingId: previous?.id,
+        consumption,
         confirmedById: actor.id,
         confirmedAt: new Date(),
       },
@@ -507,127 +574,147 @@ export async function correctReading(
   const id = uuid.parse(idInput);
   const data = correctionInput.parse(input);
   const newValue = canonicalReading(data.value);
-  return db.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM "MeterReading" WHERE id = ${id}::uuid FOR UPDATE`;
-    const existing = await tx.meterReading.findUnique({
-      where: { id },
-      include: readingInclude,
-    });
-    if (!existing)
-      throw new AppError(404, "READING_NOT_FOUND", "ไม่พบค่ามิเตอร์");
-    if (
-      existing.status !== "CONFIRMED" ||
-      !existing.readingDate ||
-      !existing.billingPeriodId
-    )
-      throw new AppError(
-        409,
-        "CORRECTION_NOT_ALLOWED",
-        "แก้ไขได้เฉพาะค่าที่ยืนยันในระบบใหม่",
-      );
-    await lockPeriod(tx, existing.billingPeriodId);
-    const previous = await previousConfirmed(
-      tx,
-      existing.meterId,
-      existing.readingDate,
-      existing.id,
-    );
-    const next = await nextConfirmed(
-      tx,
-      existing.meterId,
-      existing.readingDate,
-      existing.id,
-    );
-    const newConsumption = usage(previous, newValue, existing.type);
-    if (next && new Prisma.Decimal(newValue).greaterThan(next.value))
-      throw new AppError(
-        409,
-        "CHRONOLOGY",
-        "ค่าที่แก้ไขสูงกว่าค่าที่บันทึกในภายหลัง",
-      );
-    await tx.$queryRaw`SELECT set_config('taky.meter_correction', 'on', true)`;
-    const correction = await tx.meterReadingCorrection.create({
-      data: {
-        readingId: id,
-        oldValue: existing.value,
-        newValue,
-        oldConsumption: existing.consumption,
-        newConsumption,
-        reason: data.reason,
-        correctedById: actor.id,
-      },
-      include: { correctedBy: true },
-    });
-    const record = await tx.meterReading.update({
-      where: { id },
-      data: { value: newValue, consumption: newConsumption },
-      include: readingInclude,
-    });
-    if (next) {
-      const nextConsumption = calculateConsumption({
-        previousReading: newValue,
-        currentReading: next.value.toFixed(3),
+  const pointer = await db.meterReading.findUnique({
+    where: { id },
+    select: { meterId: true },
+  });
+  if (!pointer) throw new AppError(404, "READING_NOT_FOUND", "ไม่พบค่ามิเตอร์");
+  return db.$transaction(
+    async (tx) => {
+      await lockMeter(tx, pointer.meterId);
+      await tx.$queryRaw`SELECT id FROM "MeterReading" WHERE id = ${id}::uuid FOR UPDATE`;
+      const existing = await tx.meterReading.findUnique({
+        where: { id },
+        include: readingInclude,
       });
-      await tx.meterReadingCorrection.create({
+      if (!existing)
+        throw new AppError(404, "READING_NOT_FOUND", "ไม่พบค่ามิเตอร์");
+      if (
+        existing.status !== "CONFIRMED" ||
+        !existing.readingDate ||
+        !existing.billingPeriodId
+      )
+        throw new AppError(
+          409,
+          "CORRECTION_NOT_ALLOWED",
+          "แก้ไขได้เฉพาะค่าที่ยืนยันในระบบใหม่",
+        );
+      const previous = await previousConfirmed(
+        tx,
+        existing.meterId,
+        existing.readingDate,
+        existing.id,
+      );
+      const next = await nextConfirmed(
+        tx,
+        existing.meterId,
+        existing.readingDate,
+        existing.id,
+      );
+      const affectedPeriodIds = new Set([existing.billingPeriodId]);
+      if (next) {
+        if (!next.billingPeriodId)
+          throw new AppError(
+            409,
+            "CORRECTION_NOT_ALLOWED",
+            "ไม่สามารถแก้ไขได้เนื่องจากไม่พบรอบของค่ามิเตอร์ถัดไป",
+          );
+        affectedPeriodIds.add(next.billingPeriodId);
+      }
+      for (const periodId of [...affectedPeriodIds].sort())
+        await lockPeriod(tx, periodId);
+      const newConsumption = usage(previous, newValue, existing.type);
+      if (next && new Prisma.Decimal(newValue).greaterThan(next.value))
+        throw new AppError(
+          409,
+          "CHRONOLOGY",
+          "ค่าที่แก้ไขสูงกว่าค่าที่บันทึกในภายหลัง",
+        );
+      await tx.$queryRaw`SELECT set_config('taky.meter_correction', 'on', true)`;
+      const correction = await tx.meterReadingCorrection.create({
         data: {
-          readingId: next.id,
-          oldValue: next.value,
-          newValue: next.value,
-          oldConsumption: next.consumption,
-          newConsumption: nextConsumption,
-          reason: `ปรับการใช้ต่อเนื่องจากการแก้ไข: ${data.reason.slice(0, 900)}`,
+          readingId: id,
+          oldValue: existing.value,
+          newValue,
+          oldConsumption: existing.consumption,
+          newConsumption,
+          reason: data.reason,
           correctedById: actor.id,
         },
+        include: { correctedBy: true },
       });
-      await tx.meterReading.update({
-        where: { id: next.id },
-        data: { consumption: nextConsumption },
+      const record = await tx.meterReading.update({
+        where: { id },
+        data: { value: newValue, consumption: newConsumption },
+        include: readingInclude,
       });
-    }
-    await tx.auditLog.create({
-      data: {
-        actorId: actor.id,
-        action: "CORRECT",
-        entity: "meter_readings",
-        entityId: id,
-        metadata: {
-          oldValue: existing.value.toFixed(3),
-          newValue,
+      if (next) {
+        const nextConsumption = calculateConsumption({
+          previousReading: newValue,
+          currentReading: next.value.toFixed(3),
+        });
+        await tx.meterReadingCorrection.create({
+          data: {
+            readingId: next.id,
+            oldValue: next.value,
+            newValue: next.value,
+            oldConsumption: next.consumption,
+            newConsumption: nextConsumption,
+            reason: `ปรับการใช้ต่อเนื่องจากการแก้ไข: ${data.reason.slice(0, 900)}`,
+            correctedById: actor.id,
+          },
+        });
+        await tx.meterReading.update({
+          where: { id: next.id },
+          data: { consumption: nextConsumption },
+        });
+      }
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          action: "CORRECT",
+          entity: "meter_readings",
+          entityId: id,
+          metadata: {
+            oldValue: existing.value.toFixed(3),
+            newValue,
+            readingDate: date(existing.readingDate),
+            reason: data.reason,
+            ...(next
+              ? {
+                  affectedNextReadingId: next.id,
+                  oldNextConsumption: next.consumption?.toFixed(3) ?? null,
+                  newNextConsumption: calculateConsumption({
+                    previousReading: newValue,
+                    currentReading: next.value.toFixed(3),
+                  }),
+                }
+              : {}),
+          },
+        },
+      });
+      return {
+        reading: readingDto(record),
+        correction: {
+          id: correction.id,
+          readingId: id,
           readingDate: date(existing.readingDate),
-          reason: data.reason,
-          ...(next
-            ? {
-                affectedNextReadingId: next.id,
-                oldNextConsumption: next.consumption?.toFixed(3) ?? null,
-                newNextConsumption: calculateConsumption({
-                  previousReading: newValue,
-                  currentReading: next.value.toFixed(3),
-                }),
-              }
-            : {}),
+          oldValue: correction.oldValue.toFixed(3),
+          newValue: correction.newValue.toFixed(3),
+          oldConsumption: correction.oldConsumption?.toFixed(3) ?? null,
+          newConsumption: correction.newConsumption?.toFixed(3) ?? null,
+          reason: correction.reason,
+          correctedBy: {
+            id: correction.correctedBy.id,
+            name: correction.correctedBy.name,
+            username: correction.correctedBy.username,
+          },
+          createdAt: correction.createdAt.toISOString(),
         },
-      },
-    });
-    return {
-      reading: readingDto(record),
-      correction: {
-        id: correction.id,
-        readingId: id,
-        readingDate: date(existing.readingDate),
-        oldValue: correction.oldValue.toFixed(3),
-        newValue: correction.newValue.toFixed(3),
-        oldConsumption: correction.oldConsumption?.toFixed(3) ?? null,
-        newConsumption: correction.newConsumption?.toFixed(3) ?? null,
-        reason: correction.reason,
-        correctedBy: {
-          id: correction.correctedBy.id,
-          name: correction.correctedBy.name,
-          username: correction.correctedBy.username,
-        },
-        createdAt: correction.createdAt.toISOString(),
-      },
-    };
-  }, serializable);
+      };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+  );
 }
 
 async function periodContaining(
@@ -771,6 +858,7 @@ export async function replaceMeter(actor: Actor, input: unknown) {
       data: {
         meterId: oldMeter.id,
         period: replacementDate,
+        billingPeriodId: period.id,
         readingDate: replacementDate,
         value: finalValue,
         consumption: finalConsumption,

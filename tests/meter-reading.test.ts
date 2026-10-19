@@ -4,6 +4,7 @@ import {
   calculateReplacementConsumption,
   canonicalReading,
   assertReadingDateNotFuture,
+  isChronologicalConfirmationAllowed,
   todayInBangkok,
 } from "../src/server/meter";
 
@@ -48,6 +49,27 @@ describe("Stage 3B exact meter calculations", () => {
       oldMeterConsumption: "10.250",
       newMeterOpeningReading: "3.125",
     });
+  });
+
+  it("allows confirmation only when no earlier draft or later confirmed reading blocks it", () => {
+    expect(
+      isChronologicalConfirmationAllowed({
+        hasEarlierDraft: false,
+        hasLaterConfirmed: false,
+      }),
+    ).toBe(true);
+    expect(
+      isChronologicalConfirmationAllowed({
+        hasEarlierDraft: true,
+        hasLaterConfirmed: false,
+      }),
+    ).toBe(false);
+    expect(
+      isChronologicalConfirmationAllowed({
+        hasEarlierDraft: false,
+        hasLaterConfirmed: true,
+      }),
+    ).toBe(false);
   });
 
   it("uses the Bangkok calendar date and rejects future reading dates", () => {
