@@ -87,3 +87,24 @@ The application database role still owns the schema. An operator with owner cred
 Stage 3B development recommendation: **GO**.
 
 Production financial recommendation: **NO-GO**. Stage 3C billing and the later financial stages are intentionally not implemented.
+
+## Stage 3B closure verification addendum — 2026-10-19
+
+This addendum preserves the original Stage 3B verification record above and records the later remediation and closure checks. It supersedes the earlier counts only for the current closure working tree.
+
+- F-01 opening-reading authorization and F-03 replacement-period linkage are resolved. F-02 remains OPEN (High): an isolated PostgreSQL reproduction confirmed that correcting a March predecessor after the May successor period was closed changed successor consumption from 10.000 to 14.500 and appended a correction row in that closed period. `correctReading` checks only the predecessor's period. See `STAGE_3B_REMEDIATION_REPORT.md` for evidence.
+- The final unit suite passed 40/40 tests. The final PostgreSQL integration suite passed 36/36 tests, including 11 meter-reading tests and the correction/confirmation contention regression.
+- Focused Playwright separate-date and ADMIN replacement tests each passed 1/1. The separate-date test freezes browser time to make its date assertions repeatable.
+- The historical full browser suite remains 14/15. Focused reruns do not change that aggregate.
+- TypeScript, lint, format, test-operations/security checks, Docker production build, migration status, schema-drift check, and `git diff --check` passed. All seven migrations applied in the isolated database; Prisma reported the schema up to date and no diff.
+- A read-only inventory of the accessible local `taky` database found zero `UtilityMeter`, `MeterReading`, or orphan reading rows. The database schema predates Stage 3A/3B, so repeat the inventory after migration and before actual billing. No production data was modified.
+
+Stage 3B development status: **NOT CLOSED**. Stage 3C development recommendation: **NO-GO** until F-02 is resolved and a closed-successor-period regression passes. The PostgreSQL 36/36 result predates this uncovered scenario and does not prove the closed-period invariant. No closure commit or push was made. See `STAGE_3B_CLOSURE_REPORT.md` and `STAGE_3B_REMEDIATION_REPORT.md`; no Stage 3C handoff was created.
+
+## Final Stage 3B closure addendum — 2026-10-19
+
+This addendum supersedes the prior closure addendum's current-state statements and counts above; the original implementation and historical verification record remain unchanged. F-02 is **RESOLVED** under the owner-approved closed-period immutability policy. Correction now locks the target and immediate same-meter successor's billing periods, in stable sorted order and before any write; a closed affected period rejects the complete transaction. Open-period corrections continue to recalculate the immediate successor, while meter replacements remain separate physical-meter histories. No schema change was required.
+
+Final verification: unit **40/40**; isolated PostgreSQL integration **39/39 across four files** (14 meter tests); operations/security **8/8**; focused browser tests **2/2**; typecheck, lint, format, and `git diff --check` passed; Docker production build passed; all seven migrations are applied and Prisma reports no schema drift. The prior focused correction/confirmation contention run passed 1/1 and the case is included in the final 39/39 suite. The historical full browser aggregate remains **14/15**, not 15/15.
+
+Final finding status: **F-01 RESOLVED, F-02 RESOLVED, F-03 RESOLVED**. Stage 3B is **CLOSED for development**. Stage 3C is **CONDITIONAL GO**; F-06 remains a mandatory legacy-data verification/mapping gate before actual billing. F-04 and F-08 remain operator rollout/pre-release gates, and F-05 remains a low-priority UX follow-up. No Stage 3C application feature, migration, deployment, merge, or production data change was made. See `STAGE_3B_CLOSURE_REPORT.md` for residual ownership and final Git evidence, and `STAGE_3C_HANDOFF.md` for verified interfaces and unresolved financial rules.
