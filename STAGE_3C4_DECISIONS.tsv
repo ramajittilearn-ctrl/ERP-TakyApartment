@@ -1,0 +1,11 @@
+ts	phase	decision	why	evidence	result
+2026-10-21T23:53:21.980848+00:00	start	Record this run decision trail at closure	Reconstruct from this conversation and retained evidence without inventing action times	STAGE_3C4_PREFLIGHT.md	recorded retrospectively
+2026-10-21T23:53:21.981163+00:00	scope	Stop implementation until scope approval	The handoff assigned responsibilities but no approved change list	4dbfaf0	owner later approved
+2026-10-21T23:53:21.981168+00:00	design	Use query-bound reads and period/meter draft overlays	Preserve drafts without splitting ownership across keyed components	STAGE_3C4_PLAN.md	implemented
+2026-10-21T23:53:21.981171+00:00	isolation	Use new task-only containers, roles, ports and secrets	Keep UAT services and data independent	STAGE_3C4_CLOSURE.md	UAT untouched
+2026-10-21T23:53:21.981175+00:00	runtime	Use production standalone for browser verification	Dev eval errors conflict with the existing CSP	.local/stage3c4/build-final.log	build passed
+2026-10-21T23:53:21.981178+00:00	fixtures	Give meter integration its own property and bounded M-prefixed rooms	Shared TAKY leases blocked validated closure; long labels violated schema	tests/integration/meter-reading.test.ts	81/81 on fresh target
+2026-10-21T23:53:21.981182+00:00	browser	Await room save and split smoke tests by route	Dialog count did not prove commit; ten pages shared a timeout	tests/phase2/app.spec.ts	46/46 full aggregate
+2026-10-21T23:53:21.981185+00:00	hydration	Disable selectors until handlers attach	Trace showed August input sent against October after early selection	1026b8f	regression passed
+2026-10-21T23:53:21.981187+00:00	review	Add a delayed write and repeated-click regression	Independent reviewer identified missing mutation-lock proof	tests/phase2/meter-stage3c4.spec.ts	passed
+2026-10-21T23:53:21.981190+00:00	closure	Keep human UAT and operational commissioning separate	Synthetic checks cannot establish owner acceptance or target readiness	STAGE_3C4_TEST_REPORT.md	production NO-GO

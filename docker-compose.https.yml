@@ -1,0 +1,30 @@
+services:
+  app:
+    ports: !reset []
+    environment:
+      APP_ORIGIN: https://${LAN_HOST:?Run operations initialization}:${HTTPS_PORT:-443}
+      COOKIE_SECURE: "true"
+  caddy:
+    image: caddy:2.11.7-alpine
+    environment:
+      LAN_HOST: ${LAN_HOST:?Run operations initialization}
+    ports:
+      - "${APP_BIND_IP:-127.0.0.1}:${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./operations/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    networks: [private]
+volumes:
+  caddy_data:
+  caddy_config:

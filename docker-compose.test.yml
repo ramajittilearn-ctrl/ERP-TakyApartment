@@ -1,0 +1,5 @@
+services:
+  app:
+    environment:
+      TEST_ADMIN_PASSWORD: ${TEST_ADMIN_PASSWORD:?Test config required}
+      TEST_STAFF_PASSWORD: ${TEST_STAFF_PASSWORD:?Test config required}

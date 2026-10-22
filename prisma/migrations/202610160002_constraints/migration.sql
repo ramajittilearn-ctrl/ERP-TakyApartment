@@ -1,0 +1,16 @@
+CREATE UNIQUE INDEX "Lease_one_active_room" ON "Lease" ("roomId") WHERE status = 'ACTIVE';
+ALTER TABLE "Floor" ADD CONSTRAINT "Floor_positive" CHECK (number > 0);
+ALTER TABLE "Room" ADD CONSTRAINT "Room_rent_nonnegative" CHECK (rent >= 0);
+ALTER TABLE "Lease" ADD CONSTRAINT "Lease_valid_dates" CHECK ("endDate" >= "startDate"), ADD CONSTRAINT "Lease_nonnegative" CHECK (rent >= 0 AND deposit >= 0);
+ALTER TABLE "SecurityDeposit" ADD CONSTRAINT "Deposit_positive" CHECK (amount > 0);
+ALTER TABLE "MeterReading" ADD CONSTRAINT "Reading_nonnegative" CHECK (value >= 0);
+ALTER TABLE "UtilityRate" ADD CONSTRAINT "Rate_nonnegative" CHECK ("unitPrice" >= 0);
+ALTER TABLE "InvoiceItem" ADD CONSTRAINT "Item_quantity_positive" CHECK (quantity > 0);
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_positive" CHECK (amount > 0);
+ALTER TABLE "PaymentAllocation" ADD CONSTRAINT "Allocation_positive" CHECK (amount > 0);
+ALTER TABLE "Expense" ADD CONSTRAINT "Expense_positive" CHECK (amount > 0);
+ALTER TABLE "MaintenanceRequest" ADD CONSTRAINT "Maintenance_priority" CHECK (priority BETWEEN 1 AND 3);
+ALTER TABLE "Attachment" ADD CONSTRAINT "Attachment_size" CHECK (bytes >= 0), ADD CONSTRAINT "Attachment_one_owner" CHECK (num_nonnulls("tenantId", "leaseId", "paymentId", "expenseId") = 1);
+ALTER TABLE "User" ADD CONSTRAINT "User_normalized" CHECK (username = lower(username) AND email = lower(email));
+CREATE FUNCTION prevent_audit_change() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Audit log is append-only'; END; $$;
+CREATE TRIGGER audit_immutable BEFORE UPDATE OR DELETE ON "AuditLog" FOR EACH ROW EXECUTE FUNCTION prevent_audit_change();

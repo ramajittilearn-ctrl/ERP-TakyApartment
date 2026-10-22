@@ -1,0 +1,183 @@
+{
+  "data": [
+    {
+      "id": "279e9daa-b895-4801-a238-43d7d9946792",
+      "number": null,
+      "leaseId": "ec4dac46-9a3d-430c-b920-a45e81b7690e",
+      "billingPeriodId": "ad740ce9-a64c-4030-bcf6-2ca08ce76dff",
+      "frozenLeaseId": "2eb75d37-1f35-44ac-871a-631d94edabcc",
+      "period": "2026-11-01",
+      "dueDate": "2026-12-05",
+      "dueProvenance": {
+        "kind": "POLICY",
+        "propertyId": "acb453f0-0765-444f-8b07-620bc31a16f4",
+        "version": 1,
+        "offsetDays": 5,
+        "anchor": "2026-11-30",
+        "dueDate": "2026-12-05"
+      },
+      "status": "DRAFT",
+      "revision": 1,
+      "version": 1,
+      "finalTotal": "1050.01",
+      "notes": "",
+      "fingerprint": "f17a4ef26b9f6b3d03b0d1495f4585c81eca06e00324b40f00ce5ad3710c6419",
+      "previousInvoiceId": null,
+      "nextInvoiceId": null,
+      "issuedAt": null,
+      "issuedById": null,
+      "voidedAt": null,
+      "voidedById": null,
+      "voidReason": null,
+      "managed": true,
+      "labels": {
+        "property": "Synthetic invoice property",
+        "room": "101",
+        "tenant": "Historical tenant"
+      },
+      "snapshot": {
+        "snapshotVersion": "3C-2.1",
+        "purpose": "PREVIEW_ONLY",
+        "source": {
+          "propertyId": "acb453f0-0765-444f-8b07-620bc31a16f4",
+          "period": {
+            "id": "ad740ce9-a64c-4030-bcf6-2ca08ce76dff",
+            "propertyId": "acb453f0-0765-444f-8b07-620bc31a16f4",
+            "startsOn": "2026-11-01",
+            "endsOn": "2026-11-30",
+            "status": "OPEN",
+            "version": "2026-10-22T07:04:14.120Z"
+          },
+          "lease": {
+            "id": "ec4dac46-9a3d-430c-b920-a45e81b7690e",
+            "propertyId": "acb453f0-0765-444f-8b07-620bc31a16f4",
+            "roomId": "19fd6bb1-a08f-4aaa-a77f-39845f76b4cf",
+            "tenantId": "aff4e677-59c1-4c09-affb-80c65f2abcaf",
+            "version": "30280e911f4ba3d66c5ee15a4cd6aae4678d9ed7",
+            "rent": "1000.00",
+            "startsOn": "2026-01-01",
+            "endsOn": "2026-12-31"
+          },
+          "utilities": [
+            {
+              "kind": "WATER",
+              "rate": {
+                "id": "192f92c9-7755-4129-a9c9-c7fce221b88a",
+                "propertyId": "acb453f0-0765-444f-8b07-620bc31a16f4",
+                "billingPeriodId": "ad740ce9-a64c-4030-bcf6-2ca08ce76dff",
+                "kind": "WATER",
+                "value": "20.0050",
+                "effectiveFrom": "2026-01-01",
+                "nextEffectiveFrom": null,
+                "approval": {
+                  "id": "e11a64a2-233b-41b5-a0d7-fcf7e5183615",
+                  "approverId": "18b408e6-ce79-435b-9d22-4d2c50f40862",
+                  "approverRole": "ADMIN",
+                  "approvedAt": "2026-10-22T07:04:14.132Z"
+                }
+              },
+              "consumption": {
+                "kind": "ESTIMATE",
+                "quantity": "1.000",
+                "reason": "Documented estimate",
+                "evidence": ["synthetic evidence"],
+                "sourceContext": "Visit record",
+                "approval": {
+                  "id": "9f911d4c-de1f-4144-8334-3fe1f651bdc3",
+                  "approverId": "18b408e6-ce79-435b-9d22-4d2c50f40862",
+                  "approverRole": "ADMIN",
+                  "approvedAt": "2026-10-22T07:04:14.145Z"
+                }
+              }
+            },
+            {
+              "kind": "ELECTRICITY",
+              "rate": {
+                "id": "8ffa3b44-044c-4fda-a3ef-c369e194c4ae",
+                "propertyId": "acb453f0-0765-444f-8b07-620bc31a16f4",
+                "billingPeriodId": "ad740ce9-a64c-4030-bcf6-2ca08ce76dff",
+                "kind": "ELECTRICITY",
+                "value": "30.0050",
+                "effectiveFrom": "2026-01-01",
+                "nextEffectiveFrom": null,
+                "approval": {
+                  "id": "5a811467-48dd-45f1-b9da-87928693a7d8",
+                  "approverId": "18b408e6-ce79-435b-9d22-4d2c50f40862",
+                  "approverRole": "ADMIN",
+                  "approvedAt": "2026-10-22T07:04:14.160Z"
+                }
+              },
+              "consumption": {
+                "kind": "ESTIMATE",
+                "quantity": "1.000",
+                "reason": "Documented estimate",
+                "evidence": ["synthetic evidence"],
+                "sourceContext": "Visit record",
+                "approval": {
+                  "id": "7f911226-4f5f-44ed-a444-8d9b61f17f63",
+                  "approverId": "18b408e6-ce79-435b-9d22-4d2c50f40862",
+                  "approverRole": "ADMIN",
+                  "approvedAt": "2026-10-22T07:04:14.166Z"
+                }
+              }
+            }
+          ],
+          "validationIssues": []
+        },
+        "rentProration": {
+          "occupiedStartsOn": "2026-11-01",
+          "occupiedEndsOn": "2026-11-30",
+          "occupiedDays": 30,
+          "periodDays": 30
+        },
+        "lines": [
+          {
+            "kind": "RENT",
+            "rawAmount": {
+              "numerator": "1000",
+              "denominator": "1",
+              "decimal": "1000"
+            },
+            "displayAmount": "1000.00"
+          },
+          {
+            "kind": "WATER",
+            "rawAmount": {
+              "numerator": "4001",
+              "denominator": "200",
+              "decimal": "20.005"
+            },
+            "displayAmount": "20.01"
+          },
+          {
+            "kind": "ELECTRICITY",
+            "rawAmount": {
+              "numerator": "6001",
+              "denominator": "200",
+              "decimal": "30.005"
+            },
+            "displayAmount": "30.01"
+          }
+        ],
+        "totals": {
+          "rawTotal": {
+            "numerator": "105001",
+            "denominator": "100",
+            "decimal": "1050.01"
+          },
+          "finalTotal": "1050.01",
+          "displayLineTotal": "1050.02",
+          "reconciliationDelta": "-0.01"
+        },
+        "rounding": {
+          "mode": "HALF_UP",
+          "scale": 2,
+          "aggregation": "SUM_EXACT_RAW_THEN_ROUND_ONCE",
+          "decimalDisplayPrecision": 80
+        },
+        "fingerprint": "f17a4ef26b9f6b3d03b0d1495f4585c81eca06e00324b40f00ce5ad3710c6419"
+      },
+      "correction": null
+    }
+  ]
+}

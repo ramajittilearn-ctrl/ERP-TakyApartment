@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+tmp/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.DS_Store
+.env*
+!.env.example
+.local/
+*.taky.enc
+*.backup-key

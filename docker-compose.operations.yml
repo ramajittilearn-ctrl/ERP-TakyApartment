@@ -1,0 +1,35 @@
+services:
+  operations:
+    image: taky-operations:local
+    build:
+      context: .
+      dockerfile: operations/Dockerfile
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB:?Generate environment first}
+      PGUSER: ${POSTGRES_USER:?Generate environment first}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Generate environment first}
+      BACKUP_REMOTE: ${BACKUP_REMOTE:-}
+      BACKUP_DIR: /backups
+      BACKUP_KEY_FILE: /run/secrets/backup.key
+      RCLONE_CONFIG: /run/rclone/rclone.conf
+      ATTACHMENT_DIR: /attachments
+    volumes:
+      - ${BACKUP_DIR:-./.local/backups}:/backups
+      - ${BACKUP_KEY_PATH:-./.local/private/backup.key}:/run/secrets/backup.key:ro
+      - ${RCLONE_CONFIG_DIR:-./.local/private/rclone}:/run/rclone
+      - attachments:/attachments:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "operations/cli.mjs", "heartbeat"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    networks: [private]

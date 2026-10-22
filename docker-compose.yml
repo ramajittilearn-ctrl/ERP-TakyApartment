@@ -1,0 +1,47 @@
+name: taky-erp
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Generate .env first}
+      POSTGRES_USER: ${POSTGRES_USER:?Generate .env first}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate .env first}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks: [private]
+  app:
+    build: .
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Generate .env first}
+      SESSION_SECRET: ${SESSION_SECRET:?Generate .env first}
+      APP_ORIGIN: ${APP_ORIGIN:?Set exact browser origin}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ATTACHMENT_DIR: /app/storage/attachments
+    ports:
+      - "${APP_BIND_IP:-127.0.0.1}:${APP_PORT:-3000}:3000"
+    volumes:
+      - attachments:/app/storage/attachments
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    networks: [private]
+networks:
+  private:
+    driver: bridge
+volumes:
+  database:
+  attachments:
