@@ -1,0 +1,48 @@
+# Stage 3D-1 independent design review
+
+Date: 2026-10-23. Reviewer: `/root/stage3d_design_review`, independent of the contract designer and future implementer. Scope: read-only financial/database design review, with this review document as the only write.
+
+Verdict: the architecture is suitable for local implementation after the three narrow guard clarifications below. The adopted development policies do not require another Owner approval. This review does not establish implementation correctness, Owner UAT acceptance, migration readiness for a real database, or production readiness.
+
+## Evidence
+
+Inspected the engineering contract and policy authorization checkpoint; all five preserved Stage 3D design documents; `prisma/schema.prisma`; foundation monetary checks; Stage 3C lifecycle migration; invoice transaction wrapper, source gate, `lockedInvoice`, `voidInvoice`, and `reviseInvoice`. Used the installed Pstack Codex adapter, Poteto workflow guidance, investigation playbook and Unslop instructions. No tests, database commands, service changes, application edits or Git mutations were performed.
+
+## Required contract corrections
+
+| ID | Priority | Evidence and failure | Minimal correction and verification |
+|---|---|---|---|
+| DR-01 | High | Contract lines 102-105 freeze selected payment fields but omit explicit immutable `legacyUnmapped`, `isDemo`, bank account/reference and creation metadata. A transition trigger implemented from that enumerated list could change a bank reference while confirming or turn a managed confirmed payment into an excluded legacy/demo row, removing its money from balances. Existing legacy rows must also remain protected from conversion through direct SQL. | Define an UPDATE allowlist for each transition. All other Payment columns are immutable, including both scope flags, both bank identity fields, methodCode, createdAt and original confirmation provenance. Existing legacy rows cannot be updated/deleted or acquire new managed child records. New Receipt/Reversal/Cancellation records must reference managed payments in their permitted final states. Test attempts to toggle flags, change bank identity during a valid transition, map a legacy row directly, and mint a receipt/reversal on legacy history. |
+| DR-02 | High | Lines 105-106 and 124 require direct-SQL invariant protection, but the final sentence at 124 discourages a trigger from locking a parent after a child whenever the service could prelock it. A service-only invoice lock cannot protect against a direct writer that does not take that lock. Deferring cap queries without database-side serialization admits concurrent write skew. | State that database guards independently take the affected Invoice row lock before their final cap/state query. The lock also coordinates with direct invoice VOID. Service writers prelock periods, lease and invoices in the documented order. Arbitrary SQL may invert that order and must abort safely on deadlock; it must never bypass cap/state checks. Preserve the existing Stage 3C source gate and guards. Require two direct SQL confirmations racing for one invoice balance and direct confirmation racing with direct VOID; assert at most one incompatible transaction commits. |
+| DR-03 | Medium | Deferred constraints are required at line 105, but their trigger coverage and insertion-versus-history semantics are not explicit. Checks attached only to the Payment transition can miss independent later child inserts. An unqualified requirement that all original allocations point to ISSUED invoices would also prevent voiding an invoice after full reversal. | Define final-state checks reached by inserts/updates of Payment, PaymentAllocation, Receipt, PaymentReversal and ReceiptCancellation. Validate cancellation.receipt.paymentId equals cancellation.reversal.paymentId. Require exactly one receipt for CONFIRMED/REVERSED and exactly one linked cancellation only for REVERSED. Check invoice payable state on allocation insertion and active CONFIRMED totals, while retained REVERSED allocations may subsequently reference VOID invoices. Test standalone orphan receipt/reversal/cancellation insertion, mismatched cancellation links, and reverse-then-void while original allocations and receipt snapshot remain unchanged. |
+
+The deferred checks may share one payment-validation function. These corrections do not require a different schema architecture or separate managed payment tables.
+
+## Reviewed decisions
+
+- Retaining existing Payment and PaymentAllocation tables with an additive migration preserves reference semantics and avoids a second balance source. The legacy fixture rehearsal is mandatory. It does not replace target-data inventory before operational release.
+- Trimmed, case-sensitive receiving-account/reference uniqueness for PENDING and CONFIRMED rows is a declared conservative engineering default consistent with the preserved recommendation's explicitly open normalization and active-state predicate. Releasing a reference after full reversal permits correction by a new payment. Keep the original reference in the reversed history. The UI and runbook must disclose the active-only scope.
+- The same-lease, exact-amount, same Bangkok received-day cash predicate is a reasonable declared heuristic for likely duplicates. It does not prove payment identity. Lease serialization, audited ADMIN reason and candidate IDs are necessary. Test cross-midnight boundaries and simultaneous confirmations.
+- Receipt issuance-month numbering in Asia/Bangkok is consistent with the dedicated monthly counter policy. ReceivedAt remains separate. A cancelled receipt retains its number. Test the Bangkok month boundary, exhaustion, and rollback after number allocation. A rolled-back transaction issued no receipt and need not reserve that failed attempt's number.
+- Shared source gate, actor/command advisory lock, sorted periods, lease, sorted invoices, payment and receipt counter preserve the observed service order. The historical design's statement that ordinary payments need no source gate is superseded by the engineering contract's choice to reuse the actual invoice wrapper. This is compatible and adds serialization with period close.
+- Same-key retry must return the stored original result before expected-version validation, after authorization. A changed body/operation conflicts. Retry the complete transaction only for known transient database conflicts with a bounded count; deterministic bank-reference conflicts should become domain errors.
+- Full reversal retains allocations and snapshot, excludes the payment from balances, and appends the same-payment cancellation in one transaction. Pending cancellation cannot manufacture a receipt. Failure after any allocation, receipt, audit or command write must roll back all financial changes.
+- Post-VOID exception, private evidence flow, transport/UI and legal print identity are explicitly deferred. Stage 3D-1 must not claim them implemented. Bank reference plus receiving-account key is an acceptable narrower local-development path while private slips are unavailable.
+
+## Integration dependency
+
+The orchestrator reports concurrent OPS03 work that freezes a restore fingerprint registry for the 33 current Prisma models and verifies coverage. Before integrating the Stage 3D schema, coordinate a new inventory/schema registry version for the new models. Preserve the existing version 2 registry and old archive compatibility. Do not silently invalidate old archives by redefining their version. The operations owner owns those files; this reviewer did not edit them. This dependency blocks final integrated restore readiness, rather than the bounded payment implementation.
+
+## Retest required
+
+The orchestrator/designer should incorporate DR-01 through DR-03 in the contract, then request a short independent design retest. A fresh independent code/database review remains mandatory after implementation. No implementation approval or test pass is claimed by this document.
+
+## Independent correction retest
+
+Date: 2026-10-23. Reviewer: `/root/stage3d_design_retest`, independent of the designer and implementer. Verdict: accepted for bounded Stage 3D-1 implementation. DR-01, DR-02 and DR-03 are closed at the design level.
+
+Read the corrected contract in full against the three original findings. Its explicit precedence section freezes flags, bank identity and provenance through transition-specific UPDATE allowlists. It prohibits legacy mutations and new managed children on legacy rows. The revised lock paragraph and DR-02 both require database-side Invoice locks before final cap/state queries, including direct SQL. They permit safe deadlock aborts and require both direct SQL race tests. DR-03 reaches all five lifecycle tables, checks same-payment cancellation links and distinguishes allocation insertion from retained reversed history so reverse-then-void remains valid. These corrections do not contradict the earlier abbreviated requirements because the contract states their precedence.
+
+The restore dependency preserves the frozen version 2 registry and old archives while requiring a new inventory version for the expanded schema. Operations ownership and serial coordination remain explicit. The contract header still describes its pre-review status; this verdict records completion of this design retest.
+
+This was document inspection only. No application, database, service or Git changes and no test execution occurred. Implementation acceptance still requires the specified PostgreSQL races, integrity tests, migration rehearsal and fresh independent code review.
