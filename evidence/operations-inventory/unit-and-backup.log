@@ -1,0 +1,118 @@
+TAP version 13
+# Subtest: AES-256-GCM round trip preserves bytes and uses a fresh nonce
+ok 1 - AES-256-GCM round trip preserves bytes and uses a fresh nonce
+  ---
+  duration_ms: 329.19825
+  type: 'test'
+  ...
+# Subtest: decrypt preserves an existing file with a valid key
+ok 2 - decrypt preserves an existing file with a valid key
+  ---
+  duration_ms: 145.998625
+  type: 'test'
+  ...
+# Subtest: decrypt preserves an existing file with a wrong key
+ok 3 - decrypt preserves an existing file with a wrong key
+  ---
+  duration_ms: 124.293708
+  type: 'test'
+  ...
+# Subtest: decrypt preserves an existing symlink with a valid key
+ok 4 - decrypt preserves an existing symlink with a valid key
+  ---
+  duration_ms: 127.673542
+  type: 'test'
+  ...
+# Subtest: decrypt preserves an existing symlink with a wrong key
+ok 5 - decrypt preserves an existing symlink with a wrong key
+  ---
+  duration_ms: 119.958667
+  type: 'test'
+  ...
+# Subtest: decrypt preserves a destination filesystem error
+ok 6 - decrypt preserves a destination filesystem error
+  ---
+  duration_ms: 119.393208
+  type: 'test'
+  ...
+# Subtest: wrong keys and damaged header, nonce, ciphertext and tag never leave plaintext
+ok 7 - wrong keys and damaged header, nonce, ciphertext and tag never leave plaintext
+  ---
+  duration_ms: 463.493458
+  type: 'test'
+  ...
+# Subtest: keys must be random-length canonical base64, not passwords
+ok 8 - keys must be random-length canonical base64, not passwords
+  ---
+  duration_ms: 95.575
+  type: 'test'
+  ...
+# Subtest: paths reject traversal and links; ordinary Thai filenames retain hashes
+ok 9 - paths reject traversal and links; ordinary Thai filenames retain hashes
+  ---
+  duration_ms: 137.426584
+  type: 'test'
+  ...
+# Subtest: encrypted manifest verifies database and attachment content; altered manifests fail
+ok 10 - encrypted manifest verifies database and attachment content; altered manifests fail
+  ---
+  duration_ms: 10334.520583
+  type: 'test'
+  ...
+# Subtest: retention keeps latest twelve successful weekly sets and all pending uploads
+ok 11 - retention keeps latest twelve successful weekly sets and all pending uploads
+  ---
+  duration_ms: 190.54875
+  type: 'test'
+  ...
+# Subtest: Sunday 02:00 Bangkok, catch-up, successful slot and failed-attempt backoff
+ok 12 - Sunday 02:00 Bangkok, catch-up, successful slot and failed-attempt backoff
+  ---
+  duration_ms: 1.902125
+  type: 'test'
+  ...
+# Subtest: production restore refuses absent owner confirmation before any database access
+ok 13 - production restore refuses absent owner confirmation before any database access
+  ---
+  duration_ms: 19.996875
+  type: 'test'
+  ...
+# Subtest: frozen registry covers every current Prisma model exactly once
+ok 14 - frozen registry covers every current Prisma model exactly once
+  ---
+  duration_ms: 28.471667
+  type: 'test'
+  ...
+# Subtest: v2 query extends legacy fingerprint and hashes full ordered database rows
+ok 15 - v2 query extends legacy fingerprint and hashes full ordered database rows
+  ---
+  duration_ms: 0.551542
+  type: 'test'
+  ...
+# Subtest: absent version selects legacy, explicit unknown versions fail closed
+ok 16 - absent version selects legacy, explicit unknown versions fail closed
+  ---
+  duration_ms: 3.620333
+  type: 'test'
+  ...
+# Subtest: v2 requires exact registry and canonical string counts/hash, before any DB access
+ok 17 - v2 requires exact registry and canonical string counts/hash, before any DB access
+  ---
+  duration_ms: 1.323459
+  type: 'test'
+  ...
+# Subtest: arbitrarily large counts remain strings without Number rounding
+ok 18 - arbitrarily large counts remain strings without Number rounding
+  ---
+  duration_ms: 2.803584
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15121.872542

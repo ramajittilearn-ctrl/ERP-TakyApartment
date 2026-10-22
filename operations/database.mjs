@@ -6,26 +6,47 @@ import { createInterface } from "node:readline";
 import assert from "node:assert/strict";
 import { run, copyFiles, filesUnder, unpack } from "./archive.mjs";
 
-export const INVENTORY_SQL = `SELECT jsonb_build_object(
- 'schema', (SELECT encode(sha256(convert_to(string_agg(table_name||':'||column_name||':'||data_type||':'||is_nullable,',' ORDER BY table_name,ordinal_position),'UTF8')),'hex') FROM information_schema.columns WHERE table_schema='public'),
- 'migrations', (SELECT jsonb_agg(jsonb_build_object('name',migration_name,'checksum',checksum) ORDER BY migration_name) FROM "_prisma_migrations" WHERE finished_at IS NOT NULL),
- 'rooms', (SELECT jsonb_build_object('count',count(*),'numbers',jsonb_agg(number ORDER BY number),'hash',encode(sha256(convert_to(coalesce(jsonb_agg(to_jsonb(t) ORDER BY id)::text,'[]'),'UTF8')),'hex')) FROM "Room" t),
- 'tenants', (SELECT jsonb_build_object('count',count(*),'hash',encode(sha256(convert_to(coalesce(jsonb_agg(to_jsonb(t) ORDER BY id)::text,'[]'),'UTF8')),'hex')) FROM "Tenant" t),
- 'leases', (SELECT jsonb_build_object('count',count(*),'hash',encode(sha256(convert_to(coalesce(jsonb_agg(to_jsonb(t) ORDER BY id)::text,'[]'),'UTF8')),'hex')) FROM "Lease" t),
- 'attachments', (SELECT coalesce(jsonb_agg(jsonb_build_object('path',"storageKey",'sha256',sha256,'bytes',bytes) ORDER BY "storageKey"),'[]') FROM "Attachment"));`;
+import {
+  inventoryVersion,
+  INVENTORY_SQL,
+  LEGACY_INVENTORY_SQL,
+} from "./inventory.mjs";
+export { INVENTORY_SQL, LEGACY_INVENTORY_SQL } from "./inventory.mjs";
 export const literal = (value) =>
   value == null ? "NULL" : `'${String(value).replaceAll("'", "''")}'`;
-export function sql(query, env = process.env) {
+export function sql(query, env = process.env, version = 1) {
   return run("psql", ["-X", "-v", "ON_ERROR_STOP=1", "-Atc", query], {
-    env: { ...env, PGOPTIONS: "-c timezone=UTC" },
+    env: {
+      ...env,
+      PGOPTIONS:
+        version === 2
+          ? "-c timezone=UTC -c datestyle=ISO,YMD"
+          : "-c timezone=UTC",
+    },
   });
 }
-export async function inventory(env = process.env) {
-  return JSON.parse(await sql(INVENTORY_SQL, env));
+export async function inventory(env = process.env, version = 2) {
+  if (version !== 2 && version !== 1)
+    throw new Error("Unsupported inventory version");
+  return JSON.parse(
+    await sql(
+      version === 2 ? INVENTORY_SQL : LEGACY_INVENTORY_SQL,
+      env,
+      version,
+    ),
+  );
+}
+export async function assertInventory(expected, env = process.env) {
+  const version = inventoryVersion(expected);
+  assert.deepEqual(
+    await inventory(env, version),
+    expected,
+    "Restored database inventory differs from snapshot",
+  );
 }
 export async function exportSnapshot() {
   const child = spawn("psql", ["-X", "-v", "ON_ERROR_STOP=1", "-At"], {
-    env: { ...process.env, PGOPTIONS: "-c timezone=UTC" },
+    env: { ...process.env, PGOPTIONS: "-c timezone=UTC -c datestyle=ISO,YMD" },
     stdio: ["pipe", "pipe", "pipe"],
   });
   child.stderr.resume();
@@ -132,11 +153,7 @@ export async function verifyDatabase(dump, expected) {
         ],
         { env },
       );
-      assert.deepEqual(
-        await inventory(env),
-        expected,
-        "Restored database inventory differs from snapshot",
-      );
+      await assertInventory(expected, env);
     } finally {
       if (started)
         await asPostgres("pg_ctl", [
@@ -187,7 +204,7 @@ export async function restoreIsolated(file, key, attachmentTarget) {
       attachmentTarget,
       set.manifest.attachments,
     );
-    assert.deepEqual(await inventory(), set.manifest.inventory);
+    await assertInventory(set.manifest.inventory);
     assert.deepEqual(
       await filesUnder(attachmentTarget),
       set.manifest.attachments,

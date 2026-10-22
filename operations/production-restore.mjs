@@ -9,7 +9,7 @@ import {
   run,
   sha256,
 } from "./archive.mjs";
-import { inventory, verifyArchive, withTemp } from "./database.mjs";
+import { assertInventory, verifyArchive, withTemp } from "./database.mjs";
 import { root, keyFile, selectedFile, records } from "./backup.mjs";
 
 export async function restoreProduction(name) {
@@ -73,7 +73,7 @@ export async function restoreProduction(name) {
     }
     await ownership(target);
     assert.deepEqual(await filesUnder(target), set.manifest.attachments);
-    assert.deepEqual(await inventory(), set.manifest.inventory);
+    await assertInventory(set.manifest.inventory);
     console.info(
       JSON.stringify({
         status: "RESTORED",
