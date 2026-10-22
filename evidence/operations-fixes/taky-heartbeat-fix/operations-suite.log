@@ -1,0 +1,145 @@
+TAP version 13
+# Subtest: AES-256-GCM round trip preserves bytes and uses a fresh nonce
+ok 1 - AES-256-GCM round trip preserves bytes and uses a fresh nonce
+  ---
+  duration_ms: 337.496042
+  type: 'test'
+  ...
+# Subtest: wrong keys and damaged header, nonce, ciphertext and tag never leave plaintext
+ok 2 - wrong keys and damaged header, nonce, ciphertext and tag never leave plaintext
+  ---
+  duration_ms: 370.512875
+  type: 'test'
+  ...
+# Subtest: keys must be random-length canonical base64, not passwords
+ok 3 - keys must be random-length canonical base64, not passwords
+  ---
+  duration_ms: 21.624
+  type: 'test'
+  ...
+# Subtest: paths reject traversal and links; ordinary Thai filenames retain hashes
+ok 4 - paths reject traversal and links; ordinary Thai filenames retain hashes
+  ---
+  duration_ms: 83.808917
+  type: 'test'
+  ...
+# Subtest: encrypted manifest verifies database and attachment content; altered manifests fail
+ok 5 - encrypted manifest verifies database and attachment content; altered manifests fail
+  ---
+  duration_ms: 607.194458
+  type: 'test'
+  ...
+# Subtest: retention keeps latest twelve successful weekly sets and all pending uploads
+ok 6 - retention keeps latest twelve successful weekly sets and all pending uploads
+  ---
+  duration_ms: 2.564042
+  type: 'test'
+  ...
+# Subtest: Sunday 02:00 Bangkok, catch-up, successful slot and failed-attempt backoff
+ok 7 - Sunday 02:00 Bangkok, catch-up, successful slot and failed-attempt backoff
+  ---
+  duration_ms: 0.306208
+  type: 'test'
+  ...
+# Subtest: production restore refuses absent owner confirmation before any database access
+ok 8 - production restore refuses absent owner confirmation before any database access
+  ---
+  duration_ms: 0.421292
+  type: 'test'
+  ...
+# Subtest: browser proxy blocks direct and redirected unauthorized targets without sending a request
+not ok 9 - browser proxy blocks direct and redirected unauthorized targets without sending a request
+  ---
+  duration_ms: 29.269708
+  type: 'test'
+  location: '/private/tmp/taky-heartbeat-fix/tests/ops/browser-target-proxy.test.mjs:36:1'
+  failureType: 'uncaughtException'
+  error: 'listen EPERM: operation not permitted 127.0.0.1'
+  code: 'EPERM'
+  stack: |-
+    Server.setupListenHandle [as _listen2] (node:net:1918:21)
+    listenInCluster (node:net:1997:12)
+    node:net:2206:7
+    process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+  ...
+# Subtest: heartbeat command rejects missing file
+ok 10 - heartbeat command rejects missing file
+  ---
+  duration_ms: 343.4375
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects malformed JSON
+ok 11 - heartbeat command rejects malformed JSON
+  ---
+  duration_ms: 261.55075
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects missing timestamp
+ok 12 - heartbeat command rejects missing timestamp
+  ---
+  duration_ms: 382.165
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects invalid timestamp
+ok 13 - heartbeat command rejects invalid timestamp
+  ---
+  duration_ms: 200.392791
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects null record
+ok 14 - heartbeat command rejects null record
+  ---
+  duration_ms: 175.753875
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects null timestamp
+ok 15 - heartbeat command rejects null timestamp
+  ---
+  duration_ms: 205.204792
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects array timestamp
+ok 16 - heartbeat command rejects array timestamp
+  ---
+  duration_ms: 219.056458
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects stale timestamp
+ok 17 - heartbeat command rejects stale timestamp
+  ---
+  duration_ms: 386.042875
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects future timestamp
+ok 18 - heartbeat command rejects future timestamp
+  ---
+  duration_ms: 316.943792
+  type: 'test'
+  ...
+# Subtest: heartbeat command accepts current timestamp
+ok 19 - heartbeat command accepts current timestamp
+  ---
+  duration_ms: 430.768333
+  type: 'test'
+  ...
+# Subtest: heartbeat command accepts recent timestamp
+ok 20 - heartbeat command accepts recent timestamp
+  ---
+  duration_ms: 385.014917
+  type: 'test'
+  ...
+# Subtest: heartbeat command accepts exactly twenty-minute-old timestamp
+ok 21 - heartbeat command accepts exactly twenty-minute-old timestamp
+  ---
+  duration_ms: 485.464333
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 20
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4129.942792

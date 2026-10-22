@@ -46,6 +46,53 @@ test("AES-256-GCM round trip preserves bytes and uses a fresh nonce", () =>
     await decrypt(one, restored, key);
     assert.deepEqual(await fs.readFile(restored), content);
     assert.equal((await fs.stat(one)).mode & 0o077, 0);
+    assert.equal((await fs.stat(restored)).mode & 0o777, 0o600);
+  }));
+for (const existing of ["file", "symlink"]) {
+  for (const wrongKey of [false, true]) {
+    test(`decrypt preserves an existing ${existing} with a ${wrongKey ? "wrong" : "valid"} key`, () =>
+      temporary(async (directory) => {
+        const source = path.join(directory, "source"),
+          encrypted = path.join(directory, "encrypted"),
+          restored = path.join(directory, "restored"),
+          target = path.join(directory, "target");
+        const key = randomBytes(32);
+        await fs.writeFile(source, "Backup fixture");
+        await encrypt(source, encrypted, key);
+        const protectedFile = existing === "file" ? restored : target;
+        await fs.writeFile(protectedFile, "Existing content must survive", {
+          mode: 0o640,
+        });
+        await fs.chmod(protectedFile, 0o640);
+        if (existing === "symlink") await fs.symlink("target", restored);
+        const before = await fs.lstat(restored);
+        await assert.rejects(
+          decrypt(encrypted, restored, wrongKey ? randomBytes(32) : key),
+        );
+        assert.equal(
+          await fs.readFile(protectedFile, "utf8"),
+          "Existing content must survive",
+        );
+        assert.equal((await fs.stat(protectedFile)).mode & 0o777, 0o640);
+        assert.equal((await fs.lstat(restored)).ino, before.ino);
+        if (existing === "symlink")
+          assert.equal(await fs.readlink(restored), "target");
+        await assert.rejects(decrypt(encrypted, restored, key), {
+          code: "EEXIST",
+        });
+      }));
+  }
+}
+test("decrypt preserves a destination filesystem error", () =>
+  temporary(async (directory) => {
+    const source = path.join(directory, "source"),
+      encrypted = path.join(directory, "encrypted"),
+      restored = path.join(directory, "missing", "restored");
+    const key = randomBytes(32);
+    await fs.writeFile(source, "Backup fixture");
+    await encrypt(source, encrypted, key);
+    await assert.rejects(decrypt(encrypted, restored, key), { code: "ENOENT" });
+    await assert.rejects(fs.access(restored), { code: "ENOENT" });
   }));
 test("wrong keys and damaged header, nonce, ciphertext and tag never leave plaintext", () =>
   temporary(async (directory) => {
@@ -59,6 +106,7 @@ test("wrong keys and damaged header, nonce, ciphertext and tag never leave plain
       decrypt(encrypted, restored, randomBytes(32)),
       /authentication failed/,
     );
+    await assert.rejects(fs.access(restored), { code: "ENOENT" });
     for (const index of [0, 17, 100, (await fs.stat(encrypted)).size - 1]) {
       const bytes = await fs.readFile(encrypted);
       bytes[index] ^= 1;

@@ -1,0 +1,166 @@
+TAP version 13
+# Subtest: AES-256-GCM round trip preserves bytes and uses a fresh nonce
+ok 1 - AES-256-GCM round trip preserves bytes and uses a fresh nonce
+  ---
+  duration_ms: 120.62075
+  type: 'test'
+  ...
+# Subtest: decrypt preserves an existing file with a valid key
+ok 2 - decrypt preserves an existing file with a valid key
+  ---
+  duration_ms: 51.582458
+  type: 'test'
+  ...
+# Subtest: decrypt preserves an existing file with a wrong key
+ok 3 - decrypt preserves an existing file with a wrong key
+  ---
+  duration_ms: 40.614084
+  type: 'test'
+  ...
+# Subtest: decrypt preserves an existing symlink with a valid key
+ok 4 - decrypt preserves an existing symlink with a valid key
+  ---
+  duration_ms: 35.01425
+  type: 'test'
+  ...
+# Subtest: decrypt preserves an existing symlink with a wrong key
+ok 5 - decrypt preserves an existing symlink with a wrong key
+  ---
+  duration_ms: 61.365166
+  type: 'test'
+  ...
+# Subtest: decrypt preserves a destination filesystem error
+ok 6 - decrypt preserves a destination filesystem error
+  ---
+  duration_ms: 42.804167
+  type: 'test'
+  ...
+# Subtest: wrong keys and damaged header, nonce, ciphertext and tag never leave plaintext
+ok 7 - wrong keys and damaged header, nonce, ciphertext and tag never leave plaintext
+  ---
+  duration_ms: 116.477
+  type: 'test'
+  ...
+# Subtest: keys must be random-length canonical base64, not passwords
+ok 8 - keys must be random-length canonical base64, not passwords
+  ---
+  duration_ms: 28.92775
+  type: 'test'
+  ...
+# Subtest: paths reject traversal and links; ordinary Thai filenames retain hashes
+ok 9 - paths reject traversal and links; ordinary Thai filenames retain hashes
+  ---
+  duration_ms: 60.888584
+  type: 'test'
+  ...
+# Subtest: encrypted manifest verifies database and attachment content; altered manifests fail
+ok 10 - encrypted manifest verifies database and attachment content; altered manifests fail
+  ---
+  duration_ms: 370.121708
+  type: 'test'
+  ...
+# Subtest: retention keeps latest twelve successful weekly sets and all pending uploads
+ok 11 - retention keeps latest twelve successful weekly sets and all pending uploads
+  ---
+  duration_ms: 9.697834
+  type: 'test'
+  ...
+# Subtest: Sunday 02:00 Bangkok, catch-up, successful slot and failed-attempt backoff
+ok 12 - Sunday 02:00 Bangkok, catch-up, successful slot and failed-attempt backoff
+  ---
+  duration_ms: 0.87375
+  type: 'test'
+  ...
+# Subtest: production restore refuses absent owner confirmation before any database access
+ok 13 - production restore refuses absent owner confirmation before any database access
+  ---
+  duration_ms: 0.475167
+  type: 'test'
+  ...
+# Subtest: browser proxy blocks direct and redirected unauthorized targets without sending a request
+ok 14 - browser proxy blocks direct and redirected unauthorized targets without sending a request
+  ---
+  duration_ms: 105.864291
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects missing file
+ok 15 - heartbeat command rejects missing file
+  ---
+  duration_ms: 194.607667
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects malformed JSON
+ok 16 - heartbeat command rejects malformed JSON
+  ---
+  duration_ms: 176.718375
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects missing timestamp
+ok 17 - heartbeat command rejects missing timestamp
+  ---
+  duration_ms: 159.115875
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects invalid timestamp
+ok 18 - heartbeat command rejects invalid timestamp
+  ---
+  duration_ms: 154.903458
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects null record
+ok 19 - heartbeat command rejects null record
+  ---
+  duration_ms: 190.731666
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects null timestamp
+ok 20 - heartbeat command rejects null timestamp
+  ---
+  duration_ms: 169.991042
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects array timestamp
+ok 21 - heartbeat command rejects array timestamp
+  ---
+  duration_ms: 182.3565
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects stale timestamp
+ok 22 - heartbeat command rejects stale timestamp
+  ---
+  duration_ms: 161.350125
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects future timestamp
+ok 23 - heartbeat command rejects future timestamp
+  ---
+  duration_ms: 128.78925
+  type: 'test'
+  ...
+# Subtest: heartbeat command accepts current timestamp
+ok 24 - heartbeat command accepts current timestamp
+  ---
+  duration_ms: 148.040792
+  type: 'test'
+  ...
+# Subtest: heartbeat command accepts recent timestamp
+ok 25 - heartbeat command accepts recent timestamp
+  ---
+  duration_ms: 134.964708
+  type: 'test'
+  ...
+# Subtest: heartbeat command accepts exactly twenty-minute-old timestamp
+ok 26 - heartbeat command accepts exactly twenty-minute-old timestamp
+  ---
+  duration_ms: 199.821833
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2153.274

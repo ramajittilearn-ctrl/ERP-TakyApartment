@@ -80,17 +80,23 @@ export async function decrypt(source, destination, key) {
     );
     decipher.setAAD(header);
     decipher.setAuthTag(tag);
+    const output = await fs.open(destination, "wx", 0o600);
     try {
       await pipeline(
         createReadStream(source, { start: header.length, end: size - 17 }),
         decipher,
-        createWriteStream(destination, { flags: "wx", mode: 0o600 }),
+        output.createWriteStream(),
       );
-    } catch {
+    } catch (error) {
       await fs.rm(destination, { force: true });
+      if (error.message !== "Unsupported state or unable to authenticate data")
+        throw error;
       throw new Error(
         "Archive authentication failed: incorrect key or damaged ciphertext",
+        { cause: error },
       );
+    } finally {
+      await output.close();
     }
   } finally {
     await file.close();

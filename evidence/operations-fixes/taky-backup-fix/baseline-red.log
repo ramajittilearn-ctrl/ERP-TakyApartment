@@ -1,0 +1,124 @@
+TAP version 13
+# Subtest: AES-256-GCM round trip preserves bytes and uses a fresh nonce
+ok 1 - AES-256-GCM round trip preserves bytes and uses a fresh nonce
+  ---
+  duration_ms: 56.547291
+  type: 'test'
+  ...
+# Subtest: decrypt preserves an existing file with a valid key
+not ok 2 - decrypt preserves an existing file with a valid key
+  ---
+  duration_ms: 22.905458
+  type: 'test'
+  location: '/private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:53:5'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, open '/var/folders/js/sh2qxcnj5gn8myhzhhcjpcrw0000gn/T/taky-ops-test-YHIUqC/restored'"
+  code: 'ENOENT'
+  stack: |-
+    async open (node:internal/fs/promises:639:25)
+    async Object.readFile (node:internal/fs/promises:1249:14)
+    async file:///private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:73:11
+    async temporary (file:///private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:29:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: decrypt preserves an existing file with a wrong key
+not ok 3 - decrypt preserves an existing file with a wrong key
+  ---
+  duration_ms: 17.6015
+  type: 'test'
+  location: '/private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:53:5'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, open '/var/folders/js/sh2qxcnj5gn8myhzhhcjpcrw0000gn/T/taky-ops-test-Eqq0VX/restored'"
+  code: 'ENOENT'
+  stack: |-
+    async open (node:internal/fs/promises:639:25)
+    async Object.readFile (node:internal/fs/promises:1249:14)
+    async file:///private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:73:11
+    async temporary (file:///private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:29:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: decrypt preserves an existing symlink with a valid key
+not ok 4 - decrypt preserves an existing symlink with a valid key
+  ---
+  duration_ms: 47.978958
+  type: 'test'
+  location: '/private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:53:5'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, lstat '/var/folders/js/sh2qxcnj5gn8myhzhhcjpcrw0000gn/T/taky-ops-test-XqKjT4/restored'"
+  code: 'ENOENT'
+  stack: |-
+    async Object.lstat (node:internal/fs/promises:1028:18)
+    async file:///private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:77:23
+    async temporary (file:///private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:29:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: decrypt preserves an existing symlink with a wrong key
+not ok 5 - decrypt preserves an existing symlink with a wrong key
+  ---
+  duration_ms: 33.437334
+  type: 'test'
+  location: '/private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:53:5'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, lstat '/var/folders/js/sh2qxcnj5gn8myhzhhcjpcrw0000gn/T/taky-ops-test-zR5W8Z/restored'"
+  code: 'ENOENT'
+  stack: |-
+    async Object.lstat (node:internal/fs/promises:1028:18)
+    async file:///private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:77:23
+    async temporary (file:///private/tmp/taky-backup-fix/tests/ops/backup.test.mjs:29:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: wrong keys and damaged header, nonce, ciphertext and tag never leave plaintext
+ok 6 - wrong keys and damaged header, nonce, ciphertext and tag never leave plaintext
+  ---
+  duration_ms: 86.134375
+  type: 'test'
+  ...
+# Subtest: keys must be random-length canonical base64, not passwords
+ok 7 - keys must be random-length canonical base64, not passwords
+  ---
+  duration_ms: 38.087458
+  type: 'test'
+  ...
+# Subtest: paths reject traversal and links; ordinary Thai filenames retain hashes
+ok 8 - paths reject traversal and links; ordinary Thai filenames retain hashes
+  ---
+  duration_ms: 133.181334
+  type: 'test'
+  ...
+# Subtest: encrypted manifest verifies database and attachment content; altered manifests fail
+ok 9 - encrypted manifest verifies database and attachment content; altered manifests fail
+  ---
+  duration_ms: 1924.4965
+  type: 'test'
+  ...
+# Subtest: retention keeps latest twelve successful weekly sets and all pending uploads
+ok 10 - retention keeps latest twelve successful weekly sets and all pending uploads
+  ---
+  duration_ms: 16.44075
+  type: 'test'
+  ...
+# Subtest: Sunday 02:00 Bangkok, catch-up, successful slot and failed-attempt backoff
+ok 11 - Sunday 02:00 Bangkok, catch-up, successful slot and failed-attempt backoff
+  ---
+  duration_ms: 1.129916
+  type: 'test'
+  ...
+# Subtest: production restore refuses absent owner confirmation before any database access
+ok 12 - production restore refuses absent owner confirmation before any database access
+  ---
+  duration_ms: 0.430792
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 8
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2588.213667

@@ -1,0 +1,4 @@
+Checking formatting...
+[warn] operations/cli.mjs
+[warn] tests/ops/heartbeat.test.mjs
+[warn] Code style issues found in 2 files. Run Prettier with --write to fix.

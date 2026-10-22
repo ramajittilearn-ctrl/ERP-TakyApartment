@@ -48,8 +48,14 @@ async function main() {
     const heartbeat = JSON.parse(
       await fs.readFile(path.join(root(), "heartbeat.json"), "utf8"),
     );
-    if (Date.now() - Date.parse(heartbeat.at) > 20 * 60000)
-      throw new Error("Scheduler heartbeat is stale");
+    const at =
+      typeof heartbeat?.at === "string" ? Date.parse(heartbeat.at) : NaN;
+    if (!Number.isFinite(at))
+      throw new Error("Scheduler heartbeat timestamp is invalid");
+    const age = Date.now() - at;
+    if (age < 0)
+      throw new Error("Scheduler heartbeat timestamp is in the future");
+    if (age > 20 * 60000) throw new Error("Scheduler heartbeat is stale");
     return;
   }
   if (command === "status") {

@@ -1,0 +1,162 @@
+TAP version 13
+# Subtest: heartbeat command rejects missing file
+ok 1 - heartbeat command rejects missing file
+  ---
+  duration_ms: 103.343167
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects malformed JSON
+ok 2 - heartbeat command rejects malformed JSON
+  ---
+  duration_ms: 79.174916
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects missing timestamp
+not ok 3 - heartbeat command rejects missing timestamp
+  ---
+  duration_ms: 55.630125
+  type: 'test'
+  location: '/private/tmp/taky-heartbeat-fix/tests/ops/heartbeat.test.mjs:44:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/taky-heartbeat-fix/tests/ops/heartbeat.test.mjs:47:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: heartbeat command rejects invalid timestamp
+not ok 4 - heartbeat command rejects invalid timestamp
+  ---
+  duration_ms: 50.819167
+  type: 'test'
+  location: '/private/tmp/taky-heartbeat-fix/tests/ops/heartbeat.test.mjs:44:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/taky-heartbeat-fix/tests/ops/heartbeat.test.mjs:47:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: heartbeat command rejects null record
+ok 5 - heartbeat command rejects null record
+  ---
+  duration_ms: 57.401041
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects null timestamp
+not ok 6 - heartbeat command rejects null timestamp
+  ---
+  duration_ms: 45.614333
+  type: 'test'
+  location: '/private/tmp/taky-heartbeat-fix/tests/ops/heartbeat.test.mjs:44:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/taky-heartbeat-fix/tests/ops/heartbeat.test.mjs:47:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: heartbeat command rejects array timestamp
+not ok 7 - heartbeat command rejects array timestamp
+  ---
+  duration_ms: 48.35525
+  type: 'test'
+  location: '/private/tmp/taky-heartbeat-fix/tests/ops/heartbeat.test.mjs:44:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/taky-heartbeat-fix/tests/ops/heartbeat.test.mjs:47:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: heartbeat command rejects stale timestamp
+ok 8 - heartbeat command rejects stale timestamp
+  ---
+  duration_ms: 65.901708
+  type: 'test'
+  ...
+# Subtest: heartbeat command rejects future timestamp
+not ok 9 - heartbeat command rejects future timestamp
+  ---
+  duration_ms: 84.006625
+  type: 'test'
+  location: '/private/tmp/taky-heartbeat-fix/tests/ops/heartbeat.test.mjs:44:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/taky-heartbeat-fix/tests/ops/heartbeat.test.mjs:47:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: heartbeat command accepts current timestamp
+ok 10 - heartbeat command accepts current timestamp
+  ---
+  duration_ms: 126.535083
+  type: 'test'
+  ...
+# Subtest: heartbeat command accepts recent timestamp
+ok 11 - heartbeat command accepts recent timestamp
+  ---
+  duration_ms: 134.605417
+  type: 'test'
+  ...
+# Subtest: heartbeat command accepts exactly twenty-minute-old timestamp
+ok 12 - heartbeat command accepts exactly twenty-minute-old timestamp
+  ---
+  duration_ms: 108.295375
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 7
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1076.058708
