@@ -15,3 +15,11 @@ Fallback snapshot /private/tmp/taky-development copied readable F10 source, excl
 Agents completed read-only architecture_inventory, security_review and operations_design. backup_fix and heartbeat_fix produced fixes in dedicated staging paths. Main froze/integrated both filesets, independently ran combined26/26 operations tests and targeted lint with exit0. Both workers were interrupted after integration to free constrained slots; main absorbed their final reporting. ops_independent_review accepted code with independent25/25 targeted tests and no blocking defect. See evidence/operations-fixes/independent-review.md. Local snapshot baseline commit4ad8652; reviewed fix commit follows. restore_inventory_impl owns OPS-03 files, auth_failure_regressions owns new auth tests. Next: commit reviewed OPS-01/02, finish OPS-03 and authentication tests, independently review/correct/retest, then recover original ancestry integration when available.
 
 Completion predicate: each implemented unit has behavioral tests, independent review, corrected findings, local commit and evidence. Whole ERP remains incomplete until approved finance modules, Owner UAT, production commissioning and authorized go-live.
+
+## Latest verified frontier
+
+Local snapshot commit c8d0d51 contains reviewed OPS-01/OPS-02, combined operations26/26, targeted lint, independent25/25 review. Bundle verified successfully at original workspace .local/project-orchestration-20261023/integration-snapshot.bundle. It contains complete snapshot history; it is not original-repository ancestry. ops-reviewed.patch is available beside it.
+
+Later user blanket approval was explicitly interpreted and disclosed as adoption of the recorded Stage3D recommended defaults for development. Original preserved design files retain historical unapproved status. stage3d_contract prepares current contract/authorization record. Missing legal/evidence configuration, actual target mapping, Owner UAT and production readiness are not certified by that authorization.
+
+AUTH-01 frozen and independently accepted. Full npm test146/146 in11files passed. No production auth logic changed. Evidence under evidence/auth-regressions. Stage3D design review ongoing; OPS03 implementation status requested due absent files and possible infrastructure delay.
