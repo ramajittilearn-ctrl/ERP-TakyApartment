@@ -1,0 +1,110 @@
+$ docker compose -p taky-inventory-qa-20261023 -f /private/tmp/taky-inventory-qa/compose.yaml build inventory
+ Image taky-inventory-qa-20261023:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 567B 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile:
+#2 transferring dockerfile: 656B 1.2s done
+#2 DONE 8.4s
+
+#3 [internal] load metadata for docker.io/library/postgres:17-bookworm
+#3 DONE 3.5s
+
+#4 [internal] load metadata for docker.io/rclone/rclone:1.75.2
+#4 ...
+
+#5 [auth] rclone/rclone:pull token for registry-1.docker.io
+#5 DONE 0.0s
+
+#6 [internal] load metadata for docker.io/library/node:22-bookworm-slim
+#6 ...
+
+#7 [auth] library/node:pull token for registry-1.docker.io
+#7 DONE 0.0s
+
+#6 [internal] load metadata for docker.io/library/node:22-bookworm-slim
+#6 DONE 15.8s
+
+#4 [internal] load metadata for docker.io/rclone/rclone:1.75.2
+#4 DONE 17.1s
+
+#8 [internal] load .dockerignore
+#8 DONE 0.0s
+
+#8 [internal] load .dockerignore
+#8 transferring context:
+#8 transferring context: 313B 0.9s done
+#8 DONE 2.4s
+
+#9 [stage-2 1/6] FROM docker.io/library/postgres:17-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
+#9 resolve docker.io/library/postgres:17-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
+#9 resolve docker.io/library/postgres:17-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826 3.1s done
+#9 DONE 3.2s
+
+#10 [rclone 1/1] FROM docker.io/rclone/rclone:1.75.2@sha256:2687085f718d3c628f7fdfb77c52a1d344332aed543110bb88088f2c70d43eb5
+#10 resolve docker.io/rclone/rclone:1.75.2@sha256:2687085f718d3c628f7fdfb77c52a1d344332aed543110bb88088f2c70d43eb5 2.8s done
+#10 DONE 3.1s
+
+#11 [node 1/1] FROM docker.io/library/node:22-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d
+#11 resolve docker.io/library/node:22-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d 2.8s done
+#11 DONE 3.0s
+
+#12 [internal] load build context
+#12 transferring context: 42.01kB 0.8s done
+#12 DONE 5.7s
+
+#11 [node 1/1] FROM docker.io/library/node:22-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d
+#11 CACHED
+
+#10 [rclone 1/1] FROM docker.io/rclone/rclone:1.75.2@sha256:2687085f718d3c628f7fdfb77c52a1d344332aed543110bb88088f2c70d43eb5
+#10 ...
+
+#13 [stage-2 2/6] RUN apt-get update && apt-get install -y --no-install-recommends util-linux libstdc++6 ca-certificates && rm -rf /var/lib/apt/lists/*
+#13 CACHED
+
+#14 [stage-2 3/6] COPY --from=node /usr/local/bin/node /usr/local/bin/node
+#14 ...
+
+#10 [rclone 1/1] FROM docker.io/rclone/rclone:1.75.2@sha256:2687085f718d3c628f7fdfb77c52a1d344332aed543110bb88088f2c70d43eb5
+#10 DONE 11.8s
+
+#10 [rclone 1/1] FROM docker.io/rclone/rclone:1.75.2@sha256:2687085f718d3c628f7fdfb77c52a1d344332aed543110bb88088f2c70d43eb5
+#10 sha256:c9ae8c244b4fd55dffec5b2b0e4486d804a29dd11b26d5f8c41df6729dff66cb 0B / 94B 0.6s
+#10 sha256:8845bf82926142359dc86ebb78f30cfb4e829d3a5db7f48462363b349d58ab24 0B / 949B 1.3s
+#10 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 0B / 4.19MB 0.9s
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 0B / 26.96MB 1.0s
+#10 sha256:c9ae8c244b4fd55dffec5b2b0e4486d804a29dd11b26d5f8c41df6729dff66cb 0B / 94B 5.8s
+#10 sha256:8845bf82926142359dc86ebb78f30cfb4e829d3a5db7f48462363b349d58ab24 0B / 949B 6.3s
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 0B / 26.96MB 6.1s
+#10 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 0B / 4.19MB 6.1s
+#10 sha256:c9ae8c244b4fd55dffec5b2b0e4486d804a29dd11b26d5f8c41df6729dff66cb 94B / 94B 9.7s
+#10 sha256:8845bf82926142359dc86ebb78f30cfb4e829d3a5db7f48462363b349d58ab24 949B / 949B 9.9s
+#10 sha256:8845bf82926142359dc86ebb78f30cfb4e829d3a5db7f48462363b349d58ab24 949B / 949B 10.1s done
+#10 sha256:c9ae8c244b4fd55dffec5b2b0e4486d804a29dd11b26d5f8c41df6729dff66cb 94B / 94B 10.0s done
+#10 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 0B / 4.19MB 11.7s
+#10 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 0B / 4.19MB 32.1s
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 0B / 26.96MB 34.6s
+#10 sha256:8d7a7cd3718c6097d392c423a8039ca9a9d8df6464845b4f2b6e16cd9c0d40c9 0B / 539.51kB 25.4s
+#10 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 0B / 4.19MB 38.3s
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 1.05MB / 26.96MB 39.7s
+#10 sha256:8d7a7cd3718c6097d392c423a8039ca9a9d8df6464845b4f2b6e16cd9c0d40c9 0B / 539.51kB 30.5s
+#10 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 1.05MB / 4.19MB 41.3s
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 2.10MB / 26.96MB 44.9s
+#10 sha256:8d7a7cd3718c6097d392c423a8039ca9a9d8df6464845b4f2b6e16cd9c0d40c9 0B / 539.51kB 35.6s
+#10 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 2.10MB / 4.19MB 46.5s
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 4.19MB / 26.96MB 46.4s
+#10 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 3.15MB / 4.19MB 47.5s
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 6.29MB / 26.96MB 49.0s
+#10 sha256:8d7a7cd3718c6097d392c423a8039ca9a9d8df6464845b4f2b6e16cd9c0d40c9 539.51kB / 539.51kB 39.5s
+#10 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 4.19MB / 4.19MB 50.4s
+#10 sha256:8d7a7cd3718c6097d392c423a8039ca9a9d8df6464845b4f2b6e16cd9c0d40c9 539.51kB / 539.51kB 40.8s done
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 8.39MB / 26.96MB 51.1s
+#10 extracting sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 9.44MB / 26.96MB 57.1s
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 9.44MB / 26.96MB 65.2s
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 9.44MB / 26.96MB 95.8s
+#10 sha256:b0f4fce9413e8401f41b4bd681424ae559dc6eb997b327a68b9ff8543d5db3eb 9.44MB / 26.96MB 102.2s
+exit_code=130 (intentional interrupt; recovery omits unused rclone image)
+

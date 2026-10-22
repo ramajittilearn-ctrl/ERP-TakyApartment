@@ -1,0 +1,11 @@
+services:
+  inventory:
+    image: taky-inventory-qa-20261023:local
+    build:
+      context: /private/tmp/taky-development
+      dockerfile: /private/tmp/taky-inventory-qa/Dockerfile
+    network_mode: none
+    tmpfs:
+      - /var/lib/postgresql/data
+    command: ["node", "operations/verify-inventory-isolated.mjs"]
+    restart: "no"

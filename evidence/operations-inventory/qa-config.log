@@ -1,0 +1,19 @@
+$ docker compose -p taky-inventory-qa-20261023 -f /private/tmp/taky-inventory-qa/compose.yaml config --format json
+{
+  "name": "taky-inventory-qa-20261023",
+  "services": {
+    "inventory": {
+      "build": {
+        "context": "/private/tmp/taky-development",
+        "dockerfile": "operations/Dockerfile"
+      },
+      "command": ["node", "operations/verify-inventory-isolated.mjs"],
+      "entrypoint": null,
+      "image": "taky-inventory-qa-20261023:local",
+      "network_mode": "none",
+      "restart": "no",
+      "tmpfs": ["/var/lib/postgresql/data"]
+    }
+  }
+}
+exit_code=0

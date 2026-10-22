@@ -1,0 +1,3 @@
+$ docker compose -p taky-inventory-qa-20261023 -f /private/tmp/taky-inventory-qa/compose.yaml ps -a
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+exit_code=0
