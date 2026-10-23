@@ -1,0 +1,14 @@
+{"started":"2026-10-23T11:33:15.092Z","command":"npx playwright test --output evidence/remediation/browser-0ea382341f1086e5d740d5e6/test-results --grep tenant contract rent survives|a tenant without a room assignment|room defaults fill untouched rent","runId":"0ea382341f1086e5d740d5e6","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_0ea382341f1086e5d740d5e6"}}
+
+Running 3 tests using 1 worker
+
+(node:65999) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"0ea382341f1086e5d740d5e6","database":"taky_phase2_test","role":"e2e_0ea382341f1086e5d740d5e6","proxy":"http://127.0.0.1:3822"}
+  ✓  1 tests/phase2/tenant-rent-persisted.spec.ts:18:5 › tenant contract rent survives room selection, save, reload and reselect (10.1s)
+  ✓  2 tests/phase2/tenant-rent-persisted.spec.ts:84:5 › a tenant without a room assignment has no invented contract rent (2.6s)
+  ✓  3 tests/phase2/tenant-rent-persisted.spec.ts:112:5 › room defaults fill untouched rent while explicit zero survives a room change and reload (2.1s)
+
+  3 passed (18.9s)
+
+{"finished":"2026-10-23T11:33:35.468Z","exitCode":0}

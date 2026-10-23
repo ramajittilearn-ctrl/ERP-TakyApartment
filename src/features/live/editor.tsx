@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Button, ErrorMessage, Field, Modal, Notice } from "@/components/ui";
 import { request } from "./workspace";
 import type { LiveWorkspace } from "./contracts";
+import { rentAfterRoomSelection } from "./tenant-assignment";
 type Entity = "rooms" | "tenants" | "leases";
 type Draft = {
   entity: Entity;
@@ -30,6 +31,7 @@ export function RecordEditor({
     activeAssignments.length === 1 ? activeAssignments[0] : undefined;
   const originalLease = data.leases.find((l) => l.id === draft.id);
   const [assign, setAssign] = useState(!!current);
+  const [rentExplicitlySet, setRentExplicitlySet] = useState(!!current);
   const [assignment, setAssignment] = useState({
     roomId: current?.roomId || "",
     number: current?.number || "",
@@ -48,8 +50,10 @@ export function RecordEditor({
   );
   const transfer =
     !!current && !!assignment.roomId && current.roomId !== assignment.roomId;
-  const assignSet = (key: keyof typeof assignment, value: string) =>
+  const assignSet = (key: keyof typeof assignment, value: string) => {
+    if (key === "rent") setRentExplicitlySet(true);
     setAssignment((old) => ({ ...old, [key]: value }));
+  };
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const set = (key: string, value: string | boolean) =>
@@ -256,8 +260,11 @@ export function RecordEditor({
                     setAssignment((old) => ({
                       ...old,
                       roomId: id,
-                      rent:
-                        data.rooms.find((r) => r.id === id)?.rent || old.rent,
+                      rent: rentAfterRoomSelection({
+                        currentRent: old.rent,
+                        explicitlySet: rentExplicitlySet,
+                        roomRent: data.rooms.find((r) => r.id === id)?.rent,
+                      }),
                       number:
                         current && id !== current.roomId
                           ? ""

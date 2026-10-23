@@ -1,0 +1,73 @@
+▲ Next.js 16.4.1 (webpack)
+✓ Running next.config.ts took 1640ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 8.9s
+  Running TypeScript ...
+  Finished TypeScript in 10.5s ...
+  Collecting page data using 5 workers ...
+  Generating static pages using 5 workers (0/23) ...
+  Generating static pages using 5 workers (5/23) 
+  Generating static pages using 5 workers (11/23) 
+  Generating static pages using 5 workers (17/23) 
+✓ Generating static pages using 5 workers (23/23) in 592ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/health
+├ ƒ /api/v1/[resource]
+├ ƒ /api/v1/[resource]/[id]
+├ ƒ /api/v1/billing-periods
+├ ƒ /api/v1/billing-periods/[id]/close
+├ ƒ /api/v1/billing/consumption-approvals
+├ ƒ /api/v1/billing/preview
+├ ƒ /api/v1/billing/rate-selections
+├ ƒ /api/v1/invoices
+├ ƒ /api/v1/invoices/[id]
+├ ƒ /api/v1/invoices/[id]/history
+├ ƒ /api/v1/invoices/[id]/issue
+├ ƒ /api/v1/invoices/[id]/pdf
+├ ƒ /api/v1/invoices/[id]/refresh
+├ ƒ /api/v1/invoices/[id]/revise
+├ ƒ /api/v1/invoices/[id]/void
+├ ƒ /api/v1/invoices/drafts
+├ ƒ /api/v1/invoices/due-policy
+├ ƒ /api/v1/invoices/options
+├ ƒ /api/v1/meter-readings
+├ ƒ /api/v1/meter-readings/[id]/confirm
+├ ƒ /api/v1/meter-readings/[id]/corrections
+├ ƒ /api/v1/meter-readings/drafts
+├ ƒ /api/v1/meter-readings/history
+├ ƒ /api/v1/meters
+├ ƒ /api/v1/meters/replacements
+├ ƒ /api/v1/outstanding-balances
+├ ƒ /api/v1/payments
+├ ƒ /api/v1/payments/[id]
+├ ƒ /api/v1/payments/[id]/cancel
+├ ƒ /api/v1/payments/[id]/confirm
+├ ƒ /api/v1/payments/[id]/reverse
+├ ƒ /api/v1/receipts/[id]
+├ ƒ /api/v1/users
+├ ƒ /api/v1/utility-rates
+├ ƒ /billing
+├ ƒ /expenses
+├ ○ /icon.svg
+├ ƒ /leases
+├ ○ /login
+├ ƒ /maintenance
+├ ƒ /meters
+├ ƒ /payments
+├ ƒ /reports
+├ ƒ /rooms
+├ ƒ /settings
+└ ƒ /tenants
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

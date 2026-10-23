@@ -1,0 +1,11 @@
+# Tenant rent overwrite verification
+
+User report: creating a tenant with an entered rent subsequently shows zero. Source trace found room selection always overwrote assignment.rent with the room default, including0. Backend saves assignment.rent and tenant profile reads ACTIVE lease rent. The bounded fix tracks explicit rent entry and preserves entered/existing lease values through room/floor selection. Untouched drafts still follow room defaults. No backend, schema, financial formula or existing tenant data was changed.
+
+Main built a separate before-fix worktree atd068f40 with the original editor and the new regression spec. Its fresh guarded browser runf96e52ffcc45c5a6aea73e80 reproduced entered4100.75 becoming0 after selecting a zero-defaultroom. That scenario failed as expected; unassigned control passed. Retained sanitized evidence is in before/. The first baseline build was invoked before dependencyclone completion and exited127; the separately retained second build passed. No successful first-build claim is made.
+
+Main built the combined reviewed Billing/PaymentUI/tenant candidate with supported Next Webpack, exit0. Fresh guarded fixed run0ea382341f1086e5d740d5e6 passed all3cases: entered4100.75 survives save/reload/reselection; unassigned tenant has no fabricated lease/rent; untouched room defaults3500.25 and4200.50 work, then explicitly entered0.00 survives room switch/save/reload. API Decimal JSON normalizes trailingzeros, so4200.50 serializes4200.5 and0.00 serializes0. The input remains0.00 before save. This representation is not rent loss.
+
+Owner focused4tests and nearby6passed. Independent reviewer reran4unit tests, typecheck/lint/format and verified both actual browser resultJSON, identity, logs and final3/3. Source/spec fingerprints are in independent-review.md. Combined integration checks267unit and50ops passed; raw evidence under evidence/agent-uat. Those combined checks also include uncommitted PaymentUI work and are not presented as tests of an isolated commit alone.
+
+No actual existing rent records were repaired or guessed. Data already overwritten on another environment requires explicit identification/reconciliation rather than inventing original amounts. This local verified fix is not yet deployed to original UAT or the configured production service. No wholeprojectcompletion is claimed.

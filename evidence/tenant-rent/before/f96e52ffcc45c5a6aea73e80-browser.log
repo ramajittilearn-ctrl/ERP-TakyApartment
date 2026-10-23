@@ -1,0 +1,58 @@
+{"started":"2026-10-23T11:30:37.932Z","command":"npx playwright test --output evidence/remediation/browser-f96e52ffcc45c5a6aea73e80/test-results --grep tenant contract rent survives|a tenant without a room assignment","runId":"f96e52ffcc45c5a6aea73e80","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_f96e52ffcc45c5a6aea73e80"}}
+
+Running 2 tests using 1 worker
+
+(node:65121) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"f96e52ffcc45c5a6aea73e80","database":"taky_phase2_test","role":"e2e_f96e52ffcc45c5a6aea73e80","proxy":"http://127.0.0.1:3822"}
+  ✘  1 tests/phase2/tenant-rent-persisted.spec.ts:18:5 › tenant contract rent survives room selection, save, reload and reselect (15.9s)
+(node:65321) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"f96e52ffcc45c5a6aea73e80","database":"taky_phase2_test","role":"e2e_f96e52ffcc45c5a6aea73e80","proxy":"http://127.0.0.1:3822"}
+  ✓  2 tests/phase2/tenant-rent-persisted.spec.ts:84:5 › a tenant without a room assignment has no invented contract rent (3.3s)
+
+
+  1) tests/phase2/tenant-rent-persisted.spec.ts:18:5 › tenant contract rent survives room selection, save, reload and reselect 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByLabel('ค่าเช่าตามสัญญา', { exact: true })
+    Expected: "4100.75"
+    Received: "0"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('ค่าเช่าตามสัญญา', { exact: true }) with timeout 10000ms
+      - waiting for getByLabel('ค่าเช่าตามสัญญา', { exact: true })
+        23 × locator resolved to <input value="0" id="_r_f_" required="" type="text"/>
+           - unexpected value "0"
+
+
+      53 |   await page.getByLabel("ชั้นสำหรับเลือกห้อง").selectOption(floor.id);
+      54 |   await page.getByLabel("ห้องพัก", { exact: true }).selectOption(room.id);
+    > 55 |   await expect(rent).toHaveValue("4100.75");
+         |                      ^
+      56 |   await page.getByLabel("เลขที่สัญญา", { exact: true }).fill(`RENT-${suffix}`);
+      57 |   await page.getByLabel("วันเริ่มสัญญา", { exact: true }).fill("2026-10-01");
+      58 |   await page.getByLabel("วันสิ้นสุดสัญญา", { exact: true }).fill("2027-09-30");
+        at /private/tmp/taky-tenant-rent-before/tests/phase2/tenant-rent-persisted.spec.ts:55:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-f96e52ffcc45c5a6aea73e80/test-results/phase2-tenant-rent-persist-d7827-on-save-reload-and-reselect/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-f96e52ffcc45c5a6aea73e80/test-results/phase2-tenant-rent-persist-d7827-on-save-reload-and-reselect/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-f96e52ffcc45c5a6aea73e80/test-results/phase2-tenant-rent-persist-d7827-on-save-reload-and-reselect/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-f96e52ffcc45c5a6aea73e80/test-results/phase2-tenant-rent-persist-d7827-on-save-reload-and-reselect/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/phase2/tenant-rent-persisted.spec.ts:18:5 › tenant contract rent survives room selection, save, reload and reselect 
+  1 passed (36.2s)
+
+{"finished":"2026-10-23T11:31:15.658Z","exitCode":1}

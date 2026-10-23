@@ -1,0 +1,264 @@
+{
+  "config": {
+    "argv": [
+      "/Users/ramajittipasutanavin/.hermes/node/bin/node",
+      "/private/tmp/taky-tenant-rent-before/node_modules/.bin/playwright",
+      "test",
+      "--output",
+      "evidence/remediation/browser-f96e52ffcc45c5a6aea73e80/test-results",
+      "--grep",
+      "tenant contract rent survives|a tenant without a room assignment"
+    ],
+    "configFile": "/private/tmp/taky-tenant-rent-before/playwright.config.ts",
+    "rootDir": "/private/tmp/taky-tenant-rent-before/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/private/tmp/taky-tenant-rent-before/evidence/remediation/browser-f96e52ffcc45c5a6aea73e80/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/private/tmp/taky-tenant-rent-before/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "phase2/**/*.spec.ts"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/private/tmp/taky-tenant-rent-before/evidence/remediation/browser-f96e52ffcc45c5a6aea73e80/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "/private/tmp/taky-tenant-rent-before/tests",
+        "snapshotDir": "/private/tmp/taky-tenant-rent-before/tests",
+        "testIgnore": [],
+        "testMatch": "phase2/**/*.spec.ts",
+        "timeout": 45000,
+        "use": {
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "screen": {
+            "width": 1920,
+            "height": 1080
+          },
+          "deviceScaleFactor": 1,
+          "isMobile": false,
+          "hasTouch": false,
+          "defaultBrowserType": "chromium",
+          "channel": "chrome",
+          "baseURL": "http://127.0.0.1:3820",
+          "serviceWorkers": "block",
+          "proxy": {
+            "server": "http://127.0.0.1:3822"
+          },
+          "launchOptions": {
+            "args": [
+              "--proxy-bypass-list=<-loopback>"
+            ]
+          },
+          "locale": "th-TH",
+          "timezoneId": "Asia/Bangkok",
+          "colorScheme": "light",
+          "reducedMotion": "reduce",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "phase2/tenant-rent-persisted.spec.ts",
+      "file": "phase2/tenant-rent-persisted.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "tenant contract rent survives room selection, save, reload and reselect",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 15927,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByLabel('ค่าเช่าตามสัญญา', { exact: true })\nExpected: \u001b[32m\"4100.75\"\u001b[39m\nReceived: \u001b[31m\"0\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" getByLabel('ค่าเช่าตามสัญญา', { exact: true }) with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByLabel('ค่าเช่าตามสัญญา', { exact: true })\u001b[22m\n\u001b[2m    23 × locator resolved to <input value=\"0\" id=\"_r_f_\" required=\"\" type=\"text\"/>\u001b[22m\n\u001b[2m       - unexpected value \"0\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByLabel('ค่าเช่าตามสัญญา', { exact: true })\nExpected: \u001b[32m\"4100.75\"\u001b[39m\nReceived: \u001b[31m\"0\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" getByLabel('ค่าเช่าตามสัญญา', { exact: true }) with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByLabel('ค่าเช่าตามสัญญา', { exact: true })\u001b[22m\n\u001b[2m    23 × locator resolved to <input value=\"0\" id=\"_r_f_\" required=\"\" type=\"text\"/>\u001b[22m\n\u001b[2m       - unexpected value \"0\"\u001b[22m\n\n    at /private/tmp/taky-tenant-rent-before/tests/phase2/tenant-rent-persisted.spec.ts:55:22",
+                    "location": {
+                      "file": "/private/tmp/taky-tenant-rent-before/tests/phase2/tenant-rent-persisted.spec.ts",
+                      "column": 22,
+                      "line": 55
+                    },
+                    "snippet": "  53 |   await page.getByLabel(\"ชั้นสำหรับเลือกห้อง\").selectOption(floor.id);\n  54 |   await page.getByLabel(\"ห้องพัก\", { exact: true }).selectOption(room.id);\n> 55 |   await expect(rent).toHaveValue(\"4100.75\");\n     |                      ^\n  56 |   await page.getByLabel(\"เลขที่สัญญา\", { exact: true }).fill(`RENT-${suffix}`);\n  57 |   await page.getByLabel(\"วันเริ่มสัญญา\", { exact: true }).fill(\"2026-10-01\");\n  58 |   await page.getByLabel(\"วันสิ้นสุดสัญญา\", { exact: true }).fill(\"2027-09-30\");"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/private/tmp/taky-tenant-rent-before/tests/phase2/tenant-rent-persisted.spec.ts",
+                        "column": 22,
+                        "line": 55
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByLabel('ค่าเช่าตามสัญญา', { exact: true })\nExpected: \u001b[32m\"4100.75\"\u001b[39m\nReceived: \u001b[31m\"0\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" getByLabel('ค่าเช่าตามสัญญา', { exact: true }) with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByLabel('ค่าเช่าตามสัญญา', { exact: true })\u001b[22m\n\u001b[2m    23 × locator resolved to <input value=\"0\" id=\"_r_f_\" required=\"\" type=\"text\"/>\u001b[22m\n\u001b[2m       - unexpected value \"0\"\u001b[22m\n\n\n  53 |   await page.getByLabel(\"ชั้นสำหรับเลือกห้อง\").selectOption(floor.id);\n  54 |   await page.getByLabel(\"ห้องพัก\", { exact: true }).selectOption(room.id);\n> 55 |   await expect(rent).toHaveValue(\"4100.75\");\n     |                      ^\n  56 |   await page.getByLabel(\"เลขที่สัญญา\", { exact: true }).fill(`RENT-${suffix}`);\n  57 |   await page.getByLabel(\"วันเริ่มสัญญา\", { exact: true }).fill(\"2026-10-01\");\n  58 |   await page.getByLabel(\"วันสิ้นสุดสัญญา\", { exact: true }).fill(\"2027-09-30\");\n    at /private/tmp/taky-tenant-rent-before/tests/phase2/tenant-rent-persisted.spec.ts:55:22"
+                    }
+                  ],
+                  "stdout": [
+                    {
+                      "text": "{\"verifiedBrowserTarget\":\"http://127.0.0.1:3820\",\"runId\":\"f96e52ffcc45c5a6aea73e80\",\"database\":\"taky_phase2_test\",\"role\":\"e2e_f96e52ffcc45c5a6aea73e80\",\"proxy\":\"http://127.0.0.1:3822\"}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:30:40.103Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/private/tmp/taky-tenant-rent-before/evidence/remediation/browser-f96e52ffcc45c5a6aea73e80/test-results/phase2-tenant-rent-persist-d7827-on-save-reload-and-reselect/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/private/tmp/taky-tenant-rent-before/evidence/remediation/browser-f96e52ffcc45c5a6aea73e80/test-results/phase2-tenant-rent-persist-d7827-on-save-reload-and-reselect/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/private/tmp/taky-tenant-rent-before/evidence/remediation/browser-f96e52ffcc45c5a6aea73e80/test-results/phase2-tenant-rent-persist-d7827-on-save-reload-and-reselect/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/private/tmp/taky-tenant-rent-before/tests/phase2/tenant-rent-persisted.spec.ts",
+                    "column": 22,
+                    "line": 55
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bcfc71849fffa65c22e6-1e881f90f80c633eb697",
+          "file": "phase2/tenant-rent-persisted.spec.ts",
+          "line": 18,
+          "column": 5
+        },
+        {
+          "title": "a tenant without a room assignment has no invented contract rent",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3275,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"verifiedBrowserTarget\":\"http://127.0.0.1:3820\",\"runId\":\"f96e52ffcc45c5a6aea73e80\",\"database\":\"taky_phase2_test\",\"role\":\"e2e_f96e52ffcc45c5a6aea73e80\",\"proxy\":\"http://127.0.0.1:3822\"}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:31:08.392Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bcfc71849fffa65c22e6-3dc0b934d9aef919ff2a",
+          "file": "phase2/tenant-rent-persisted.spec.ts",
+          "line": 84,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-23T11:30:39.352Z",
+    "duration": 36175.914000000004,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}
