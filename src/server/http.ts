@@ -17,8 +17,11 @@ export async function requirePageActor() {
 }
 export function checkOrigin(request: Request) {
   const expected = process.env.APP_ORIGIN;
-  if (!expected || request.headers.get("origin") !== new URL(expected).origin)
+  if (!expected) throw new AppError(403, "ORIGIN", "ต้นทางคำขอไม่ถูกต้อง");
+  const origin = new URL(expected);
+  if (request.headers.get("origin") !== origin.origin)
     throw new AppError(403, "ORIGIN", "ต้นทางคำขอไม่ถูกต้อง");
+  return origin;
 }
 export async function readJson(request: Request) {
   if (!request.headers.get("content-type")?.startsWith("application/json"))

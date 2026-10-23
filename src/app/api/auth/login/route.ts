@@ -3,12 +3,13 @@ import { COOKIE, SESSION_SECONDS, login } from "@/server/auth";
 import { checkOrigin, handle, json, readJson } from "@/server/http";
 export function POST(request: Request) {
   return handle(async () => {
-    checkOrigin(request);
+    const origin = checkOrigin(request);
     const session = await login(await readJson(request));
     (await cookies()).set(COOKIE, session.token, {
       httpOnly: true,
       sameSite: "strict",
-      secure: process.env.COOKIE_SECURE === "true",
+      secure:
+        origin.protocol === "https:" || process.env.COOKIE_SECURE === "true",
       path: "/",
       maxAge: SESSION_SECONDS,
     });

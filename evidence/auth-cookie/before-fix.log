@@ -1,0 +1,229 @@
+
+ RUN  v4.1.12 /private/tmp/taky-development
+
+ ❯ tests/auth-login-route.test.ts (18 tests | 6 failed) 46ms
+     × sets secure=https://auth-regression.invalid with COOKIE_SECURE=false and expected=true 29ms
+     × sets secure=HTTPS://auth-regression.invalid with COOKIE_SECURE=false and expected=true 2ms
+     × sets secure=https://auth-regression.invalid with COOKIE_SECURE=undefined and expected=true 1ms
+     × sets secure=HTTPS://auth-regression.invalid with COOKIE_SECURE=undefined and expected=true 1ms
+     × sets secure=https://auth-regression.invalid with COOKIE_SECURE=ture and expected=true 1ms
+     × sets secure=HTTPS://auth-regression.invalid with COOKIE_SECURE=ture and expected=true 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/auth-login-route.test.ts > login request security boundaries > sets secure=https://auth-regression.invalid with COOKIE_SECURE=false and expected=true
+AssertionError: expected "vi.fn()" to be called with arguments: [ 'taky_session', …(2) ]
+
+Received:
+
+  1st vi.fn() call:
+
+  [
+    "taky_session",
+-   StringMatching /^[a-f0-9]{64}$/,
+-   ObjectContaining {
+-     "secure": true,
++   "f5e78d533cda0c142f581519d6b71ec386b359b2927c41cc901422b36cf37492",
++   {
++     "httpOnly": true,
++     "maxAge": 28800,
++     "path": "/",
++     "sameSite": "strict",
++     "secure": false,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/auth-login-route.test.ts:109:31
+    107|       );
+    108|       expect(response.status).toBe(200);
+    109|       expect(boundary.cookie).toHaveBeenCalledWith(
+       |                               ^
+    110|         "taky_session",
+    111|         expect.stringMatching(/^[a-f0-9]{64}$/),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  tests/auth-login-route.test.ts > login request security boundaries > sets secure=HTTPS://auth-regression.invalid with COOKIE_SECURE=false and expected=true
+AssertionError: expected "vi.fn()" to be called with arguments: [ 'taky_session', …(2) ]
+
+Received:
+
+  1st vi.fn() call:
+
+  [
+    "taky_session",
+-   StringMatching /^[a-f0-9]{64}$/,
+-   ObjectContaining {
+-     "secure": true,
++   "6a839e371ba484c8768be9644af367d2739709c8f5f25c71b9f70c0b13203354",
++   {
++     "httpOnly": true,
++     "maxAge": 28800,
++     "path": "/",
++     "sameSite": "strict",
++     "secure": false,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/auth-login-route.test.ts:109:31
+    107|       );
+    108|       expect(response.status).toBe(200);
+    109|       expect(boundary.cookie).toHaveBeenCalledWith(
+       |                               ^
+    110|         "taky_session",
+    111|         expect.stringMatching(/^[a-f0-9]{64}$/),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  tests/auth-login-route.test.ts > login request security boundaries > sets secure=https://auth-regression.invalid with COOKIE_SECURE=undefined and expected=true
+AssertionError: expected "vi.fn()" to be called with arguments: [ 'taky_session', …(2) ]
+
+Received:
+
+  1st vi.fn() call:
+
+  [
+    "taky_session",
+-   StringMatching /^[a-f0-9]{64}$/,
+-   ObjectContaining {
+-     "secure": true,
++   "592bbe703ebc341bf829857ec50ae2d00b3abe2c785af94d225847fc6bfe995f",
++   {
++     "httpOnly": true,
++     "maxAge": 28800,
++     "path": "/",
++     "sameSite": "strict",
++     "secure": false,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/auth-login-route.test.ts:109:31
+    107|       );
+    108|       expect(response.status).toBe(200);
+    109|       expect(boundary.cookie).toHaveBeenCalledWith(
+       |                               ^
+    110|         "taky_session",
+    111|         expect.stringMatching(/^[a-f0-9]{64}$/),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  tests/auth-login-route.test.ts > login request security boundaries > sets secure=HTTPS://auth-regression.invalid with COOKIE_SECURE=undefined and expected=true
+AssertionError: expected "vi.fn()" to be called with arguments: [ 'taky_session', …(2) ]
+
+Received:
+
+  1st vi.fn() call:
+
+  [
+    "taky_session",
+-   StringMatching /^[a-f0-9]{64}$/,
+-   ObjectContaining {
+-     "secure": true,
++   "96dab0dc6c22a22ae2176637c2b4ba0b1f4554df88f41720834b0f95b0310102",
++   {
++     "httpOnly": true,
++     "maxAge": 28800,
++     "path": "/",
++     "sameSite": "strict",
++     "secure": false,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/auth-login-route.test.ts:109:31
+    107|       );
+    108|       expect(response.status).toBe(200);
+    109|       expect(boundary.cookie).toHaveBeenCalledWith(
+       |                               ^
+    110|         "taky_session",
+    111|         expect.stringMatching(/^[a-f0-9]{64}$/),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  tests/auth-login-route.test.ts > login request security boundaries > sets secure=https://auth-regression.invalid with COOKIE_SECURE=ture and expected=true
+AssertionError: expected "vi.fn()" to be called with arguments: [ 'taky_session', …(2) ]
+
+Received:
+
+  1st vi.fn() call:
+
+  [
+    "taky_session",
+-   StringMatching /^[a-f0-9]{64}$/,
+-   ObjectContaining {
+-     "secure": true,
++   "29674b20b17554b3d89534ea8bbf02427568d84bc08a3eba982df2800d508c27",
++   {
++     "httpOnly": true,
++     "maxAge": 28800,
++     "path": "/",
++     "sameSite": "strict",
++     "secure": false,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/auth-login-route.test.ts:109:31
+    107|       );
+    108|       expect(response.status).toBe(200);
+    109|       expect(boundary.cookie).toHaveBeenCalledWith(
+       |                               ^
+    110|         "taky_session",
+    111|         expect.stringMatching(/^[a-f0-9]{64}$/),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  tests/auth-login-route.test.ts > login request security boundaries > sets secure=HTTPS://auth-regression.invalid with COOKIE_SECURE=ture and expected=true
+AssertionError: expected "vi.fn()" to be called with arguments: [ 'taky_session', …(2) ]
+
+Received:
+
+  1st vi.fn() call:
+
+  [
+    "taky_session",
+-   StringMatching /^[a-f0-9]{64}$/,
+-   ObjectContaining {
+-     "secure": true,
++   "684da8d89de08be027bee53c8c00794effed8366876b42259480ede7c0972173",
++   {
++     "httpOnly": true,
++     "maxAge": 28800,
++     "path": "/",
++     "sameSite": "strict",
++     "secure": false,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ tests/auth-login-route.test.ts:109:31
+    107|       );
+    108|       expect(response.status).toBe(200);
+    109|       expect(boundary.cookie).toHaveBeenCalledWith(
+       |                               ^
+    110|         "taky_session",
+    111|         expect.stringMatching(/^[a-f0-9]{64}$/),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 12 passed (18)
+   Start at  06:56:28
+   Duration  611ms (transform 94ms, setup 0ms, import 276ms, tests 46ms, environment 0ms)
+

@@ -82,6 +82,69 @@ afterEach(() => {
 });
 
 describe("login request security boundaries", () => {
+  it.each([
+    ["https://auth-regression.invalid", "false", true],
+    ["HTTPS://auth-regression.invalid", "false", true],
+    ["https://auth-regression.invalid", undefined, true],
+    ["HTTPS://auth-regression.invalid", undefined, true],
+    ["https://auth-regression.invalid", "ture", true],
+    ["HTTPS://auth-regression.invalid", "ture", true],
+    ["http://127.0.0.1:3999", "false", false],
+    ["http://127.0.0.1:3999", undefined, false],
+    ["http://127.0.0.1:3999", "true", true],
+    ["https://auth-regression.invalid", "true", true],
+  ])(
+    "uses APP_ORIGIN=%s and COOKIE_SECURE=%s to set secure=%s",
+    async (appOrigin, flag, secure) => {
+      vi.stubEnv("APP_ORIGIN", appOrigin);
+      vi.stubEnv("COOKIE_SECURE", flag);
+      const response = await POST(
+        request({
+          origin: new URL(appOrigin).origin,
+          forwarded: "proto=http;host=forged.invalid",
+          "x-forwarded-proto": "http",
+        }),
+      );
+      expect(response.status).toBe(200);
+      expect(boundary.cookie).toHaveBeenCalledWith(
+        "taky_session",
+        expect.stringMatching(/^[a-f0-9]{64}$/),
+        expect.objectContaining({ secure }),
+      );
+    },
+  );
+
+  it("ignores forged HTTPS forwarding headers for configured HTTP development", async () => {
+    vi.stubEnv("COOKIE_SECURE", "false");
+    const response = await POST(
+      request({
+        forwarded: "proto=https;host=forged.invalid",
+        "x-forwarded-proto": "https",
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(boundary.cookie).toHaveBeenCalledWith(
+      "taky_session",
+      expect.any(String),
+      expect.objectContaining({ secure: false }),
+    );
+  });
+
+  it.each([null, "https://forged.invalid"])(
+    "rejects an invalid origin %s before creating a session or cookie",
+    async (callerOrigin) => {
+      vi.stubEnv("APP_ORIGIN", "https://auth-regression.invalid");
+      const invalidRequest = request();
+      if (callerOrigin === null) invalidRequest.headers.delete("origin");
+      else invalidRequest.headers.set("origin", callerOrigin);
+      const response = await POST(invalidRequest);
+      expect(response.status).toBe(403);
+      expect(boundary.query).not.toHaveBeenCalled();
+      expect(boundary.transaction).not.toHaveBeenCalled();
+      expect(boundary.cookie).not.toHaveBeenCalled();
+    },
+  );
+
   it("returns success and sets a protected session cookie after storage succeeds", async () => {
     const response = await POST(request());
     expect(response.status).toBe(200);
