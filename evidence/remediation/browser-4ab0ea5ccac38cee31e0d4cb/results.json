@@ -1,0 +1,650 @@
+{
+  "config": {
+    "argv": [
+      "/Users/ramajittipasutanavin/.hermes/node/bin/node",
+      "/private/tmp/taky-development/node_modules/.bin/playwright",
+      "test",
+      "--output",
+      "evidence/remediation/browser-4ab0ea5ccac38cee31e0d4cb/test-results",
+      "--grep",
+      "payment persisted"
+    ],
+    "configFile": "/private/tmp/taky-development/playwright.config.ts",
+    "rootDir": "/private/tmp/taky-development/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/private/tmp/taky-development/evidence/remediation/browser-4ab0ea5ccac38cee31e0d4cb/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/private/tmp/taky-development/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "phase2/**/*.spec.ts"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/private/tmp/taky-development/evidence/remediation/browser-4ab0ea5ccac38cee31e0d4cb/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "/private/tmp/taky-development/tests",
+        "snapshotDir": "/private/tmp/taky-development/tests",
+        "testIgnore": [],
+        "testMatch": "phase2/**/*.spec.ts",
+        "timeout": 45000,
+        "use": {
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "screen": {
+            "width": 1920,
+            "height": 1080
+          },
+          "deviceScaleFactor": 1,
+          "isMobile": false,
+          "hasTouch": false,
+          "defaultBrowserType": "chromium",
+          "channel": "chrome",
+          "baseURL": "http://127.0.0.1:3820",
+          "serviceWorkers": "block",
+          "proxy": {
+            "server": "http://127.0.0.1:3822"
+          },
+          "launchOptions": {
+            "args": [
+              "--proxy-bypass-list=<-loopback>"
+            ]
+          },
+          "locale": "th-TH",
+          "timezoneId": "Asia/Bangkok",
+          "colorScheme": "light",
+          "reducedMotion": "reduce",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "phase2/payment-persisted.spec.ts",
+      "file": "phase2/payment-persisted.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "payment persisted STAFF pending capture, Bangkok date, roles and reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5395,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"verifiedBrowserTarget\":\"http://127.0.0.1:3820\",\"runId\":\"4ab0ea5ccac38cee31e0d4cb\",\"database\":\"taky_phase2_test\",\"role\":\"e2e_4ab0ea5ccac38cee31e0d4cb\",\"proxy\":\"http://127.0.0.1:3822\"}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:48:22.427Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-56e601993935eb1ff8c7",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 259,
+          "column": 5
+        },
+        {
+          "title": "payment persisted ADMIN exact multi-invoice allocations, immutable receipt, reversal and pending cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3187,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [
+                    {
+                      "text": "(node:69727) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.\n"
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:48:30.719Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-3370795e009f8a968971",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 299,
+          "column": 5
+        },
+        {
+          "title": "payment persisted lost create response survives Next navigation and exact replay",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2471,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:48:33.917Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-70c9dd6dae2bc7f5262a",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 369,
+          "column": 5
+        },
+        {
+          "title": "payment persisted cash duplicate review, explicit override and stale invoice rejection",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4230,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:48:36.397Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-b7c3b0ab24728728d013",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 421,
+          "column": 5
+        },
+        {
+          "title": "payment persisted invalid precision, maximum amount, keyboard and narrow accessibility",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2468,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:48:40.638Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-edad56b0a4504d56c508",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 486,
+          "column": 5
+        },
+        {
+          "title": "payment persisted uncertain retry403 stays protected and logout never resurrects its command",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3397,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:48:43.120Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-eeeb25950af28d1adf08",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 515,
+          "column": 5
+        },
+        {
+          "title": "payment persisted lost confirmation replay remains uncertain after real ADMIN demotion",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2551,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:48:46.533Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-50e9eb9b51b416ff37a1",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 576,
+          "column": 5
+        },
+        {
+          "title": "payment persisted all-history allocations load the second balance page",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 135000,
+              "annotations": [
+                {
+                  "type": "slow",
+                  "location": {
+                    "file": "/private/tmp/taky-development/tests/phase2/payment-persisted.spec.ts",
+                    "line": 644,
+                    "column": 8
+                  }
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 21384,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:48:49.100Z",
+                  "annotations": [
+                    {
+                      "type": "slow",
+                      "location": {
+                        "file": "/private/tmp/taky-development/tests/phase2/payment-persisted.spec.ts",
+                        "line": 644,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-87cc5f6a2ad68e0e86d5",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 641,
+          "column": 5
+        },
+        {
+          "title": "payment persisted malformed list and receipt mismatch remain failures, stale detail never overwrites selection",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4517,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:49:10.510Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-fcc99c5625b00226fc5a",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 667,
+          "column": 5
+        },
+        {
+          "title": "payment persisted bank duplicate has no override and failed allocation paging cannot confirm",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3574,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:49:15.045Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-4e41793954654c7b41b4",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 760,
+          "column": 5
+        },
+        {
+          "title": "payment persisted genuine doubleclick settles original POST while the view is unmounted",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2590,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:49:18.635Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-8d12ab7b5647e5ec4604",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 819,
+          "column": 5
+        },
+        {
+          "title": "payment persisted two ADMIN browser sessions race explicit allocations without overpayment",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5691,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:49:21.251Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-d865a4fd2fdb2f4479e2",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 878,
+          "column": 5
+        },
+        {
+          "title": "payment persisted list pages beyond fifty managed records without inventing a total",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3494,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:49:26.965Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-2cfe6582e68aaa699f81",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 988,
+          "column": 5
+        },
+        {
+          "title": "payment persisted keyboard-only dialogs complete pending capture and receipt confirmation without runtime errors",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3852,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-23T11:49:30.485Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dbd89ffcd65f5b936859-a881ed78ecbfed16e3d4",
+          "file": "phase2/payment-persisted.spec.ts",
+          "line": 1030,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-23T11:48:21.920Z",
+    "duration": 72767.836,
+    "expected": 14,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

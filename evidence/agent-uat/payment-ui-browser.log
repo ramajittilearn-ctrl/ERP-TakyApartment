@@ -1,0 +1,291 @@
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "taky_phase2_test", schema "public" at "127.0.0.1:55452"
+
+14 migrations found in prisma/migrations
+
+Applying migration `202610160001_foundation`
+Applying migration `202610160002_constraints`
+Applying migration `202610170001_backup_operations`
+Applying migration `202610170002_room_reserved`
+Applying migration `202610170003_occupancy_integrity`
+Applying migration `202610180001_phase3a_financial_foundation`
+Applying migration `202610180002_phase3b_meter_reading`
+Applying migration `202610190001_phase3c2_billing_inputs`
+Applying migration `202610200001_phase3c2_approval_sources`
+Applying migration `202610200002_phase3c2_lease_allocations`
+Applying migration `202610210001_phase3c3_invoice_lifecycle`
+Applying migration `202610210002_phase3c3_reference_capacity`
+Applying migration `202610210003_phase3c3_legacy_month_barrier`
+Applying migration `202610230001_phase3d_payments`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 202610160001_foundation/
+    └─ migration.sql
+  └─ 202610160002_constraints/
+    └─ migration.sql
+  └─ 202610170001_backup_operations/
+    └─ migration.sql
+  └─ 202610170002_room_reserved/
+    └─ migration.sql
+  └─ 202610170003_occupancy_integrity/
+    └─ migration.sql
+  └─ 202610180001_phase3a_financial_foundation/
+    └─ migration.sql
+  └─ 202610180002_phase3b_meter_reading/
+    └─ migration.sql
+  └─ 202610190001_phase3c2_billing_inputs/
+    └─ migration.sql
+  └─ 202610200001_phase3c2_approval_sources/
+    └─ migration.sql
+  └─ 202610200002_phase3c2_lease_allocations/
+    └─ migration.sql
+  └─ 202610210001_phase3c3_invoice_lifecycle/
+    └─ migration.sql
+  └─ 202610210002_phase3c3_reference_capacity/
+    └─ migration.sql
+  └─ 202610210003_phase3c3_legacy_month_barrier/
+    └─ migration.sql
+  └─ 202610230001_phase3d_payments/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+
+Evidence: /private/tmp/taky-development/evidence/remediation/09315d4d52c7272074c81c2b-migrate.log; exit 0
+
+> taky-apartment-erp@0.1.0 db:seed
+> tsx prisma/seed.ts
+
+Seed complete: 3 floors / 15 room identities; existing values preserved.
+
+Evidence: /private/tmp/taky-development/evidence/remediation/09315d4d52c7272074c81c2b-seed.log; exit 0
+Isolated test accounts ready; no production records changed.
+
+Evidence: /private/tmp/taky-development/evidence/remediation/09315d4d52c7272074c81c2b-users.log; exit 0
+Standalone server ready on http://127.0.0.1:3820; run 09315d4d52c7272074c81c2b
+
+Running 14 tests using 1 worker
+
+(node:66962) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"09315d4d52c7272074c81c2b","database":"taky_phase2_test","role":"e2e_09315d4d52c7272074c81c2b","proxy":"http://127.0.0.1:3822"}
+  ✓   1 tests/phase2/payment-persisted.spec.ts:259:5 › payment persisted STAFF pending capture, Bangkok date, roles and reload (4.7s)
+(node:66962) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✓   2 tests/phase2/payment-persisted.spec.ts:299:5 › payment persisted ADMIN exact multi-invoice allocations, immutable receipt, reversal and pending cancellation (6.2s)
+  ✘   3 tests/phase2/payment-persisted.spec.ts:369:5 › payment persisted lost create response survives Next navigation and exact replay (12.2s)
+(node:67061) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"09315d4d52c7272074c81c2b","database":"taky_phase2_test","role":"e2e_09315d4d52c7272074c81c2b","proxy":"http://127.0.0.1:3822"}
+(node:67061) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✓   4 tests/phase2/payment-persisted.spec.ts:418:5 › payment persisted cash duplicate review, explicit override and stale invoice rejection (5.6s)
+  ✓   5 tests/phase2/payment-persisted.spec.ts:483:5 › payment persisted invalid precision, maximum amount, keyboard and narrow accessibility (2.4s)
+  ✘   6 tests/phase2/payment-persisted.spec.ts:512:5 › payment persisted uncertain retry403 stays protected and logout never resurrects its command (11.5s)
+(node:67155) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"09315d4d52c7272074c81c2b","database":"taky_phase2_test","role":"e2e_09315d4d52c7272074c81c2b","proxy":"http://127.0.0.1:3822"}
+(node:67155) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✘   7 tests/phase2/payment-persisted.spec.ts:568:5 › payment persisted lost confirmation replay remains uncertain after real ADMIN demotion (14.4s)
+(node:67251) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"09315d4d52c7272074c81c2b","database":"taky_phase2_test","role":"e2e_09315d4d52c7272074c81c2b","proxy":"http://127.0.0.1:3822"}
+(node:67251) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✓   8 tests/phase2/payment-persisted.spec.ts:630:5 › payment persisted all-history allocations load the second balance page (20.6s)
+  ✘   9 tests/phase2/payment-persisted.spec.ts:656:5 › payment persisted malformed list and receipt mismatch remain failures, stale detail never overwrites selection (3.7s)
+(node:67357) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"09315d4d52c7272074c81c2b","database":"taky_phase2_test","role":"e2e_09315d4d52c7272074c81c2b","proxy":"http://127.0.0.1:3822"}
+(node:67357) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✓  10 tests/phase2/payment-persisted.spec.ts:745:5 › payment persisted bank duplicate has no override and failed allocation paging cannot confirm (3.1s)
+  ✓  11 tests/phase2/payment-persisted.spec.ts:804:5 › payment persisted genuine doubleclick settles original POST while the view is unmounted (2.3s)
+  ✓  12 tests/phase2/payment-persisted.spec.ts:863:5 › payment persisted two ADMIN browser sessions race explicit allocations without overpayment (4.6s)
+  ✓  13 tests/phase2/payment-persisted.spec.ts:973:5 › payment persisted list pages beyond fifty managed records without inventing a total (4.7s)
+  ✓  14 tests/phase2/payment-persisted.spec.ts:1015:5 › payment persisted keyboard-only dialogs complete pending capture and receipt confirmation without runtime errors (4.0s)
+
+
+  1) tests/phase2/payment-persisted.spec.ts:369:5 › payment persisted lost create response survives Next navigation and exact replay 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'ลองส่งคำสั่งเดิมอีกครั้ง', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('button', { name: 'ลองส่งคำสั่งเดิมอีกครั้ง', exact: true }) with timeout 10000ms
+      - waiting for getByRole('button', { name: 'ลองส่งคำสั่งเดิมอีกครั้ง', exact: true })
+
+
+      389 |   await expect(
+      390 |     page.getByRole("button", { name: "ลองส่งคำสั่งเดิมอีกครั้ง", exact: true }),
+    > 391 |   ).toBeVisible();
+          |     ^
+      392 |   await dialog.getByRole("button", { name: "ปิด", exact: true }).click();
+      393 |   await page
+      394 |     .getByRole("link", { name: "ห้องพัก", exact: true })
+        at /private/tmp/taky-development/tests/phase2/payment-persisted.spec.ts:391:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-1249c-navigation-and-exact-replay/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-1249c-navigation-and-exact-replay/error-context.md
+
+    Error Context: evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-1249c-navigation-and-exact-replay/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-1249c-navigation-and-exact-replay/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-1249c-navigation-and-exact-replay/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/phase2/payment-persisted.spec.ts:512:5 › payment persisted uncertain retry403 stays protected and logout never resurrects its command 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'ลองส่งคำสั่งเดิมอีกครั้ง' })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('button', { name: 'ลองส่งคำสั่งเดิมอีกครั้ง' }) with timeout 10000ms
+      - waiting for getByRole('button', { name: 'ลองส่งคำสั่งเดิมอีกครั้ง' })
+
+
+      540 |   await expect(
+      541 |     page.getByRole("button", { name: "ลองส่งคำสั่งเดิมอีกครั้ง" }),
+    > 542 |   ).toBeVisible();
+          |     ^
+      543 |   await dialog.getByRole("button", { name: "ปิด", exact: true }).click();
+      544 |   await page.getByRole("button", { name: "ลองส่งคำสั่งเดิมอีกครั้ง" }).click();
+      545 |   await expect(
+        at /private/tmp/taky-development/tests/phase2/payment-persisted.spec.ts:542:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-e47b0-ever-resurrects-its-command/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-e47b0-ever-resurrects-its-command/error-context.md
+
+    Error Context: evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-e47b0-ever-resurrects-its-command/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-e47b0-ever-resurrects-its-command/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-e47b0-ever-resurrects-its-command/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/phase2/payment-persisted.spec.ts:568:5 › payment persisted lost confirmation replay remains uncertain after real ADMIN demotion 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'ลองส่งคำสั่งเดิมอีกครั้ง', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('button', { name: 'ลองส่งคำสั่งเดิมอีกครั้ง', exact: true }) with timeout 10000ms
+      - waiting for getByRole('button', { name: 'ลองส่งคำสั่งเดิมอีกครั้ง', exact: true })
+
+
+      592 |   await expect(
+      593 |     page.getByRole("button", { name: "ลองส่งคำสั่งเดิมอีกครั้ง", exact: true }),
+    > 594 |   ).toBeVisible();
+          |     ^
+      595 |   await dialog.getByRole("button", { name: "ปิด", exact: true }).click();
+      596 |   try {
+      597 |     await db.user.update({
+        at /private/tmp/taky-development/tests/phase2/payment-persisted.spec.ts:594:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-692e7-n-after-real-ADMIN-demotion/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-692e7-n-after-real-ADMIN-demotion/error-context.md
+
+    Error Context: evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-692e7-n-after-real-ADMIN-demotion/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-692e7-n-after-real-ADMIN-demotion/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-692e7-n-after-real-ADMIN-demotion/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/phase2/payment-persisted.spec.ts:656:5 › payment persisted malformed list and receipt mismatch remain failures, stale detail never overwrites selection 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('alert')
+    Expected substring: "ระบบตอบกลับไม่สมบูรณ์"
+    Error: strict mode violation: getByRole('alert') resolved to 2 elements:
+        1) <p role="alert" class="error-message">ระบบตอบกลับไม่สมบูรณ์ กรุณาตรวจสอบผลก่อนทำรายการใ…</p> aka getByText('ระบบตอบกลับไม่สมบูรณ์ กรุณาตรวจสอบผลก่อนทำรายการใหม่')
+        2) <div role="alert" aria-live="assertive" id="__next-route-announcer__"></div> aka locator('[id="__next-route-announcer__"]')
+
+    Call log:
+      - Expect "toContainText" getByRole('alert') with timeout 10000ms
+      - waiting for getByRole('alert')
+
+
+      670 |   );
+      671 |   await page.goto("/payments/");
+    > 672 |   await expect(page.getByRole("alert")).toContainText("ระบบตอบกลับไม่สมบูรณ์");
+          |                                         ^
+      673 |   await expect(
+      674 |     page.getByText("ไม่มีรายการรับชำระในหน้านี้", { exact: true }),
+      675 |   ).toHaveCount(0);
+        at /private/tmp/taky-development/tests/phase2/payment-persisted.spec.ts:672:41
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-ace94--never-overwrites-selection/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-ace94--never-overwrites-selection/error-context.md
+
+    Error Context: evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-ace94--never-overwrites-selection/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-ace94--never-overwrites-selection/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-09315d4d52c7272074c81c2b/test-results/phase2-payment-persisted-p-ace94--never-overwrites-selection/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4 failed
+    tests/phase2/payment-persisted.spec.ts:369:5 › payment persisted lost create response survives Next navigation and exact replay 
+    tests/phase2/payment-persisted.spec.ts:512:5 › payment persisted uncertain retry403 stays protected and logout never resurrects its command 
+    tests/phase2/payment-persisted.spec.ts:568:5 › payment persisted lost confirmation replay remains uncertain after real ADMIN demotion 
+    tests/phase2/payment-persisted.spec.ts:656:5 › payment persisted malformed list and receipt mismatch remain failures, stale detail never overwrites selection 
+  10 passed (1.9m)
+
+Evidence: /private/tmp/taky-development/evidence/remediation/09315d4d52c7272074c81c2b-browser.log; exit 1
+ Container taky-remediation-browser-09315d4d52c7272074c81c2b-db-1 Stopping 
+ Container taky-remediation-browser-09315d4d52c7272074c81c2b-db-1 Stopped 
+ Container taky-remediation-browser-09315d4d52c7272074c81c2b-db-1 Removing 
+ Container taky-remediation-browser-09315d4d52c7272074c81c2b-db-1 Removed 
+ Network taky-remediation-browser-09315d4d52c7272074c81c2b_default Removing 
+ Network taky-remediation-browser-09315d4d52c7272074c81c2b_default Removed 
+
+Evidence: /private/tmp/taky-development/evidence/remediation/09315d4d52c7272074c81c2b-cleanup.log; exit 0
+{"runId":"09315d4d52c7272074c81c2b","succeeded":false,"evidence":"evidence/remediation/browser-09315d4d52c7272074c81c2b","volumes":"retained"}
+file:///private/tmp/taky-development/scripts/run-remediation-browser.mjs:35
+      code === 0 ? resolve() : reject(new Error(`${command} exited ${code}`)),
+                                      ^
+
+Error: node exited 1
+    at ChildProcess.<anonymous> (file:///private/tmp/taky-development/scripts/run-remediation-browser.mjs:35:39)
+    at ChildProcess.emit (node:events:519:28)
+    at ChildProcess._handle.onexit (node:internal/child_process:293:12)
+
+Node.js v22.22.3

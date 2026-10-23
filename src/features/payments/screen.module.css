@@ -1,0 +1,67 @@
+.filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 1rem 0;
+}
+.table {
+  overflow-x: auto;
+}
+.amount {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.recovery,
+.review {
+  border: 1px solid #b7791f;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #fffbeb;
+  color: #65430f;
+}
+.recovery h2 {
+  font-size: 1rem;
+}
+.allocations {
+  display: grid;
+  gap: 1rem;
+}
+.allocations fieldset {
+  border: 1px solid #d9e1ea;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  min-width: 0;
+}
+.allocations legend {
+  font-weight: 600;
+}
+.allocations p {
+  margin-bottom: 0.75rem;
+}
+.allocations label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.allocations :global(.field) {
+  margin: 0.75rem 0;
+}
+@media (max-width: 640px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+  .actions {
+    align-items: stretch;
+  }
+  .actions button {
+    white-space: normal;
+  }
+}

@@ -15,9 +15,14 @@ export function AppShell({
   actor: { name: string; role: "ADMIN" | "STAFF" };
 }) {
   const path = usePathname();
-  const live = ["/rooms", "/tenants", "/leases", "/meters"].some((route) =>
-    path.startsWith(route),
-  );
+  const live = [
+    "/rooms",
+    "/tenants",
+    "/leases",
+    "/meters",
+    "/billing",
+    "/payments",
+  ].some((route) => path.startsWith(route));
   const [menu, setMenu] = useState(false);
   const [help, setHelp] = useState(false);
   const current =
@@ -99,7 +104,9 @@ export function AppShell({
             </span>
             <button
               className="icon-button help-button"
-              aria-label="เกี่ยวกับโหมดสาธิต"
+              aria-label={
+                live ? "เกี่ยวกับการบันทึกข้อมูล" : "เกี่ยวกับโหมดสาธิต"
+              }
               onClick={() => setHelp(true)}
             >
               <CircleHelp size={21} />
@@ -139,14 +146,31 @@ export function AppShell({
       >
         <div className="mobile-navigation">{links}</div>
       </Modal>
-      <Modal open={help} onOpenChange={setHelp} title="เกี่ยวกับโหมดสาธิต">
-        <p>
-          ทดลองใช้งานหน้าจอด้วยข้อมูลสมมติได้โดยไม่ต้องเชื่อมต่ออินเทอร์เน็ต
-          การแก้ไขจะอยู่ในหน่วยความจำของแท็บนี้และรีเซ็ตเมื่อโหลดหน้าใหม่
-        </p>
-        <p className="paragraph-gap">
-          ห้องพัก ผู้เช่า สัญญาเช่า และมิเตอร์บันทึกในฐานข้อมูลจริง ส่วนการเงิน
-          แจ้งซ่อม และการตั้งค่ายังเป็นหน้าจอสาธิตแยกจากข้อมูลจริง
+      <Modal
+        open={help}
+        onOpenChange={setHelp}
+        title={live ? "เกี่ยวกับการบันทึกข้อมูล" : "เกี่ยวกับโหมดสาธิต"}
+        description={
+          live
+            ? "ข้อมูลของหน้านี้บันทึกในฐานข้อมูล PostgreSQL"
+            : "หน้าจอสาธิตแยกจากข้อมูลจริง"
+        }
+      >
+        {live ? (
+          <p>
+            หน้านี้อ่านและบันทึกข้อมูลในฐานข้อมูลจริง
+            รายการรับชำระรอตรวจสอบยังไม่ใช่รายรับยืนยันและยังไม่มีใบเสร็จ
+          </p>
+        ) : (
+          <p>
+            หน้านี้ยังเป็นหน้าจอสาธิต
+            ข้อมูลสมมติอยู่ในหน่วยความจำของแท็บและรีเซ็ตเมื่อโหลดใหม่
+          </p>
+        )}
+        <p className="text-small muted-text paragraph-gap">
+          ห้องพัก ผู้เช่า สัญญา มิเตอร์ การออกบิล
+          และรับชำระใช้ข้อมูลจากฐานข้อมูล ส่วนค่าใช้จ่าย รายงาน แจ้งซ่อม
+          และการตั้งค่ายังมีหน้าจอสาธิต
         </p>
       </Modal>
     </div>

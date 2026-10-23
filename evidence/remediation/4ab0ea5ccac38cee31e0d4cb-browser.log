@@ -1,0 +1,26 @@
+{"started":"2026-10-23T11:48:21.394Z","command":"npx playwright test --output evidence/remediation/browser-4ab0ea5ccac38cee31e0d4cb/test-results --grep payment persisted","runId":"4ab0ea5ccac38cee31e0d4cb","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_4ab0ea5ccac38cee31e0d4cb"}}
+
+Running 14 tests using 1 worker
+
+(node:69727) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"4ab0ea5ccac38cee31e0d4cb","database":"taky_phase2_test","role":"e2e_4ab0ea5ccac38cee31e0d4cb","proxy":"http://127.0.0.1:3822"}
+  ✓   1 tests/phase2/payment-persisted.spec.ts:259:5 › payment persisted STAFF pending capture, Bangkok date, roles and reload (5.4s)
+(node:69727) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✓   2 tests/phase2/payment-persisted.spec.ts:299:5 › payment persisted ADMIN exact multi-invoice allocations, immutable receipt, reversal and pending cancellation (3.2s)
+  ✓   3 tests/phase2/payment-persisted.spec.ts:369:5 › payment persisted lost create response survives Next navigation and exact replay (2.5s)
+  ✓   4 tests/phase2/payment-persisted.spec.ts:421:5 › payment persisted cash duplicate review, explicit override and stale invoice rejection (4.2s)
+  ✓   5 tests/phase2/payment-persisted.spec.ts:486:5 › payment persisted invalid precision, maximum amount, keyboard and narrow accessibility (2.5s)
+  ✓   6 tests/phase2/payment-persisted.spec.ts:515:5 › payment persisted uncertain retry403 stays protected and logout never resurrects its command (3.4s)
+  ✓   7 tests/phase2/payment-persisted.spec.ts:576:5 › payment persisted lost confirmation replay remains uncertain after real ADMIN demotion (2.6s)
+  ✓   8 tests/phase2/payment-persisted.spec.ts:641:5 › payment persisted all-history allocations load the second balance page (21.4s)
+  ✓   9 tests/phase2/payment-persisted.spec.ts:667:5 › payment persisted malformed list and receipt mismatch remain failures, stale detail never overwrites selection (4.5s)
+  ✓  10 tests/phase2/payment-persisted.spec.ts:760:5 › payment persisted bank duplicate has no override and failed allocation paging cannot confirm (3.6s)
+  ✓  11 tests/phase2/payment-persisted.spec.ts:819:5 › payment persisted genuine doubleclick settles original POST while the view is unmounted (2.6s)
+  ✓  12 tests/phase2/payment-persisted.spec.ts:878:5 › payment persisted two ADMIN browser sessions race explicit allocations without overpayment (5.7s)
+  ✓  13 tests/phase2/payment-persisted.spec.ts:988:5 › payment persisted list pages beyond fifty managed records without inventing a total (3.5s)
+  ✓  14 tests/phase2/payment-persisted.spec.ts:1030:5 › payment persisted keyboard-only dialogs complete pending capture and receipt confirmation without runtime errors (3.9s)
+
+  14 passed (1.2m)
+
+{"finished":"2026-10-23T11:49:34.814Z","exitCode":0}
