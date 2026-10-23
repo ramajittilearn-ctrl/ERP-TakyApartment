@@ -1,0 +1,9 @@
+# Read-only deployment target discovery
+
+Main executed `node scripts/ops.mjs ps` against the original configured taky-erp project. App, PostgreSQL, Caddy and operations services are healthy. Caddy currently publishes192.168.1.177:443. Private operations configuration selects the same address, while current host en0 address is192.168.1.135. No deployment setting or service was changed.
+
+Main executed an explicit PostgreSQL BEGIN READ ONLY transaction through that project's db service. Identity returned database taky, role taky, transaction_read_only on. The public catalog contains22application tables plus _prisma_migrations. Applied migrations are202610160001_foundation,202610160002_constraints,202610170001_backup_operations. This operational schema is far behind the integrated14migration candidate. Only catalog/table/migration names were selected; no tenant names, financial row values, credentials or session data were read. Transaction rolled back.
+
+Before Go-Live, reconcile canonical private address, preserve a verified encrypted backup and rehearse upgrade against a safe isolated copy. Do not run current38table inventory SQL against the old22table source before migration. Do not reset or replace its volumes, infer legacy financial truth, or classify this read-only inspection as upgrade acceptance. AgentUAT is authorized in place of humanexecution, but implementation, automated verification and explicit deployedtarget evidence remain necessary.
+
+A later separate read-only aggregate inventory returned zero rows in Tenant, Lease, Invoice, Payment, PaymentAllocation, SecurityDeposit and Expense. It did not read individual records or financial values. This is the configured operational target, not evidence that the user-reported tenant record is absent from every UAT environment.

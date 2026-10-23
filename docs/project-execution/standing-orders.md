@@ -2,7 +2,7 @@
 
 1. Follow installed Pstack through CODEX_ADAPTER.md. Available collaboration agents inherit the session model; Cursor agent types/cloud and model routing are unavailable.
 2. Preserve original checkout, all concurrent worktrees, UAT ports 3700/3701, existing databases and volumes.
-3. No production changes, push, deployment, database reset or deletion. Owner policy gates remain explicit.
+3. Owner later authorized proceeding toward Go-Live and delegated UAT to agents. Production mutation still requires an identified target, verified implementation, preserved backup and a rehearsed non-destructive migration. No database reset/deletion or unrelated push. Preserve protected UAT environments.
 4. Use synthetic test data and temporary files only. Never read secrets or tenant data into evidence.
 5. One implementer per assigned file set. Material changes require an independent reviewer and correction retest.
 6. Record actual commands and exit codes. Distinguish development, integration, automated verification, Owner UAT and production readiness.

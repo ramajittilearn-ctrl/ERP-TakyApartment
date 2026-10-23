@@ -1,0 +1,41 @@
+{"mode":"integration","attempt":"2026-10-23T11-58-03.174Z-07d03db8-dc65-4922-a68b-07164fc1a280","project":"taky-remediation-integration-4896c4d1e00a0ca6939fd8bc","runId":"4896c4d1e00a0ca6939fd8bc","role":"int_4896c4d1e00a0ca6939fd8bc","database":"taky_phase2_test","host":"127.0.0.1","port":55451,"subnet":"10.253.244.0/28","volume":"taky-remediation-integration-4896c4d1e00a0ca6939fd8bc_database","origin":"http://127.0.0.1:3820","planValidated":true}
+{"attested":true,"database":"taky_phase2_test","role":"int_4896c4d1e00a0ca6939fd8bc","public_tables":39,"host":"127.0.0.1","port":55451}
+Stage: node_modules/.bin/vitest run --config vitest.integration.config.ts --exclude tests/integration/payments.test.ts --exclude tests/integration/payment-routes.test.ts
+
+ RUN  v4.1.12 /private/tmp/taky-development
+
+ ✓ tests/integration/billing-preview.test.ts (23 tests) 5401ms
+     ✓ uses contractual rent, separate dates, exact raw totals and read-only deterministic previews  1497ms
+     ✓ detects actual/estimate conflict and permits an explicit audited ADMIN actual supersession in an open period  441ms
+     ✓ supports an explicit same-month canonical opening anchor without assigning it a fabricated period  373ms
+     ✓ requires complete verified replacement segments and preserves separate physical meter sources  339ms
+ ✓ tests/integration/invoices.test.ts (21 tests) 3951ms
+     ✓ blocks draft PDF data and enforces the existing invoice read role  322ms
+     ✓ requires due configuration and resolves explicit policy only when refreshed  334ms
+     ✓ retains unprepared and VOID lease reservations and overlays latest corrections under room caps  473ms
+ ✓ tests/integration/auth-throttle.test.ts (8 tests) 4711ms
+     ✓ allows unrelated ADMIN and STAFF login when the legacy global bucket is exhausted  388ms
+     ✓ gives existing and unknown identifiers the same five-attempt allowance and errors  1537ms
+     ✓ normalizes case and whitespace before counting attempts  631ms
+     ✓ counts concurrent attempts atomically  591ms
+     ✓ resets its own attempt allowance after a successful login  819ms
+ ✓ tests/integration/foundation.test.ts (10 tests) 1503ms
+     ✓ throttles invalid credentials persistently  759ms
+ ✓ tests/integration/meter-reading.test.ts (14 tests) 1542ms
+     ✓ confirms readings in chronological order and rechecks stale drafts  378ms
+ ✓ tests/integration/room-assignment.test.ts (9 tests) 480ms
+ ✓ tests/integration/finance-foundation.test.ts (7 tests) 332ms
+
+ Test Files  7 passed (7)
+      Tests  92 passed (92)
+   Start at  18:58:03
+   Duration  19.65s (transform 294ms, setup 0ms, import 1.09s, tests 17.92s, environment 0ms)
+
+(node:72446) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:72506) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:72526) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Stage outcome: {"exitCode":0,"signal":null,"error":null}
+Outcome: 0
