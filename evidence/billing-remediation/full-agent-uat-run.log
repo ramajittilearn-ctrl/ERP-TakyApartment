@@ -1,0 +1,138 @@
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "taky_phase2_test", schema "public" at "127.0.0.1:55452"
+
+14 migrations found in prisma/migrations
+
+Applying migration `202610160001_foundation`
+Applying migration `202610160002_constraints`
+Applying migration `202610170001_backup_operations`
+Applying migration `202610170002_room_reserved`
+Applying migration `202610170003_occupancy_integrity`
+Applying migration `202610180001_phase3a_financial_foundation`
+Applying migration `202610180002_phase3b_meter_reading`
+Applying migration `202610190001_phase3c2_billing_inputs`
+Applying migration `202610200001_phase3c2_approval_sources`
+Applying migration `202610200002_phase3c2_lease_allocations`
+Applying migration `202610210001_phase3c3_invoice_lifecycle`
+Applying migration `202610210002_phase3c3_reference_capacity`
+Applying migration `202610210003_phase3c3_legacy_month_barrier`
+Applying migration `202610230001_phase3d_payments`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 202610160001_foundation/
+    └─ migration.sql
+  └─ 202610160002_constraints/
+    └─ migration.sql
+  └─ 202610170001_backup_operations/
+    └─ migration.sql
+  └─ 202610170002_room_reserved/
+    └─ migration.sql
+  └─ 202610170003_occupancy_integrity/
+    └─ migration.sql
+  └─ 202610180001_phase3a_financial_foundation/
+    └─ migration.sql
+  └─ 202610180002_phase3b_meter_reading/
+    └─ migration.sql
+  └─ 202610190001_phase3c2_billing_inputs/
+    └─ migration.sql
+  └─ 202610200001_phase3c2_approval_sources/
+    └─ migration.sql
+  └─ 202610200002_phase3c2_lease_allocations/
+    └─ migration.sql
+  └─ 202610210001_phase3c3_invoice_lifecycle/
+    └─ migration.sql
+  └─ 202610210002_phase3c3_reference_capacity/
+    └─ migration.sql
+  └─ 202610210003_phase3c3_legacy_month_barrier/
+    └─ migration.sql
+  └─ 202610230001_phase3d_payments/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+
+Evidence: /private/tmp/taky-billing-remediation/evidence/remediation/92c0237d47f3ec10ef010234-migrate.log; exit 0
+
+> taky-apartment-erp@0.1.0 db:seed
+> tsx prisma/seed.ts
+
+Seed complete: 3 floors / 15 room identities; existing values preserved.
+
+Evidence: /private/tmp/taky-billing-remediation/evidence/remediation/92c0237d47f3ec10ef010234-seed.log; exit 0
+Isolated test accounts ready; no production records changed.
+
+Evidence: /private/tmp/taky-billing-remediation/evidence/remediation/92c0237d47f3ec10ef010234-users.log; exit 0
+Standalone server ready on http://127.0.0.1:3820; run 92c0237d47f3ec10ef010234
+
+Running 51 tests using 1 worker
+
+(node:47210) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"92c0237d47f3ec10ef010234","database":"taky_phase2_test","role":"e2e_92c0237d47f3ec10ef010234","proxy":"http://127.0.0.1:3822"}
+  ✓   1 tests/phase2/app.spec.ts:20:5 › unauthenticated pages redirect and all CRUD APIs reject access (3.3s)
+  ✓   2 tests/phase2/app.spec.ts:70:5 › secure cookie, CSRF rejection, staff authorization and logout revocation (548ms)
+  ✓   3 tests/phase2/app.spec.ts:107:5 › real login form and all fifteen room records (1.7s)
+  ✓   4 tests/phase2/app.spec.ts:125:5 › properties and floors CRUD; validation and referenced deletes (736ms)
+  ✓   5 tests/phase2/app.spec.ts:184:5 › room edits persist across refresh and grid filters work (2.5s)
+  ✓   6 tests/phase2/app.spec.ts:211:5 › tenant and lease UI create, update and delete draft (3.4s)
+  ✓   7 tests/phase2/app.spec.ts:339:9 › 1440px dashboard protected responsive smoke and accessibility (1.6s)
+  ✓   8 tests/phase2/app.spec.ts:339:9 › 1440px rooms protected responsive smoke and accessibility (1.8s)
+  ✓   9 tests/phase2/app.spec.ts:339:9 › 1440px tenants protected responsive smoke and accessibility (2.5s)
+  ✓  10 tests/phase2/app.spec.ts:339:9 › 1440px leases protected responsive smoke and accessibility (3.4s)
+  ✓  11 tests/phase2/app.spec.ts:339:9 › 1440px billing protected responsive smoke and accessibility (2.0s)
+  ✓  12 tests/phase2/app.spec.ts:339:9 › 1440px payments protected responsive smoke and accessibility (1.8s)
+  ✓  13 tests/phase2/app.spec.ts:339:9 › 1440px expenses protected responsive smoke and accessibility (1.4s)
+  ✓  14 tests/phase2/app.spec.ts:339:9 › 1440px reports protected responsive smoke and accessibility (1.7s)
+  ✓  15 tests/phase2/app.spec.ts:339:9 › 1440px maintenance protected responsive smoke and accessibility (1.7s)
+  ✓  16 tests/phase2/app.spec.ts:339:9 › 1440px settings protected responsive smoke and accessibility (2.6s)
+  ✓  17 tests/phase2/app.spec.ts:339:9 › 768px dashboard protected responsive smoke and accessibility (2.5s)
+  ✓  18 tests/phase2/app.spec.ts:339:9 › 768px rooms protected responsive smoke and accessibility (2.5s)
+  ✓  19 tests/phase2/app.spec.ts:339:9 › 768px tenants protected responsive smoke and accessibility (1.5s)
+  ✓  20 tests/phase2/app.spec.ts:339:9 › 768px leases protected responsive smoke and accessibility (1.4s)
+  ✓  21 tests/phase2/app.spec.ts:339:9 › 768px billing protected responsive smoke and accessibility (1.7s)
+  ✓  22 tests/phase2/app.spec.ts:339:9 › 768px payments protected responsive smoke and accessibility (1.7s)
+  ✓  23 tests/phase2/app.spec.ts:339:9 › 768px expenses protected responsive smoke and accessibility (1.4s)
+  ✓  24 tests/phase2/app.spec.ts:339:9 › 768px reports protected responsive smoke and accessibility (1.8s)
+  ✓  25 tests/phase2/app.spec.ts:339:9 › 768px maintenance protected responsive smoke and accessibility (1.8s)
+  ✓  26 tests/phase2/app.spec.ts:339:9 › 768px settings protected responsive smoke and accessibility (1.4s)
+  ✓  27 tests/phase2/app.spec.ts:339:9 › 390px dashboard protected responsive smoke and accessibility (1.5s)
+  ✓  28 tests/phase2/app.spec.ts:339:9 › 390px rooms protected responsive smoke and accessibility (1.8s)
+  ✓  29 tests/phase2/app.spec.ts:339:9 › 390px tenants protected responsive smoke and accessibility (2.2s)
+  ✓  30 tests/phase2/app.spec.ts:339:9 › 390px leases protected responsive smoke and accessibility (3.0s)
+  ✓  31 tests/phase2/app.spec.ts:339:9 › 390px billing protected responsive smoke and accessibility (3.2s)
+  ✓  32 tests/phase2/app.spec.ts:339:9 › 390px payments protected responsive smoke and accessibility (2.3s)
+  ✓  33 tests/phase2/app.spec.ts:339:9 › 390px expenses protected responsive smoke and accessibility (1.6s)
+  ✓  34 tests/phase2/app.spec.ts:339:9 › 390px reports protected responsive smoke and accessibility (1.5s)
+  ✓  35 tests/phase2/app.spec.ts:339:9 › 390px maintenance protected responsive smoke and accessibility (2.0s)
+  ✓  36 tests/phase2/app.spec.ts:339:9 › 390px settings protected responsive smoke and accessibility (2.3s)
+  ✓  37 tests/phase2/billing-setup.spec.ts:38:5 › ADMIN completes a fictional monthly billing flow in the UI (22.4s)
+  ✓  38 tests/phase2/billing-setup.spec.ts:323:5 › billing rate history never carries selected values into a different period (2.1s)
+  ✓  39 tests/phase2/invoice-accessibility.spec.ts:5:5 › invoice loading, populated ready and recoverable error states remain accessible (3.7s)
+  ✓  40 tests/phase2/meter-reading.spec.ts:45:5 › mobile operator records water and electricity on separate actual dates (7.2s)
+  ✓  41 tests/phase2/meter-reading.spec.ts:141:5 › admin replacement keeps final and initial readings in the selected billing period (2.9s)
+  ✓  42 tests/phase2/meter-stage3c4.spec.ts:199:5 › 3C4 latest overview wins and unrelated drafts survive reload and filter navigation (2.6s)
+  ✓  43 tests/phase2/meter-stage3c4.spec.ts:340:7 › 3C4 1440px validation confirmation correction replacement history and STAFF restrictions (5.2s)
+  ✓  44 tests/phase2/meter-stage3c4.spec.ts:340:7 › 3C4 390px validation confirmation correction replacement history and STAFF restrictions (5.2s)
+  ✓  45 tests/phase2/phase26.spec.ts:70:5 › floor-dependent assignment options contain database rooms and exclude occupied rooms (3.1s)
+  ✓  46 tests/phase2/phase26.spec.ts:167:5 › staff can create an unassigned tenant; incomplete assignment is rejected without a profile (2.3s)
+  ✓  47 tests/phase2/phase26.spec.ts:218:7 › Phase 2.6 linked profiles and explicit transfer at 1440px (8.1s)
+  ✓  48 tests/phase2/phase26.spec.ts:218:7 › Phase 2.6 linked profiles and explicit transfer at 834px (20.5s)
+  ✓  49 tests/phase2/phase26.spec.ts:218:7 › Phase 2.6 linked profiles and explicit transfer at 390px (7.6s)
+  ✓  50 tests/phase2/target-safety.spec.ts:4:5 › API contexts reject unauthorized destinations and redirects before following them (2.8s)
+  ✓  51 tests/phase2/target-safety.spec.ts:26:5 › browser rejects an off-origin redirect without reaching its destination (1.1s)
+
+  51 passed (2.9m)
+
+Evidence: /private/tmp/taky-billing-remediation/evidence/remediation/92c0237d47f3ec10ef010234-browser.log; exit 0
+ Container taky-remediation-browser-92c0237d47f3ec10ef010234-db-1 Stopping 
+ Container taky-remediation-browser-92c0237d47f3ec10ef010234-db-1 Stopped 
+ Container taky-remediation-browser-92c0237d47f3ec10ef010234-db-1 Removing 
+ Container taky-remediation-browser-92c0237d47f3ec10ef010234-db-1 Removed 
+ Network taky-remediation-browser-92c0237d47f3ec10ef010234_default Removing 
+ Network taky-remediation-browser-92c0237d47f3ec10ef010234_default Removed 
+
+Evidence: /private/tmp/taky-billing-remediation/evidence/remediation/92c0237d47f3ec10ef010234-cleanup.log; exit 0
+{"runId":"92c0237d47f3ec10ef010234","succeeded":true,"evidence":"evidence/remediation/browser-92c0237d47f3ec10ef010234","volumes":"retained"}

@@ -1,13 +1,32 @@
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { config } from "dotenv";
-import { cp, mkdir, readFile, writeFile, access } from "node:fs/promises";
+import { parse } from "dotenv";
+import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { setTimeout } from "node:timers/promises";
 import net from "node:net";
+import {
+  loadRemediationPlan,
+  attestRemediationDatabase,
+} from "./remediation-plan.mjs";
 import { browserTargetProxy } from "./browser-target-proxy.mjs";
 
 const reproduce = process.argv[2] === "--reproduce";
+const preparedIndex = process.argv.indexOf("--prepared-run");
+const preparedRun =
+  preparedIndex === -1 ? undefined : process.argv[preparedIndex + 1];
+if (
+  preparedIndex !== -1 &&
+  (!preparedRun || !/^[a-f0-9]{24}$/.test(preparedRun))
+)
+  throw new Error("--prepared-run requires a planned isolated run identifier");
+if (preparedRun && reproduce)
+  throw new Error("Choose prepared-run or reproduce");
+const grepIndex = process.argv.indexOf("--grep");
+const grep = grepIndex === -1 ? undefined : process.argv[grepIndex + 1];
+if (grepIndex !== -1 && (!grep || grep.startsWith("--")))
+  throw new Error("--grep requires a test title expression");
 const failSetup = process.argv[2] === "--fail-setup";
+const billingSetup = process.argv[2] === "--billing-setup";
 const run = (command, args) =>
   new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: "inherit", env: process.env });
@@ -16,22 +35,31 @@ const run = (command, args) =>
       code === 0 ? resolve() : reject(new Error(`${command} exited ${code}`)),
     );
   });
+const preparedPlan = preparedRun
+  ? await loadRemediationPlan(preparedRun)
+  : undefined;
+const reproductionEnv = reproduce
+  ? parse(await readFile(".local/remediation.env"))
+  : undefined;
+const runId =
+  preparedRun ??
+  (reproduce ? reproductionEnv.E2E_RUN_ID : randomBytes(12).toString("hex"));
+if (!runId || !/^[a-f0-9]{24}$/.test(runId))
+  throw new Error("Missing isolated run identity");
 for (const port of [3820, 3822])
   await new Promise((resolve, reject) => {
     const probe = net.createServer();
     probe.once("error", reject);
     probe.listen(port, "127.0.0.1", () => probe.close(resolve));
   });
-if (reproduce)
-  config({ path: ".local/remediation.env", override: true, quiet: true });
-const runId = reproduce
-  ? process.env.E2E_RUN_ID
-  : randomBytes(12).toString("hex");
-if (!runId || !/^[a-f0-9]{24}$/.test(runId))
-  throw new Error("Missing isolated run identity");
 const evidence = `evidence/remediation/browser-${runId}`;
-const composePath = `.local/remediation-${runId}-compose.json`;
 await mkdir(evidence, { recursive: true });
+if (!reproduce)
+  await writeFile(
+    `${evidence}/attempt-started.json`,
+    JSON.stringify({ runId, started: new Date().toISOString() }),
+    { flag: "wx" },
+  );
 const logged = (label, command, ...args) =>
   run("node", [
     "scripts/remediation-log.mjs",
@@ -44,14 +72,21 @@ let closed;
 let proxy;
 let serverOutput = "";
 let succeeded = false;
+let validatedPlan;
+let browserStarted = false;
 try {
-  if (!reproduce) {
+  if (!reproduce && !preparedRun)
     await run("node", ["scripts/provision-remediation.mjs", "browser", runId]);
-    config({
-      path: `.local/remediation-${runId}.env`,
-      override: true,
-      quiet: true,
-    });
+  const plan = preparedPlan ?? (await loadRemediationPlan(runId));
+  const identity = await attestRemediationDatabase(plan);
+  validatedPlan = plan;
+  Object.assign(process.env, plan.env);
+  await writeFile(
+    `${evidence}/database-identity.json`,
+    JSON.stringify({ runId, ...identity }),
+    { flag: "wx" },
+  );
+  if (!reproduce) {
     if (failSetup)
       throw new Error("Injected isolated setup failure before migrations");
     await logged("migrate", "npx", "prisma", "migrate", "deploy");
@@ -106,19 +141,32 @@ try {
       "node",
       "scripts/reproduce-invoice-loading.mjs",
     );
-  else
+  else {
+    process.env.PLAYWRIGHT_JSON_OUTPUT_FILE = `${evidence}/results.json`;
+    process.env.PLAYWRIGHT_HTML_OUTPUT_DIR = `${evidence}/playwright-report`;
+    browserStarted = true;
     await logged(
       "browser",
       "npx",
       "playwright",
       "test",
-      ...(process.argv[2] === "--target-check"
-        ? [
-            "--grep",
-            "invoice loading|API contexts|browser rejects|unauthenticated pages|real login",
-          ]
-        : []),
+      "--output",
+      `${evidence}/test-results`,
+      ...(grep
+        ? ["--grep", grep]
+        : billingSetup
+          ? [
+              "--grep",
+              "ADMIN completes a fictional monthly billing flow in the UI",
+            ]
+          : process.argv[2] === "--target-check"
+            ? [
+                "--grep",
+                "invoice loading|API contexts|browser rejects|unauthenticated pages|real login",
+              ]
+            : []),
     );
+  }
   succeeded = true;
 } finally {
   if (server) {
@@ -137,24 +185,20 @@ try {
     await new Promise((resolve) => proxy.close(resolve));
   }
   if (!reproduce) {
-    if (server)
-      try {
-        await writeFile(
-          `${evidence}/results.json`,
-          await readFile("test-results/results.json"),
-        );
-      } catch {
-        /* Reporter may not have started. */
-      }
-    let provisioned = false;
-    try {
-      await access(composePath);
-      provisioned = true;
-    } catch {
-      /* Provisioning failed before creating any resource. */
-    }
-    if (provisioned)
-      await logged("cleanup", "docker", "compose", "-f", composePath, "down");
+    await writeFile(
+      `${evidence}/execution.json`,
+      JSON.stringify({ runId, browserStarted, succeeded }),
+      { flag: "wx" },
+    );
+    if (validatedPlan)
+      await logged(
+        "cleanup",
+        "docker",
+        "compose",
+        "-f",
+        validatedPlan.composePath,
+        "down",
+      );
   }
   console.info(
     JSON.stringify({ runId, succeeded, evidence, volumes: "retained" }),

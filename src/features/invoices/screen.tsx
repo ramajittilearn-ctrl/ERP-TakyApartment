@@ -28,6 +28,7 @@ import {
 } from "@/server/invoices/contracts";
 import type { BillingConsumption } from "@/server/billing/contracts";
 import styles from "./screen.module.css";
+import { BillingSetupPanel } from "@/features/billing/setup-panel";
 
 const errorSchema = z.object({
   error: z.object({ code: z.string(), message: z.string() }),
@@ -318,6 +319,17 @@ export function InvoiceScreen({ admin }: { admin: boolean }) {
       </Notice>
       {error ? <ErrorMessage>{error}</ErrorMessage> : null}
       {success ? <SuccessMessage>{success}</SuccessMessage> : null}
+      <BillingSetupPanel
+        admin={admin}
+        options={options}
+        periodId={periodId}
+        onSelectPeriod={(id) => {
+          setPeriodId(id);
+          setRoomId("");
+          setLeaseId("");
+        }}
+        onRefresh={reload}
+      />
       <Card
         title="ใบแจ้งหนี้"
         description="ตรวจสอบรอบบิล เตรียมฉบับร่าง และติดตามประวัติเอกสาร"

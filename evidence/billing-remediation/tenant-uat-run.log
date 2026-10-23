@@ -1,0 +1,91 @@
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "taky_phase2_test", schema "public" at "127.0.0.1:55452"
+
+14 migrations found in prisma/migrations
+
+Applying migration `202610160001_foundation`
+Applying migration `202610160002_constraints`
+Applying migration `202610170001_backup_operations`
+Applying migration `202610170002_room_reserved`
+Applying migration `202610170003_occupancy_integrity`
+Applying migration `202610180001_phase3a_financial_foundation`
+Applying migration `202610180002_phase3b_meter_reading`
+Applying migration `202610190001_phase3c2_billing_inputs`
+Applying migration `202610200001_phase3c2_approval_sources`
+Applying migration `202610200002_phase3c2_lease_allocations`
+Applying migration `202610210001_phase3c3_invoice_lifecycle`
+Applying migration `202610210002_phase3c3_reference_capacity`
+Applying migration `202610210003_phase3c3_legacy_month_barrier`
+Applying migration `202610230001_phase3d_payments`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 202610160001_foundation/
+    └─ migration.sql
+  └─ 202610160002_constraints/
+    └─ migration.sql
+  └─ 202610170001_backup_operations/
+    └─ migration.sql
+  └─ 202610170002_room_reserved/
+    └─ migration.sql
+  └─ 202610170003_occupancy_integrity/
+    └─ migration.sql
+  └─ 202610180001_phase3a_financial_foundation/
+    └─ migration.sql
+  └─ 202610180002_phase3b_meter_reading/
+    └─ migration.sql
+  └─ 202610190001_phase3c2_billing_inputs/
+    └─ migration.sql
+  └─ 202610200001_phase3c2_approval_sources/
+    └─ migration.sql
+  └─ 202610200002_phase3c2_lease_allocations/
+    └─ migration.sql
+  └─ 202610210001_phase3c3_invoice_lifecycle/
+    └─ migration.sql
+  └─ 202610210002_phase3c3_reference_capacity/
+    └─ migration.sql
+  └─ 202610210003_phase3c3_legacy_month_barrier/
+    └─ migration.sql
+  └─ 202610230001_phase3d_payments/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+
+Evidence: /private/tmp/taky-billing-remediation/evidence/remediation/b27aeb21dfc049cdbe65001a-migrate.log; exit 0
+
+> taky-apartment-erp@0.1.0 db:seed
+> tsx prisma/seed.ts
+
+Seed complete: 3 floors / 15 room identities; existing values preserved.
+
+Evidence: /private/tmp/taky-billing-remediation/evidence/remediation/b27aeb21dfc049cdbe65001a-seed.log; exit 0
+Isolated test accounts ready; no production records changed.
+
+Evidence: /private/tmp/taky-billing-remediation/evidence/remediation/b27aeb21dfc049cdbe65001a-users.log; exit 0
+Standalone server ready on http://127.0.0.1:3820; run b27aeb21dfc049cdbe65001a
+Error: No tests found
+
+
+Evidence: /private/tmp/taky-billing-remediation/evidence/remediation/b27aeb21dfc049cdbe65001a-browser.log; exit 1
+ Container taky-remediation-browser-b27aeb21dfc049cdbe65001a-db-1 Stopping 
+ Container taky-remediation-browser-b27aeb21dfc049cdbe65001a-db-1 Stopped 
+ Container taky-remediation-browser-b27aeb21dfc049cdbe65001a-db-1 Removing 
+ Container taky-remediation-browser-b27aeb21dfc049cdbe65001a-db-1 Removed 
+ Network taky-remediation-browser-b27aeb21dfc049cdbe65001a_default Removing 
+ Network taky-remediation-browser-b27aeb21dfc049cdbe65001a_default Removed 
+
+Evidence: /private/tmp/taky-billing-remediation/evidence/remediation/b27aeb21dfc049cdbe65001a-cleanup.log; exit 0
+{"runId":"b27aeb21dfc049cdbe65001a","succeeded":false,"evidence":"evidence/remediation/browser-b27aeb21dfc049cdbe65001a","volumes":"retained"}
+file:///private/tmp/taky-billing-remediation/scripts/run-remediation-browser.mjs:35
+      code === 0 ? resolve() : reject(new Error(`${command} exited ${code}`)),
+                                      ^
+
+Error: node exited 1
+    at ChildProcess.<anonymous> (file:///private/tmp/taky-billing-remediation/scripts/run-remediation-browser.mjs:35:39)
+    at ChildProcess.emit (node:events:519:28)
+    at ChildProcess._handle.onexit (node:internal/child_process:293:12)
+
+Node.js v22.22.3

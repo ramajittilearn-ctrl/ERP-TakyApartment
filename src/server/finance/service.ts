@@ -76,6 +76,7 @@ export async function listBillingPeriods(input: unknown) {
 }
 
 export async function createBillingPeriod(actor: Actor, input: unknown) {
+  admin(actor);
   const data = billingPeriodCreateInput.parse(input);
   const startsOn = new Date(`${data.month}-01T00:00:00.000Z`);
   const endsOn = new Date(

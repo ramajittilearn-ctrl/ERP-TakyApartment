@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db } from "../../src/server/db";
 import {
+  approveBillingRate,
+  listBillingRateSelections,
+} from "../../src/server/billing";
+import {
   closeBillingPeriod,
   createBillingPeriod,
   createUtilityRate,
@@ -54,10 +58,13 @@ describe("Stage 3A PostgreSQL foundation", () => {
     ).rejects.toThrow();
   });
 
-  it("allows STAFF period creation but rejects duplicate concurrent months", async () => {
+  it("rejects STAFF period creation and rejects duplicate concurrent ADMIN months", async () => {
+    await expect(
+      createBillingPeriod(staff, { propertyId, month: "2026-01" }),
+    ).rejects.toMatchObject({ status: 403 });
     const results = await Promise.allSettled([
-      createBillingPeriod(staff, { propertyId, month: "2026-01" }),
-      createBillingPeriod(staff, { propertyId, month: "2026-01" }),
+      createBillingPeriod(admin, { propertyId, month: "2026-01" }),
+      createBillingPeriod(admin, { propertyId, month: "2026-01" }),
     ]);
     expect(
       results.filter((value) => value.status === "fulfilled"),
@@ -70,7 +77,7 @@ describe("Stage 3A PostgreSQL foundation", () => {
   });
 
   it("allows only ADMIN to close and makes close retries deterministic", async () => {
-    const period = await createBillingPeriod(staff, {
+    const period = await createBillingPeriod(admin, {
       propertyId,
       month: "2026-02",
     });
@@ -91,6 +98,47 @@ describe("Stage 3A PostgreSQL foundation", () => {
         data: { status: "OPEN", closedAt: null, closedById: null },
       }),
     ).rejects.toThrow();
+  });
+
+  it("returns persisted rate approval history without changing its immutable rates", async () => {
+    const period = await createBillingPeriod(admin, {
+      propertyId,
+      month: "2027-03",
+    });
+    const rate = await createUtilityRate(admin, {
+      propertyId,
+      kind: "WATER",
+      effectiveFrom: "2027-03-01",
+      unitPrice: "19.2500",
+    });
+    const originalRate = await db.utilityRate.findUniqueOrThrow({
+      where: { id: rate.id },
+    });
+    await approveBillingRate(admin, {
+      billingPeriodId: period.id,
+      kind: "WATER",
+      utilityRateId: rate.id,
+      reason: "approved for integration test",
+    });
+    const history = await listBillingRateSelections(staff, {
+      billingPeriodId: period.id,
+    });
+    expect(history).toHaveLength(1);
+    expect(history[0]).toMatchObject({
+      billingPeriodId: period.id,
+      kind: "WATER",
+      utilityRateId: rate.id,
+      reason: "approved for integration test",
+      revision: 1,
+      rate: {
+        unitPrice: "19.2500",
+        effectiveFrom: "2027-03-01",
+        nextEffectiveFrom: null,
+      },
+    });
+    expect(
+      await db.utilityRate.findUniqueOrThrow({ where: { id: rate.id } }),
+    ).toEqual(originalRate);
   });
 
   it("keeps rate change points append-only, exact, unique, audited, and ADMIN-only", async () => {

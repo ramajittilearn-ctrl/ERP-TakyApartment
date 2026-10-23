@@ -1,0 +1,362 @@
+.panel {
+  display: grid;
+  gap: 1.25rem;
+  margin-block: 1.25rem;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  border: 1px solid var(--border, #dce3e8);
+  border-radius: 1rem;
+  background: var(--surface, #fff);
+  color: var(--text, #17212b);
+}
+
+.header,
+.sectionHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.header h2,
+.sectionHeading h3,
+.block h3,
+.rateCard h4,
+.selectionCard h4,
+.rateForm h4 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.eyebrow {
+  margin: 0 0 0.2rem;
+  color: var(--muted, #5a6875);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.workflow {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--muted, #5a6875);
+  font-size: 0.78rem;
+  line-height: 1.65;
+  text-align: right;
+}
+
+.workflow span {
+  padding-inline: 0.2rem;
+  color: var(--accent, #24715c);
+  font-weight: 700;
+}
+
+.periodGrid,
+.rateGrid,
+.selectionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.block,
+.rateCard,
+.selectionCard,
+.rateForm {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border, #dce3e8);
+  border-radius: 0.75rem;
+  background: var(--surface-subtle, #f8fafb);
+}
+
+.block,
+.rateForm {
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+}
+
+.block h3,
+.rateForm h4 {
+  margin-bottom: 0.2rem;
+}
+
+.field {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text, #17212b);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.block input,
+.block select,
+.rateForm input,
+.rateForm select,
+.selectionCard select,
+.selectionCard textarea {
+  width: 100%;
+  min-height: 2.65rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--control-border, #bcc8d1);
+  border-radius: 0.5rem;
+  background: var(--surface, #fff);
+  color: inherit;
+  font: inherit;
+}
+
+.selectionCard textarea {
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+.block input:focus-visible,
+.block select:focus-visible,
+.rateForm input:focus-visible,
+.rateForm select:focus-visible,
+.selectionCard select:focus-visible,
+.selectionCard textarea:focus-visible,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible {
+  outline: 3px solid var(--focus, #78b6a1);
+  outline-offset: 2px;
+}
+
+.periodSummary {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.periodSummary div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.82rem;
+}
+
+.periodSummary span,
+.muted,
+.help {
+  color: var(--muted, #5a6875);
+}
+
+.periodSummary strong {
+  text-align: right;
+}
+
+.openStatus {
+  color: #16734f;
+}
+
+.closedStatus {
+  color: #5e6670;
+}
+
+.muted,
+.help {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: 2.6rem;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.55rem 0.9rem;
+  border: 0;
+  border-radius: 0.5rem;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryButton {
+  margin-top: 0.2rem;
+  background: var(--accent, #24715c);
+  color: #fff;
+}
+
+.secondaryButton {
+  margin-top: 0.4rem;
+  background: var(--secondary-action, #e5f1ed);
+  color: var(--accent-strong, #18543f);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ratesSection,
+.selectionSection {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, #dce3e8);
+}
+
+.sectionHeading p {
+  margin: 0.2rem 0 0;
+  color: var(--muted, #5a6875);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.propertyTag {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-subtle, #f1f5f4);
+  color: var(--muted, #5a6875);
+  font-size: 0.75rem;
+}
+
+.rateCard h4,
+.selectionCard h4 {
+  margin-bottom: 0.1rem;
+}
+
+.unit {
+  margin: 0;
+  color: var(--muted, #5a6875);
+  font-size: 0.75rem;
+}
+
+.rateHistory,
+.historyDetails ol {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.7rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.rateHistory li,
+.historyDetails li {
+  padding-left: 0.15rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.rateHistory strong {
+  display: block;
+}
+
+.rateHistory span {
+  display: block;
+  color: var(--muted, #5a6875);
+}
+
+.rateForm {
+  margin-top: 0.1rem;
+  grid-column: 1 / -1;
+}
+
+.inlineFields {
+  display: grid;
+  grid-template-columns: 0.8fr 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.inlineFields > div {
+  min-width: 0;
+}
+
+.selectionCard {
+  display: grid;
+  align-content: start;
+  gap: 0.65rem;
+}
+
+.selectedRate {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem;
+  border-radius: 0.55rem;
+  background: var(--surface, #fff);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.selectedRate strong {
+  font-size: 0.9rem;
+}
+
+.reason {
+  color: var(--muted, #5a6875);
+  overflow-wrap: anywhere;
+}
+
+.selectionCard form {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.readOnly {
+  margin: 0;
+  color: var(--muted, #5a6875);
+  font-size: 0.78rem;
+}
+
+.historyDetails {
+  font-size: 0.76rem;
+}
+
+.historyDetails summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--accent-strong, #18543f);
+  font-weight: 650;
+}
+
+.error,
+.success {
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.55rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.error {
+  border: 1px solid #e5b9b9;
+  background: #fff4f3;
+  color: #8b2828;
+}
+
+.success {
+  border: 1px solid #b7d8cb;
+  background: #eff8f4;
+  color: #176244;
+}
+
+@media (max-width: 760px) {
+  .header,
+  .sectionHeading {
+    flex-direction: column;
+  }
+
+  .workflow {
+    max-width: none;
+    text-align: left;
+  }
+
+  .periodGrid,
+  .rateGrid,
+  .selectionGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rateForm {
+    grid-column: auto;
+  }
+
+  .inlineFields {
+    grid-template-columns: 1fr;
+  }
+}

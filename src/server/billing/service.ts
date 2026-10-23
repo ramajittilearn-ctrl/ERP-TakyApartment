@@ -301,6 +301,50 @@ export async function approveBillingRate(actor: Actor, input: unknown) {
   }, serializable);
 }
 
+export async function listBillingRateSelections(actor: Actor, input: unknown) {
+  authorize(actor);
+  const { billingPeriodId } = previewInput.parse(input);
+  return db.$transaction(async (tx) => {
+    const period = await tx.billingPeriod.findUnique({
+      where: { id: billingPeriodId },
+    });
+    if (!period)
+      throw new AppError(404, "PERIOD_NOT_FOUND", "ไม่พบรอบเรียกเก็บ");
+    const selections = await tx.billingRateSelection.findMany({
+      where: { billingPeriodId },
+      include: { utilityRate: true },
+      orderBy: [{ kind: "asc" }, { revision: "asc" }],
+    });
+    return Promise.all(
+      selections.map(async (selection) => {
+        const next = await tx.utilityRate.findFirst({
+          where: {
+            propertyId: selection.utilityRate.propertyId,
+            kind: selection.kind,
+            effectiveFrom: { gt: selection.utilityRate.effectiveFrom },
+          },
+          orderBy: { effectiveFrom: "asc" },
+        });
+        return {
+          id: selection.id,
+          billingPeriodId: selection.billingPeriodId,
+          kind: selection.kind,
+          utilityRateId: selection.utilityRateId,
+          reason: selection.reason,
+          revision: selection.revision,
+          approvedAt: selection.approvedAt.toISOString(),
+          approvedById: selection.approvedById,
+          rate: {
+            unitPrice: selection.utilityRate.unitPrice.toFixed(4),
+            effectiveFrom: day(selection.utilityRate.effectiveFrom),
+            nextEffectiveFrom: next ? day(next.effectiveFrom) : null,
+          },
+        };
+      }),
+    );
+  });
+}
+
 async function replacementRecords(
   tx: Prisma.TransactionClient,
   period: BillingPeriod,

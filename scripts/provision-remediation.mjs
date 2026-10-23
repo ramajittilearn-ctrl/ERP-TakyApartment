@@ -7,16 +7,33 @@ const kind = process.argv[2];
 if (!["integration", "browser"].includes(kind))
   throw new Error("Choose integration or browser");
 const port = kind === "browser" ? 55452 : 55451;
-await new Promise((resolve, reject) => {
-  const socket = net.createServer();
-  socket.once("error", reject);
-  socket.listen(port, "127.0.0.1", () => socket.close(resolve));
-});
 const runId = process.argv[3] ?? randomBytes(12).toString("hex");
 if (!/^[a-f0-9]{24}$/.test(runId))
   throw new Error("Invalid isolated run identifier");
 const role = `${kind === "browser" ? "e2e" : "int"}_${runId}`;
 const project = `taky-remediation-${kind}-${runId}`;
+const planOnly = process.argv.includes("--plan-only");
+const subnet =
+  process.env.REMEDIATION_SUBNET ??
+  (kind === "browser" ? "10.250.241.0/24" : "10.250.240.0/24");
+const subnetMatch = /^(10)\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(24|28)$/.exec(
+  subnet,
+);
+if (
+  !subnetMatch ||
+  subnetMatch.slice(1, 5).some((part) => Number(part) > 255) ||
+  Number(subnetMatch[4]) % (subnetMatch[5] === "24" ? 256 : 16) !== 0
+)
+  throw new Error(
+    "REMEDIATION_SUBNET must be a private 10.x IPv4 /24 or /28 network",
+  );
+if (!planOnly) {
+  await new Promise((resolve, reject) => {
+    const socket = net.createServer();
+    socket.once("error", reject);
+    socket.listen(port, "127.0.0.1", () => socket.close(resolve));
+  });
+}
 const password = randomBytes(24).toString("hex");
 const values = {
   DATABASE_URL: `postgresql://${role}:${password}@127.0.0.1:${port}/taky_phase2_test`,
@@ -34,13 +51,6 @@ const values = {
 };
 await mkdir(".local", { recursive: true });
 await mkdir("evidence/remediation", { recursive: true });
-await writeFile(
-  ".local/remediation.env",
-  Object.entries(values)
-    .map(([key, value]) => `${key}=${value}`)
-    .join("\n") + "\n",
-  { mode: 0o600 },
-);
 const compose = {
   name: project,
   services: {
@@ -61,10 +71,30 @@ const compose = {
       },
     },
   },
+  networks: {
+    default: {
+      ipam: {
+        config: [
+          {
+            subnet,
+          },
+        ],
+      },
+    },
+  },
   volumes: { database: {} },
 };
-await writeFile(".local/remediation-compose.json", JSON.stringify(compose), {
+await writeFile(
+  `.local/remediation-${runId}.env`,
+  Object.entries(values)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n") + "\n",
+  { mode: 0o600, flag: "wx" },
+);
+const composePath = `.local/remediation-${runId}-compose.json`;
+await writeFile(composePath, JSON.stringify(compose), {
   mode: 0o600,
+  flag: "wx",
 });
 await writeFile(
   `evidence/remediation/${kind}-${runId}.json`,
@@ -76,22 +106,39 @@ await writeFile(
       database: "taky_phase2_test",
       host: "127.0.0.1",
       port,
+      subnet,
       volume: `${project}_database`,
       origin: values.APP_ORIGIN,
     },
     null,
     2,
   ),
+  { flag: "wx" },
 );
 await writeFile(
-  `.local/remediation-${runId}.env`,
+  ".local/remediation.env",
   Object.entries(values)
     .map(([key, value]) => `${key}=${value}`)
     .join("\n") + "\n",
   { mode: 0o600 },
 );
-const composePath = `.local/remediation-${runId}-compose.json`;
-await writeFile(composePath, JSON.stringify(compose), { mode: 0o600 });
+await writeFile(".local/remediation-compose.json", JSON.stringify(compose), {
+  mode: 0o600,
+});
+if (planOnly) {
+  console.info(
+    JSON.stringify({
+      project,
+      runId,
+      role,
+      port,
+      subnet,
+      composePath,
+      plannedOnly: true,
+    }),
+  );
+  process.exit(0);
+}
 const result = spawnSync(
   "docker",
   ["compose", "-f", composePath, "up", "-d", "--wait"],

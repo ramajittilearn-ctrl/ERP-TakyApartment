@@ -1,4 +1,7 @@
-import { approveBillingRate } from "@/server/billing";
+import {
+  approveBillingRate,
+  listBillingRateSelections,
+} from "@/server/billing";
 import {
   checkOrigin,
   handle,
@@ -6,6 +9,19 @@ import {
   readJson,
   requireActor,
 } from "@/server/http";
+
+export function GET(request: Request) {
+  return handle(async () => {
+    const actor = await requireActor();
+    return json(
+      await listBillingRateSelections(actor, {
+        billingPeriodId: new URL(request.url).searchParams.get(
+          "billingPeriodId",
+        ),
+      }),
+    );
+  });
+}
 
 export function POST(request: Request) {
   return handle(async () => {
