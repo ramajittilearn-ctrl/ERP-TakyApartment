@@ -1,0 +1,15 @@
+import { writeFile } from 'node:fs/promises';
+import {renderInvoicePdf, type InvoicePdfDocument} from '../../src/server/invoices/pdf';
+const base: InvoicePdfDocument = {
+invoiceNumber:'INV-202610-0042',status:'ISSUED', periodStart:'2026-10-01',periodEnd:'2026-10-31',issuedDate:'2026-10-22',dueDate:'2026-10-29',revision:1,
+property:{name:'บ้านตัวอย่าง / Sample Residence',address:'99 ถนนสุขุมวิท แขวงคลองตัน เขตวัฒนา กรุงเทพมหานคร 10110'},
+tenant:{name:'สมมติ ใจดี Example Tenant',room:'A-204',leaseReference:'LEASE-DEMO-204'},
+lines:[{kind:'RENT',quantity:null,unit:null,rate:null,amount:'8500.00'},{kind:'WATER',quantity:'3.500',unit:'m³',rate:'18.00',amount:'63.00'},{kind:'ELECTRICITY',quantity:'125.250',unit:'kWh',rate:'7.00',amount:'876.75'}],total:'9439.75',voidedAt:null,voidReason:null};
+const cases = {
+issued:base,
+void:{...base,status:'VOID' as const,voidedAt:'2026-10-23T10:30:00.000Z',voidReason:'บันทึกผิด กรุณาใช้ใบแจ้งหนี้ฉบับแก้ไข'},
+long:{...base,property:{...base.property,address:'อาคารพักอาศัยพร้อมพื้นที่ส่วนกลางและระบบรักษาความปลอดภัยตลอดยี่สิบสี่ชั่วโมง '.repeat(12)},tenant:{...base.tenant,name:'ผู้เช่าทดสอบ'.repeat(35)+' VeryLongTenantName'.repeat(8)}},
+precision:{...base,lines:[{kind:'RENT' as const,quantity:null,unit:null,rate:null,amount:'9007199254740993.01'},{kind:'WATER' as const,quantity:'0.005',unit:'m³',rate:'18.0000',amount:'0.09'},{kind:'ELECTRICITY' as const,quantity:'0.005',unit:'kWh',rate:'7.0000',amount:'0.04'}],total:'9007199254740993.14'}
+};
+async function main(){for(const [name,invoice] of Object.entries(cases)){await writeFile(`evidence/pdf-agent-uat/${name}.pdf`,await renderInvoicePdf(invoice));}await writeFile('evidence/pdf-agent-uat/fixtures.json',JSON.stringify(cases,null,2));}
+void main();

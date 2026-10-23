@@ -1,0 +1,21 @@
+ใบแจ้งหนี้ / INVOICE ISSUED / ออกแล้ว
+บ้านตัวอย่าง / Sample Residence
+99 ถนนสุขุมวิท แขวงคลองตัน เขตวัฒนา กรุงเทพมหานคร 10110
+เลขที่ใบแจ้งหนี้ / Invoice no.
+INV-202610-0042
+ครบกำาหนด / Due date
+29 ต.ค. 2026
+รอบบิล / Billing period
+01 ต.ค. 2026 – 31 ต.ค. 2026
+วันที่ออก / Issue date
+22 ต.ค. 2026
+ผู้เช่าและสัญญา / TENANT & LEASE
+สมมติ ใจดี Example Tenant
+ห้อง / Room: A-204 สัญญา / Lease: LEASE-DEMO-204
+รายการ / Description ปริมาณ × อัตรา / Qty × Rate จำานวนเงิน / Amount
+ค่าเช่าห้อง / Room rent — ฿9,007,199,254,740,993.01
+ค่าน้ำ า / Water 0.005 m³ × ฿18.0000 ฿0.09
+ค่าไฟฟ้า / Electricity 0.005 kWh × ฿7.0000 ฿0.04
+ยอดชำาระรวม / TOTAL PAYABLE
+฿9,007,199,254,740,993.14
+Revision 1

@@ -1,0 +1,242 @@
+[
+  {
+    "name": "issued: A4 pages",
+    "passed": true,
+    "detail": "1 pages"
+  },
+  {
+    "name": "issued: frozen total exact",
+    "passed": true,
+    "detail": "9439.75"
+  },
+  {
+    "name": "issued: frozen line amounts exact",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "issued: Thai invoice heading",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "issued: no missing glyphs",
+    "passed": true,
+    "detail": "0 U+0000 characters"
+  },
+  {
+    "name": "issued: baht currency visible",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "issued: water unit visible",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "issued: revision footer",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "issued: line sum equals total",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "validmax: A4 pages",
+    "passed": true,
+    "detail": "1 pages"
+  },
+  {
+    "name": "validmax: frozen total exact",
+    "passed": true,
+    "detail": "999999999999.99"
+  },
+  {
+    "name": "validmax: frozen line amounts exact",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "validmax: Thai invoice heading",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "validmax: no missing glyphs",
+    "passed": true,
+    "detail": "0 U+0000 characters"
+  },
+  {
+    "name": "validmax: baht currency visible",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "validmax: water unit visible",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "validmax: revision footer",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "validmax: line sum equals total",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "void: A4 pages",
+    "passed": true,
+    "detail": "1 pages"
+  },
+  {
+    "name": "void: frozen total exact",
+    "passed": true,
+    "detail": "9439.75"
+  },
+  {
+    "name": "void: frozen line amounts exact",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "void: Thai invoice heading",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "void: no missing glyphs",
+    "passed": true,
+    "detail": "0 U+0000 characters"
+  },
+  {
+    "name": "void: baht currency visible",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "void: water unit visible",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "void: revision footer",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "void: line sum equals total",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "void: watermark/status/reason",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: A4 pages",
+    "passed": true,
+    "detail": "1 pages"
+  },
+  {
+    "name": "long: frozen total exact",
+    "passed": true,
+    "detail": "9439.75"
+  },
+  {
+    "name": "long: frozen line amounts exact",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: Thai invoice heading",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: no missing glyphs",
+    "passed": true,
+    "detail": "0 U+0000 characters"
+  },
+  {
+    "name": "long: baht currency visible",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: water unit visible",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: revision footer",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: line sum equals total",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "precision: A4 pages",
+    "passed": true,
+    "detail": "1 pages"
+  },
+  {
+    "name": "precision: frozen total exact",
+    "passed": true,
+    "detail": "9007199254740993.14"
+  },
+  {
+    "name": "precision: frozen line amounts exact",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "precision: Thai invoice heading",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "precision: no missing glyphs",
+    "passed": true,
+    "detail": "0 U+0000 characters"
+  },
+  {
+    "name": "precision: baht currency visible",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "precision: water unit visible",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "precision: revision footer",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "precision: line sum equals total",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "approved sample formula: water",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "approved sample formula: electricity",
+    "passed": true,
+    "detail": ""
+  }
+]

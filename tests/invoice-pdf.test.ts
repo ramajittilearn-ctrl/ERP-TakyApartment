@@ -86,6 +86,15 @@ describe("invoice PDF rendering", () => {
     expect(pdf).toContain("/FontFile2");
   });
 
+  it("encodes Baht and cubic metres with fonts that contain their glyphs", async () => {
+    const pdf = Buffer.from(await renderInvoicePdf(sample)).toString("latin1");
+    // Baht belongs to Unicode Script=Common, but is in the embedded Thai subset.
+    expect(pdf).toContain("<0e3f>");
+    // The packaged Latin subset omits superscript three; WinAnsi Helvetica has it.
+    expect(pdf).toContain("/BaseFont /Helvetica");
+    expect(pdf).toMatch(/\[<b3>\s*[-\d.]*\]\s*TJ/);
+  });
+
   it("renders VOID status without changing snapshot amounts", async () => {
     const bytes = await renderInvoicePdf({
       ...sample,

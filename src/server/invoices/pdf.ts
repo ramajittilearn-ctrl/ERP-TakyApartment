@@ -36,16 +36,22 @@ const PAGE_HEIGHT = 841.89;
 const MARGIN = 46;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 
-type Run = { text: string; thai: boolean };
+type Run = { text: string; font: "Thai" | "Latin" | "Helvetica" };
 
 function runsFor(text: string): Run[] {
   const graphemes = new Intl.Segmenter("th", { granularity: "grapheme" });
   const runs: Run[] = [];
   for (const { segment } of graphemes.segment(text)) {
-    const thai = /\p{Script=Thai}/u.test(segment);
+    // Baht is Script=Common, despite living in the packaged Thai font subset.
+    // Superscript three is absent from both subsets, but exists in WinAnsi Helvetica.
+    const font = /[\p{Script=Thai}\u0e3f]/u.test(segment)
+      ? "Thai"
+      : segment === "³"
+        ? "Helvetica"
+        : "Latin";
     const previous = runs[runs.length - 1];
-    if (previous && previous.thai === thai) previous.text += segment;
-    else runs.push({ text: segment, thai });
+    if (previous && previous.font === font) previous.text += segment;
+    else runs.push({ text: segment, font });
   }
   return runs;
 }
@@ -118,7 +124,7 @@ export async function renderInvoicePdf(
   const measure = (value: string, size: number): number => {
     let width = 0;
     for (const run of runsFor(value)) {
-      doc.font(run.thai ? "Thai" : "Latin").fontSize(size);
+      doc.font(run.font).fontSize(size);
       width += doc.widthOfString(run.text);
     }
     return width;
@@ -132,10 +138,7 @@ export async function renderInvoicePdf(
   ) => {
     let cursor = x;
     for (const run of runsFor(value)) {
-      doc
-        .font(run.thai ? "Thai" : "Latin")
-        .fontSize(size)
-        .fillColor(color);
+      doc.font(run.font).fontSize(size).fillColor(color);
       doc.text(run.text, cursor, top, { lineBreak: false, continued: false });
       cursor += doc.widthOfString(run.text);
     }

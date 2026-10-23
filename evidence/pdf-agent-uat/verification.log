@@ -1,0 +1,40 @@
+PASS issued: A4 pages 1 pages
+PASS issued: frozen total exact 9439.75
+PASS issued: frozen line amounts exact 
+PASS issued: Thai invoice heading 
+FAIL issued: no missing glyphs 7 U+0000 characters
+FAIL issued: baht currency visible 
+FAIL issued: water unit visible 
+PASS issued: revision footer 
+PASS issued: line sum equals total 
+PASS void: A4 pages 1 pages
+PASS void: frozen total exact 9439.75
+PASS void: frozen line amounts exact 
+PASS void: Thai invoice heading 
+FAIL void: no missing glyphs 7 U+0000 characters
+FAIL void: baht currency visible 
+FAIL void: water unit visible 
+PASS void: revision footer 
+PASS void: line sum equals total 
+PASS void: watermark/status/reason 
+PASS long: A4 pages 1 pages
+PASS long: frozen total exact 9439.75
+PASS long: frozen line amounts exact 
+PASS long: Thai invoice heading 
+FAIL long: no missing glyphs 7 U+0000 characters
+FAIL long: baht currency visible 
+FAIL long: water unit visible 
+PASS long: revision footer 
+PASS long: line sum equals total 
+PASS precision: A4 pages 1 pages
+PASS precision: frozen total exact 9007199254740993.14
+PASS precision: frozen line amounts exact 
+PASS precision: Thai invoice heading 
+FAIL precision: no missing glyphs 7 U+0000 characters
+FAIL precision: baht currency visible 
+FAIL precision: water unit visible 
+PASS precision: revision footer 
+PASS precision: line sum equals total 
+PASS approved sample formula: water 
+PASS approved sample formula: electricity 
+27/39 checks passed
