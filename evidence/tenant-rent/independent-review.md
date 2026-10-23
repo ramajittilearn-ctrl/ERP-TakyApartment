@@ -48,5 +48,13 @@ The browser reproduction covers entry before room selection with a zero-default 
 6331cf78f1d73e6b51b8a871f13969bf2a53f2da651d6949f39609c24b141e03  src/features/live/editor.tsx
 1354b023258cd32d4f06f7dc6f0c95780fd96f1ef64983857bb2b87c72885508  src/features/live/tenant-assignment.ts
 d6913b1b225817b32a023ac37b4b12a69948ce7fb6aad022345f4f5253c6b55b  tests/tenant-assignment.test.ts
-99bba77dba4708241c1bda33e8d86ba79d7d50658d299589dc3320d7e961540e  tests/phase2/tenant-rent-persisted.spec.ts
+b79f54a2576bbb56e41ca02156b9767c103cc7292051e752fae568730bbcbb9f  tests/phase2/tenant-rent-persisted.spec.ts
 ```
+
+## Clarified entry order verification
+
+The user clarified that they selected the room first, entered rent last, and then saved. The fourth scenario follows that order. It prepares a fresh synthetic zero-default room, fills the other contract fields, registers a listener for the actual tenant POST, enters `4100.75`, and immediately clicks Save. The test parses the captured request body with Zod and asserts the submitted assignment is exactly `rent: "4100.75"` with the selected room ID. It then checks the selected tenant's profile displays `฿4,100.75` and its saved lease API amount is `"4100.75"` before reload and after reload.
+
+Main Agent ran this case on fresh attested target `05437030b03bd82e05af9eba`. The reviewer independently inspected the raw log at `evidence/agent-uat/tenant-rent-save-last-browser.log` and structured records under `evidence/remediation/browser-05437030b03bd82e05af9eba`. They record one expected pass in 12.4 seconds, zero unexpected/skipped/flaky results, no report errors, and `succeeded: true`. Database identity is `taky_phase2_test` with role `e2e_05437030b03bd82e05af9eba`. The expanded spec independently passes scoped ESLint and Prettier.
+
+This clarified flow is accepted for the tested candidate. It does not establish that the user's deployed UAT version contains the fix, reproduce a distinct defect in the deployed version for this entry order, or recover an amount previously lost. No application code changed for this additional scenario. The earlier baseline overwrite reproduction applies to entering rent before selecting the room, so it must not be misreported as a reproduction of the clarified order.

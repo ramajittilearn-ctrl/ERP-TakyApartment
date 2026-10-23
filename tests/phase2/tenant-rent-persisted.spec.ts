@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { z } from "zod";
 import { test, expect, type APIRequestContext } from "./guarded-test";
 import { browserTestTarget } from "../../src/server/browser-test-target";
 import { db } from "../../src/server/db";
@@ -174,4 +175,71 @@ test("room defaults fill untouched rent while explicit zero survives a room chan
   expect(lease?.roomId).toBe(firstRoom.id);
   await page.getByRole("button", { name: "แก้ไขข้อมูล", exact: true }).click();
   await expect(rent).toHaveValue("0");
+});
+
+test("tenant rent entered after room selection survives immediate save and reload", async ({
+  page,
+}) => {
+  const target = browserTestTarget();
+  expect(
+    await db.$queryRaw`SELECT current_database() AS name, current_user AS role`,
+  ).toEqual([{ name: target.database, role: target.role }]);
+  const suffix = randomUUID().slice(0, 20);
+  const name = `Synthetic normal rent ${suffix}`;
+  const property = await db.property.create({
+    data: {
+      code: `ORDER-${suffix}`,
+      name,
+      address: "Synthetic",
+    },
+  });
+  const floor = await db.floor.create({
+    data: { propertyId: property.id, number: 1, name },
+  });
+  const room = await db.room.create({
+    data: { floorId: floor.id, number: "N101", rent: "0.00" },
+  });
+  await signIn(page.request);
+  await page.goto("/tenants/");
+  await page.getByRole("button", { name: "เพิ่มผู้เช่า", exact: true }).click();
+  await page.getByLabel("ชื่อผู้เช่า", { exact: true }).fill(name);
+  await page.getByLabel("ข้อมูลตัวอย่าง (Demo)").check();
+  await page.getByLabel("กำหนดห้องพัก", { exact: true }).check();
+  await page.getByLabel("ชั้นสำหรับเลือกห้อง").selectOption(floor.id);
+  await page.getByLabel("ห้องพัก", { exact: true }).selectOption(room.id);
+  await page.getByLabel("เลขที่สัญญา", { exact: true }).fill(`ORDER-${suffix}`);
+  await page.getByLabel("วันเริ่มสัญญา", { exact: true }).fill("2026-10-01");
+  await page.getByLabel("วันสิ้นสุดสัญญา", { exact: true }).fill("2027-09-30");
+  const submitted = page.waitForRequest(
+    (request) =>
+      request.method() === "POST" &&
+      new URL(request.url()).pathname === "/api/v1/tenants/",
+  );
+  await page.getByLabel("ค่าเช่าตามสัญญา", { exact: true }).fill("4100.75");
+  await page.getByRole("button", { name: "บันทึกข้อมูล" }).click();
+  const submittedData: unknown = (await submitted).postDataJSON();
+  const payload = z
+    .object({ assignment: z.object({ rent: z.string(), roomId: z.string() }) })
+    .parse(submittedData);
+  expect(payload.assignment).toEqual({ rent: "4100.75", roomId: room.id });
+  await expect(page).toHaveURL(/tenant=[a-f0-9-]+/);
+  const tenantId = new URL(page.url()).searchParams.get("tenant");
+  expect(tenantId).toBeTruthy();
+  await expect(page.locator(".tenant-profile")).toContainText(name);
+  const displayedRent = page
+    .locator(".tenant-profile .detail-grid > div")
+    .filter({ has: page.locator("dt", { hasText: /^ค่าเช่า$/ }) });
+  await expect(displayedRent.locator("dd")).toHaveText("฿4,100.75");
+  const savedLease = (await getLeases(page.request)).find(
+    (lease) => lease.tenantId === tenantId,
+  );
+  expect(savedLease?.rent).toBe("4100.75");
+  expect(savedLease?.roomId).toBe(room.id);
+  await page.reload();
+  await expect(page.locator(".tenant-profile")).toContainText(name);
+  await expect(displayedRent.locator("dd")).toHaveText("฿4,100.75");
+  expect(
+    (await getLeases(page.request)).find((lease) => lease.tenantId === tenantId)
+      ?.rent,
+  ).toBe("4100.75");
 });
