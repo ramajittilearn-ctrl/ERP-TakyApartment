@@ -41,7 +41,7 @@ test("invoice loading, populated ready and recoverable error states remain acces
   const reload = page.getByRole("button", { name: "โหลดข้อมูลใหม่" });
   await expect(reload).toBeDisabled();
   await expect(
-    page.getByRole("status").filter({ hasText: "โหลด" }),
+    page.getByRole("status").filter({ hasText: "กำลังโหลดใบแจ้งหนี้…" }),
   ).toBeVisible();
   const scan = async () => {
     await page.evaluate(() => document.fonts.ready);
