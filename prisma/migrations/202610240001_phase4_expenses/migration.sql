@@ -32,7 +32,7 @@ ALTER TABLE "Expense" ADD CONSTRAINT "Expense_lifecycle_shape" CHECK (
   AND "postedById" IS NULL AND "postedAt" IS NULL AND "cancelledById" IS NULL AND "cancelledAt" IS NULL
   AND "cancelReason" IS NULL AND "reversedById" IS NULL AND "reversedAt" IS NULL AND "reverseReason" IS NULL AND "correctionOfId" IS NULL)
  OR
- (NOT "legacyUnmapped" AND NOT "isDemo" AND status IS NOT NULL AND version IS NOT NULL AND version > 0
+ (NOT "legacyUnmapped" AND NOT "isDemo" AND amount <> 'NaN'::numeric AND status IS NOT NULL AND version IS NOT NULL AND version > 0
   AND vendor IS NOT NULL AND length(btrim(vendor)) > 0 AND method IS NOT NULL
   AND length(btrim(description)) > 0 AND "recordedById" IS NOT NULL
   AND "categoryNameSnapshot" IS NOT NULL AND "categoryKindSnapshot" IS NOT NULL
