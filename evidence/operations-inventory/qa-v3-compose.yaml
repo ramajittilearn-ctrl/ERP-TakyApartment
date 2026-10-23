@@ -1,0 +1,13 @@
+services:
+  inventory:
+    image: taky-inventory-qa-20261023:local
+    pull_policy: never
+    network_mode: none
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - /private/tmp/taky-development/operations:/opt/taky/operations:ro
+      - /private/tmp/taky-development/prisma:/opt/taky/prisma:ro
+    entrypoint: []
+    command: ["node", "/opt/taky/operations/verify-inventory-isolated.mjs"]
+    restart: "no"

@@ -10,6 +10,7 @@ import {
   sha256,
 } from "./archive.mjs";
 import { assertInventory, verifyArchive, withTemp } from "./database.mjs";
+import { inventoryVersion } from "./inventory.mjs";
 import { root, keyFile, selectedFile, records } from "./backup.mjs";
 
 export async function restoreProduction(name) {
@@ -43,6 +44,7 @@ export async function restoreProduction(name) {
   await filesUnder(target);
   await withTemp("production-restore", async (directory) => {
     const set = await unpack(selectedFile(name), key, directory);
+    inventoryVersion(set.manifest.inventory);
     await verifyArchive(selectedFile(name), key);
     await run("pg_restore", [
       "--clean",

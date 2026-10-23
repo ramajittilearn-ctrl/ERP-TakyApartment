@@ -6,11 +6,7 @@ import { createInterface } from "node:readline";
 import assert from "node:assert/strict";
 import { run, copyFiles, filesUnder, unpack } from "./archive.mjs";
 
-import {
-  inventoryVersion,
-  INVENTORY_SQL,
-  LEGACY_INVENTORY_SQL,
-} from "./inventory.mjs";
+import { inventoryVersion, inventorySql } from "./inventory.mjs";
 export { INVENTORY_SQL, LEGACY_INVENTORY_SQL } from "./inventory.mjs";
 export const literal = (value) =>
   value == null ? "NULL" : `'${String(value).replaceAll("'", "''")}'`;
@@ -19,22 +15,15 @@ export function sql(query, env = process.env, version = 1) {
     env: {
       ...env,
       PGOPTIONS:
-        version === 2
+        version >= 2
           ? "-c timezone=UTC -c datestyle=ISO,YMD"
           : "-c timezone=UTC",
     },
   });
 }
-export async function inventory(env = process.env, version = 2) {
-  if (version !== 2 && version !== 1)
-    throw new Error("Unsupported inventory version");
-  return JSON.parse(
-    await sql(
-      version === 2 ? INVENTORY_SQL : LEGACY_INVENTORY_SQL,
-      env,
-      version,
-    ),
-  );
+export async function inventory(env = process.env, version = 3) {
+  const query = inventorySql(version);
+  return JSON.parse(await sql(query, env, version));
 }
 export async function assertInventory(expected, env = process.env) {
   const version = inventoryVersion(expected);
@@ -44,16 +33,23 @@ export async function assertInventory(expected, env = process.env) {
     "Restored database inventory differs from snapshot",
   );
 }
-export async function exportSnapshot() {
+export async function exportSnapshot(version = 3) {
+  const query = inventorySql(version);
   const child = spawn("psql", ["-X", "-v", "ON_ERROR_STOP=1", "-At"], {
-    env: { ...process.env, PGOPTIONS: "-c timezone=UTC -c datestyle=ISO,YMD" },
+    env: {
+      ...process.env,
+      PGOPTIONS:
+        version >= 2
+          ? "-c timezone=UTC -c datestyle=ISO,YMD"
+          : "-c timezone=UTC",
+    },
     stdio: ["pipe", "pipe", "pipe"],
   });
   child.stderr.resume();
   const lines = createInterface({ input: child.stdout });
   const iterator = lines[Symbol.asyncIterator]();
   child.stdin.write(
-    `BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSELECT pg_export_snapshot();\n${INVENTORY_SQL}\n`,
+    `BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSELECT pg_export_snapshot();\n${query}\n`,
   );
   const values = [];
   const timeout = setTimeout(() => child.kill("SIGTERM"), 30000);
@@ -92,6 +88,7 @@ export async function withTemp(prefix, work) {
   }
 }
 export async function verifyDatabase(dump, expected) {
+  inventoryVersion(expected);
   return withTemp("verify", async (directory) => {
     const data = path.join(directory, "data");
     const root = process.getuid() === 0;
@@ -170,6 +167,7 @@ export async function verifyDatabase(dump, expected) {
 export async function verifyArchive(file, key) {
   return withTemp("unpack", async (directory) => {
     const set = await unpack(file, key, directory);
+    inventoryVersion(set.manifest.inventory);
     await verifyDatabase(set.dump, set.manifest.inventory);
     return set.manifest;
   });
@@ -181,17 +179,19 @@ export async function restoreIsolated(file, key, attachmentTarget) {
     process.env.PGDATABASE !== "taky_restore_test"
   )
     throw new Error("Restore requires the isolated Compose database");
-  if (
-    (await sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'")) !==
-    "0"
-  )
-    throw new Error(
-      "Restore database must be empty; existing data will not be overwritten",
-    );
-  if ((await fs.readdir(attachmentTarget)).length)
-    throw new Error("Restore attachment volume must be empty");
   return withTemp("restore", async (directory) => {
     const set = await unpack(file, key, directory);
+    inventoryVersion(set.manifest.inventory);
+    if (
+      (await sql(
+        "SELECT count(*) FROM pg_tables WHERE schemaname='public'",
+      )) !== "0"
+    )
+      throw new Error(
+        "Restore database must be empty; existing data will not be overwritten",
+      );
+    if ((await fs.readdir(attachmentTarget)).length)
+      throw new Error("Restore attachment volume must be empty");
     await run("pg_restore", [
       "--exit-on-error",
       "--no-owner",
