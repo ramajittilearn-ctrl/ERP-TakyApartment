@@ -65,7 +65,9 @@ export const test = base.extend<{ verifiedTarget: void }>({
         redirect: "error",
       });
       if (!response.ok)
-        throw new Error("Browser target health verification failed");
+        throw new Error(
+          `Browser target health verification failed: HTTP ${response.status}`,
+        );
       const body: unknown = await response.json();
       if (!body || typeof body !== "object" || !("target" in body))
         throw new Error(
