@@ -1,41 +1,37 @@
 # Current execution checkpoint
 
-Recorded 2026-10-23T00:07:51.242847+00:00. Main Codex thread 01a164a6-91ca-7913-ad0f-9a5d343652a6.
+Recorded 2026-10-23T06:20:12.830585+00:00. Main thread 01a164a6-91ca-7913-ad0f-9a5d343652a6. User explicitly requests continued Pstack multi-agent work.
 
-## Reviewed integration frontier
+## Integration baseline
 
-Isolated local repository /private/tmp/taky-development, branch codex/project-integration-snapshot. Current HEAD a8678f3. Reviewed commits include c8d0d51 backup destination/heartbeat fixes, fedab5b auth fail-closed regressions, dabba3f versioned restore inventory, a907e8c genuine PostgreSQL inventory verification and a8678f3 HTTPS Secure cookies. Whole ERP is not complete.
+Local independent snapshot repository /private/tmp/taky-development, branch codex/project-integration-snapshot, HEAD0e4e302. This is a complete source snapshot history, not ancestry-preserving integration with the original shared repository. Original dirty checkout and UAT3700/3701 remain untouched. Do not reset, clean, prune, stage original application edits, or promote protected UAT branches.
 
-Evidence: combined operations26/26 before inventory extension; independent later operations31/31; real PostgreSQL inventory harness37 PASS checks with exported snapshot pg_dump/pg_restore, source read-only and network disabled; cookie focused18/18, full unit159/159 in11files and independent security review accepted. These counts belong to their stated revisions/branches, not one universal final gate. No real tenant or production database was used.
+Accepted commits include c8d0d51 backup destination and heartbeat fixes, fedab5b auth regression tests, dabba3f inventoryv2, a907e8c real PostgreSQL inventory proof, a8678f3 Secure HTTPS cookies, 0d395a4 planning/public template, and 0e4e302 payment domain cherry-picked from f77c99d.
 
-## Active payment implementation
+Payment domain independent financial review accepted after real PostgreSQL22/22 and actual legacy migration preservation. Source-only combined snapshot unit tests172/172, typecheck and lint passed. Existing PostgreSQL regression91/91 in7files passed separately on fresh14migration synthetic target. Evidence under evidence/payments. Build process from pre-pause lost its session, so no build pass is claimed. No payment API/UI/receipt rendering yet. Domain development complete; whole Stage3D incomplete.
 
-Exclusive worktree /private/tmp/taky-payment-development, branch codex/payment-domain at b3b0833 plus UNCOMMITTED schema38models, additive payment migration, contracts/domain/service, invoice payment guards and tests. Owner payment_domain_impl. Independent financial reviewer found false receipt relational content and receipt0000 defects; code corrected and statically re-reviewed. Live PG correction/concurrency/rollback evidence still pending. Unit13 and whole branch159/159 in12files passed; validate/typecheck/lint passed. No development-complete claim yet.
+## Active work and ownership
 
-The first pristine QA cluster taky-payments-qa-3a21df0d40 is healthy but has invalid IP:0 host publication; SELECT proves generated expected database/role and0publictables. Preserve it until controlled cleanup. New QA owner payment_db_qa created /private/tmp/taky-payment-qa2 with own private generated credentials, fixed127.0.0.1:55489 and explicit10.253.242.0/28 network. Main attested exact database taky_payment_test_2b5214bd52, role taky_qa_2b5214bd52 and0publictables. Scoped runner prefix approved. Execute FIRST private runner rehearsal, then integration; never full-migrate before the legacy preservation rehearsal. Expected targeted PG suite22cases. Send failures to payment owner, do not reset.
+OPS04 owner restore_v3_impl completed frozen changes in operations/{inventory,database,production-restore,verify-inventory-isolated}.mjs and tests/ops/inventory.test.mjs. Reviewer restore_v3_review found VR01 ineffective v3 snapshot mutation; owner corrected with unique per-version values and live/snapshot hash inequality. Main real attempt1 exited0 but is insufficient for that condition. Main attempt2 now executing, log evidence/operations-inventory/qa-v3-runtime-attempt2.log. Full operations36/36 passed with scoped loopback permission; exact legacy/v2SQL unchanged. Reviewer must verify correction and attempt2 before commit. Runtime image network none, tmpfs data, operations and Prisma read-only mounts, actual13migration old33schema and14migration new38schema.
 
-Resumed pre-cap payment owner has stale collaboration sibling registry; main relays messages to new QA. Agents are not independent silos. Reviewer/implementer exchanged receipt findings, root relays interface and registry dependencies.
+Payment API design docs/project-execution/payment-api-contract.md defines7files/8operations using accepted domain. Reviewer payment_api_design_review requested3clarifications; designer payment_api_architecture corrected and awaits retest. No code writes until acceptance. Then same owner implements only new payment routes/query/route tests, avoiding services/schema/http/UI. Real-session PostgreSQL route verification is required; domain tests do not prove transport.
 
-## Billing UI regression work
+Billing owner billing_ui_remediation uses /private/tmp/taky-billing-remediation worktree based0e4e302. Exact14 billing files imported from idle fabca4d source, plus reviewed-in-progress provisioner/evidence retention changes and tests. Unit172/typecheck/scoped lint/provisioner3 passed. No runtime UI fix or browser pass claimed. Local build is running under owner supervision. Existing browser24/50 blocker remains open. Main verified ports3820/3822/55452 free and all current network subnets nonoverlapping with10.253.243/28, then started private project taky-remediation-browser-b27aeb21dfc049cdbe65001a. Compose .local/remediation-b27aeb21dfc049cdbe65001a-compose.json, generated synthetic creds only. First intended command after build: node scripts/run-remediation-browser.mjs --prepared-run b27aeb21dfc049cdbe65001a --grep '^tenant and lease UI create, update and delete draft$'. Read evidence/billing-remediation/qa-handoff.md first. Runner retains traces/logs and volumes, never git clean.
 
-Concurrent session Implement ERP-TakyApartment F-10 PDF is now idle. Its Billing UI commit fabca4d is clean at /private/tmp/taky-billing-ui, but full browser24/50 remains a blocker despite targeted flow pass and141unit/92integration/build claims. Agent billing_regression_triage investigates read-only. Owner history reveals new browser artifacts were deleted by git clean before commit; do not infer infrastructure-only cause or promote candidate without fresh evidence. Existing protected candidate ce18375 and UAT3700/3701 remain untouched.
+## Synthetic database isolation
 
-## Environment and methodology
+Main exclusively executes database/Docker commands. QA2 project taky-payment-qa2-isolated, config /private/tmp/taky-payment-qa2/compose.yaml, private.env mode0600. Host127.0.0.1 port55489, role taky_qa_2b5214bd52, current database taky_phase2_test. Former payment databases base/r2/r3/r4 preserved; do not reset/drop. Scoped runner /private/tmp/taky-payment-qa2/runner.cjs supports baseline setup/integration and payment rehearsal/integration, attests exact database/role/endpoint, sanitizes credentials and retains immutable logs. Baseline database already migrated/seeded; do not rerun pristine setup. New payment route tests require NEW payment-prefixed database, not this guarded baseline DB.
 
-Pstack installed adapter/playbooks govern work. Cursor-only agent executables/cloud/model routing unavailable; real collaboration agents inherit current model. Every material code unit has separate implementer/reviewer. Owner blanket authorization was recorded in policy-authorization.md; it adopts documented development defaults but does not fabricate legal identity, data mapping, Owner UAT, production recovery or go-live acceptance.
+## Resume and limits
 
-Usage cap stopped one payment turn and an unused secure-cookie agent before writes. User resumed after reset; ordinary usage was allowed. Root resumed payment owner's uncommitted state and replaced the failed cookie agent with a fresh implementation/review pair. No credits/reset purchased.
+Two pauses hit agent usage limits. Latest fresh usage query at resume reports ordinaryUsageAllowed true, primary0%, weekly31%. No credits/reset purchased. Owner user resumed Keep going; Main resumed existing agents and WIP, did not start over. Some direct sibling messages fail with stale registry/thread limits; Main relays findings and verifies results. This is explicit coordination, not isolated contributions.
 
-Original source Git object e13b005 still times out; do not overwrite original dirty checkout or reset/prune other worktrees. Root original application edits and untracked UAT files remain outside our staging. New docs/project-execution in original workspace are our durable records. Local snapshot history is complete but not ancestry-preserving integration with original repo.
+Installed Pstack Codex adapter governs actual agents; Cursor executables/cloud/model-family routing unavailable. Main owns execution records and integration; specialists own bounded code; another reviewer approves material units. Never claim Owner UAT or GoLive acceptance from blanket engineering authorization.
 
-Durable artifacts in original workspace .local/project-orchestration-20261023: verified integration-snapshot.bundle and payment-wip.tar.gz with file list. WIP archive omits dependencies, env and private directories. Refresh after new reviewed commits.
+## Next executable tasks
 
-## Next executable work
-
-1. QA runs legacy migration preservation rehearsal and22payment PG tests on verified new synthetic target. Correct any failures with owner and rerun; independent financial reviewer retests live evidence.
-2. Commit reviewed domain only after database criteria pass. Integrate locally, preserve original repository/UAT.
-3. Add restore registry version3 for38models while preserving frozen version2 and legacy manifests; independent review and actual restore test.
-4. Reproduce/fix Billing UI full-browser failures in an isolated branch/server/database. Do not reuse protected UAT or delete evidence.
-5. Then payment API/UI/receipts, exceptions, deposits, expenses and persisted reports, each with tests/review and explicit release gates.
-
-No production push, deployment, operational migration, Owner UAT acceptance or go-live is claimed.
+1. Finish actual OPS04 attempt2, verify review correction, commit reviewed operations unit.
+2. Verify API design corrections, implement transport, run boundary and actual-session PostgreSQL route tests, independent code review/fix/retest.
+3. Finish Billing build, reproduce three failures separately on fresh synthetic projects, fix proven mechanisms, run combined/full suite, independent review before integration.
+4. Reconcile integration checks, update this checkpoint/backlog, copy owned docs to original workspace, refresh verified snapshot bundle.
+5. Continue payment UI/Thai receipts, deposits, expenses, persisted reports, remaining security/operations, Owner UAT and authorized release steps. No production push, deployment, operational migration, actual recovery certification, UAT acceptance or project completion is claimed.

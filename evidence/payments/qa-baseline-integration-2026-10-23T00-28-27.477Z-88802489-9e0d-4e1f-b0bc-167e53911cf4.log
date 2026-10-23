@@ -1,0 +1,18 @@
+{"verified":true,"database":"taky_phase2_test","role":"taky_qa_2b5214bd52","public_tables":39,"host":"127.0.0.1","port":55489}
+
+ RUN  v4.1.12 /private/tmp/taky-payment-development
+
+
+ Test Files  7 passed (7)
+      Tests  91 passed (91)
+   Start at  07:28:28
+   Duration  31.39s (transform 447ms, setup 0ms, import 1.53s, tests 29.16s, environment 0ms)
+
+(node:97490) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:97554) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:97664) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Command exit: 0; signal: none
+QA outcome: 0
