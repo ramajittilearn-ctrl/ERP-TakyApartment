@@ -1,0 +1,9 @@
+
+ RUN  v4.1.12 /private/tmp/taky-expenses-development
+
+
+ Test Files  2 passed (2)
+      Tests  23 passed (23)
+   Start at  06:11:33
+   Duration  1.02s (transform 317ms, setup 0ms, import 990ms, tests 67ms, environment 0ms)
+

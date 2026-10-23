@@ -1,0 +1,13 @@
+
+> taky-apartment-erp@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.12 /private/tmp/taky-expenses-development
+
+
+ Test Files  17 passed (17)
+      Tests  292 passed (292)
+   Start at  06:17:44
+   Duration  6.58s (transform 7.85s, setup 0ms, import 16.82s, tests 4.76s, environment 2ms)
+
