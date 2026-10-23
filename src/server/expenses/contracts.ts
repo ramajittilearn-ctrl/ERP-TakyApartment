@@ -36,8 +36,8 @@ export const createExpenseInput = z.strictObject({
     .string()
     .trim()
     .max(500)
-    .transform((v) => v || null)
-    .nullish(),
+    .nullish()
+    .transform((v) => v || null),
   correctionOfId: expenseId.optional(),
   commandKey,
 });
