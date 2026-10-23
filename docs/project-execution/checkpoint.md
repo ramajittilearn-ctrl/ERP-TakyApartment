@@ -1,25 +1,41 @@
-# Execution checkpoint
+# Current execution checkpoint
 
-Orchestrator /root in Codex thread 01a164a6-91ca-7913-ad0f-9a5d343652a6. Date 2026-10-23 Asia/Bangkok.
+Recorded 2026-10-23T00:07:51.242847+00:00. Main Codex thread 01a164a6-91ca-7913-ad0f-9a5d343652a6.
 
-Original checkout remains codex/stage-3c-billing-invoice 0530edd with existing next-env.d.ts, globals.css, auth/login.tsx edits and untracked UAT docs/fixtures. Do not stage these.
+## Reviewed integration frontier
 
-UAT ports 3700 and 3701 were observed listening through Docker. No UAT database or environment was accessed.
+Isolated local repository /private/tmp/taky-development, branch codex/project-integration-snapshot. Current HEAD a8678f3. Reviewed commits include c8d0d51 backup destination/heartbeat fixes, fedab5b auth fail-closed regressions, dabba3f versioned restore inventory, a907e8c genuine PostgreSQL inventory verification and a8678f3 HTTPS Secure cookies. Whole ERP is not complete.
 
-Existing committed chain includes Stage3C4 701acf8, audit remediation 78f6269 and invoice PDF e13b005. Billing UI worktree is dirty and owned by active session Implement ERP-TakyApartment F-10 PDF. Candidate branch ce18375 must remain unchanged. Security branch 134d7b1 is documentation only; open ingress/capacity gate. Stage3D design is five untracked documents in stage-3d-design-3c.
+Evidence: combined operations26/26 before inventory extension; independent later operations31/31; real PostgreSQL inventory harness37 PASS checks with exported snapshot pg_dump/pg_restore, source read-only and network disabled; cookie focused18/18, full unit159/159 in11files and independent security review accepted. These counts belong to their stated revisions/branches, not one universal final gate. No real tenant or production database was used.
 
-Attempted original Git worktree /private/tmp/taky-project-integration branch codex/project-integration from e13b005. Git worktree process47432 stalled; main terminated only that process. It exited143 with partial checkout errors, and the worktree needs explicit recovery before use. Even git cat-file -t e13b005 timed out; git rev-parse e13b005 succeeded. Do not delete lockfiles or mutate objects. Reconcile process and worktree before reuse.
+## Active payment implementation
 
-Fallback snapshot /private/tmp/taky-development copied readable F10 source, excluding .git, .env*, .local, .next, node_modules contents, test runtime results and evidence. node_modules is a read-only-use symlink to source. It is not yet an ancestry-preserving integration.
+Exclusive worktree /private/tmp/taky-payment-development, branch codex/payment-domain at b3b0833 plus UNCOMMITTED schema38models, additive payment migration, contracts/domain/service, invoice payment guards and tests. Owner payment_domain_impl. Independent financial reviewer found false receipt relational content and receipt0000 defects; code corrected and statically re-reviewed. Live PG correction/concurrency/rollback evidence still pending. Unit13 and whole branch159/159 in12files passed; validate/typecheck/lint passed. No development-complete claim yet.
 
-Agents completed read-only architecture_inventory, security_review and operations_design. backup_fix and heartbeat_fix produced fixes in dedicated staging paths. Main froze/integrated both filesets, independently ran combined26/26 operations tests and targeted lint with exit0. Both workers were interrupted after integration to free constrained slots; main absorbed their final reporting. ops_independent_review accepted code with independent25/25 targeted tests and no blocking defect. See evidence/operations-fixes/independent-review.md. Local snapshot baseline commit4ad8652; reviewed fix commit follows. restore_inventory_impl owns OPS-03 files, auth_failure_regressions owns new auth tests. Next: commit reviewed OPS-01/02, finish OPS-03 and authentication tests, independently review/correct/retest, then recover original ancestry integration when available.
+The first pristine QA cluster taky-payments-qa-3a21df0d40 is healthy but has invalid IP:0 host publication; SELECT proves generated expected database/role and0publictables. Preserve it until controlled cleanup. New QA owner payment_db_qa created /private/tmp/taky-payment-qa2 with own private generated credentials, fixed127.0.0.1:55489 and explicit10.253.242.0/28 network. Main attested exact database taky_payment_test_2b5214bd52, role taky_qa_2b5214bd52 and0publictables. Scoped runner prefix approved. Execute FIRST private runner rehearsal, then integration; never full-migrate before the legacy preservation rehearsal. Expected targeted PG suite22cases. Send failures to payment owner, do not reset.
 
-Completion predicate: each implemented unit has behavioral tests, independent review, corrected findings, local commit and evidence. Whole ERP remains incomplete until approved finance modules, Owner UAT, production commissioning and authorized go-live.
+Resumed pre-cap payment owner has stale collaboration sibling registry; main relays messages to new QA. Agents are not independent silos. Reviewer/implementer exchanged receipt findings, root relays interface and registry dependencies.
 
-## Latest verified frontier
+## Billing UI regression work
 
-Local snapshot commit c8d0d51 contains reviewed OPS-01/OPS-02, combined operations26/26, targeted lint, independent25/25 review. Bundle verified successfully at original workspace .local/project-orchestration-20261023/integration-snapshot.bundle. It contains complete snapshot history; it is not original-repository ancestry. ops-reviewed.patch is available beside it.
+Concurrent session Implement ERP-TakyApartment F-10 PDF is now idle. Its Billing UI commit fabca4d is clean at /private/tmp/taky-billing-ui, but full browser24/50 remains a blocker despite targeted flow pass and141unit/92integration/build claims. Agent billing_regression_triage investigates read-only. Owner history reveals new browser artifacts were deleted by git clean before commit; do not infer infrastructure-only cause or promote candidate without fresh evidence. Existing protected candidate ce18375 and UAT3700/3701 remain untouched.
 
-Later user blanket approval was explicitly interpreted and disclosed as adoption of the recorded Stage3D recommended defaults for development. Original preserved design files retain historical unapproved status. stage3d_contract prepares current contract/authorization record. Missing legal/evidence configuration, actual target mapping, Owner UAT and production readiness are not certified by that authorization.
+## Environment and methodology
 
-AUTH-01 frozen and independently accepted. Full npm test146/146 in11files passed. No production auth logic changed. Evidence under evidence/auth-regressions. Stage3D design review ongoing; OPS03 implementation status requested due absent files and possible infrastructure delay.
+Pstack installed adapter/playbooks govern work. Cursor-only agent executables/cloud/model routing unavailable; real collaboration agents inherit current model. Every material code unit has separate implementer/reviewer. Owner blanket authorization was recorded in policy-authorization.md; it adopts documented development defaults but does not fabricate legal identity, data mapping, Owner UAT, production recovery or go-live acceptance.
+
+Usage cap stopped one payment turn and an unused secure-cookie agent before writes. User resumed after reset; ordinary usage was allowed. Root resumed payment owner's uncommitted state and replaced the failed cookie agent with a fresh implementation/review pair. No credits/reset purchased.
+
+Original source Git object e13b005 still times out; do not overwrite original dirty checkout or reset/prune other worktrees. Root original application edits and untracked UAT files remain outside our staging. New docs/project-execution in original workspace are our durable records. Local snapshot history is complete but not ancestry-preserving integration with original repo.
+
+Durable artifacts in original workspace .local/project-orchestration-20261023: verified integration-snapshot.bundle and payment-wip.tar.gz with file list. WIP archive omits dependencies, env and private directories. Refresh after new reviewed commits.
+
+## Next executable work
+
+1. QA runs legacy migration preservation rehearsal and22payment PG tests on verified new synthetic target. Correct any failures with owner and rerun; independent financial reviewer retests live evidence.
+2. Commit reviewed domain only after database criteria pass. Integrate locally, preserve original repository/UAT.
+3. Add restore registry version3 for38models while preserving frozen version2 and legacy manifests; independent review and actual restore test.
+4. Reproduce/fix Billing UI full-browser failures in an isolated branch/server/database. Do not reuse protected UAT or delete evidence.
+5. Then payment API/UI/receipts, exceptions, deposits, expenses and persisted reports, each with tests/review and explicit release gates.
+
+No production push, deployment, operational migration, Owner UAT acceptance or go-live is claimed.
