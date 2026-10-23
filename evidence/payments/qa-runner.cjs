@@ -3,12 +3,14 @@ const { createRequire } = require('node:module');
 const { spawnSync } = require('node:child_process');
 const { randomUUID } = require('node:crypto');
 const base = '/private/tmp/taky-payment-qa2';
-const root = '/private/tmp/taky-payment-development';
 const mode = process.argv[2] || 'preflight';
+const root = mode.startsWith('routes-') ? '/private/tmp/taky-development' : '/private/tmp/taky-payment-development';
 const permitted = {
   preflight: null,
   rehearsal: ['node_modules/.bin/tsx', 'tests/integration/payments-migration-rehearsal.ts'],
   integration: ['node_modules/.bin/vitest', 'run', '--config', 'vitest.integration.config.ts', 'tests/integration/payments.test.ts'],
+  'routes-setup': ['node_modules/.bin/prisma', 'migrate', 'deploy'],
+  'routes-integration': ['node_modules/.bin/vitest', 'run', '--config', 'vitest.integration.config.ts', 'tests/integration/payment-routes.test.ts'],
   'baseline-setup': null,
   'baseline-integration': ['node_modules/.bin/vitest', 'run', '--config', 'vitest.integration.config.ts', '--exclude', 'tests/integration/payments.test.ts'],
 };
@@ -36,6 +38,7 @@ function record(value) { output += clean(value); }
   const url = new URL(privateEnv.DATABASE_URL);
   if (url.hostname !== identity.host || Number(url.port || 5432) !== Number(identity.port)) throw new Error('Synthetic database endpoint mismatch');
   const baseline = mode.startsWith('baseline-');
+  if (mode.startsWith('routes-') && (!/^taky_payment_test_[a-z0-9_]+$/.test(identity.database) || url.pathname !== '/' + identity.database || url.search)) throw new Error('Routes require an attested isolated payment database');
   if (baseline && (identity.database !== 'taky_phase2_test' || url.pathname !== '/taky_phase2_test' || url.search)) throw new Error('Baseline requires exact isolated database taky_phase2_test');
   if (mode === 'baseline-setup') {
     for (const key of ['SESSION_SECRET', 'TEST_ADMIN_PASSWORD', 'TEST_STAFF_PASSWORD']) {
@@ -51,7 +54,7 @@ function record(value) { output += clean(value); }
   } finally { await client.end(); }
   if (response.rows[0].database !== identity.database || response.rows[0].role !== identity.role) throw new Error('Synthetic database identity mismatch');
   record(JSON.stringify({ verified: true, ...response.rows[0], host: identity.host, port: identity.port }) + '\n');
-  if ((mode === 'rehearsal' || mode === 'baseline-setup') && response.rows[0].public_tables !== 0) throw new Error('Setup/rehearsal requires pristine database');
+  if ((mode === 'rehearsal' || mode === 'baseline-setup' || mode === 'routes-setup') && response.rows[0].public_tables !== 0) throw new Error('Setup/rehearsal requires pristine database');
   if (mode === 'preflight') return;
   const env = { ...process.env, ...privateEnv, DOTENV_CONFIG_PATH: '/dev/null' };
   if (mode === 'baseline-setup') {
