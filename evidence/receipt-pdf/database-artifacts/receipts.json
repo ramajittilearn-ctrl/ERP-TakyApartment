@@ -1,0 +1,116 @@
+{
+  "before": {
+    "id": "eaae829d-706c-4d70-b7bf-d2895707aa17",
+    "number": "REC-202610-0003",
+    "paymentId": "4cff9825-65a3-4cdd-a6ef-70ba9c3074c2",
+    "fingerprint": "511b9b9afd2455c58c4bd1620971b5af8bb726e7bbae4574a8119204fbd8431c",
+    "snapshot": {
+      "schemaVersion": "receipt.v1",
+      "paymentId": "4cff9825-65a3-4cdd-a6ef-70ba9c3074c2",
+      "reference": "PAY-0e36768d-ca7c-4ece-8bfe-7c904730f474",
+      "amount": "0.30",
+      "method": "BANK_TRANSFER",
+      "receivedAt": "2026-10-22T18:01:02.000Z",
+      "externalReference": "SYNTHETIC-9f02d67c-cea0-40c3-8586-935c1a46f2f6",
+      "issuedAt": "2026-10-23T23:05:01.619Z",
+      "issuedBy": {
+        "id": "d7f7d0be-e390-406b-b042-750bf9d8daa0",
+        "name": "Synthetic PDF ADMIN"
+      },
+      "number": "REC-202610-0003",
+      "invoices": [
+        {
+          "invoiceId": "5d9a6708-e9f7-4be0-8952-90e2f73d2206",
+          "number": "INV-202602-0002",
+          "frozenLeaseId": "0c92eb2e-b419-44b7-a38b-6795f5375abc",
+          "frozenTenantId": "7fbb516b-55d9-4c6b-8ca4-b0963cc515c6",
+          "labels": {
+            "property": "ที่พักสมมติ / Frozen synthetic property",
+            "propertyAddress": "Frozen synthetic address",
+            "room": "PDF-101",
+            "tenant": "ผู้เช่าสมมติ / Frozen synthetic tenant",
+            "leaseNumber": "PDF-b39c71cc-68ea-408e-aaa7-92e4107c5ba2"
+          },
+          "finalTotal": "1040.00",
+          "allocatedAmount": "0.10"
+        },
+        {
+          "invoiceId": "f2eceb94-b041-4e43-861c-54420cd391b9",
+          "number": "INV-202603-0001",
+          "frozenLeaseId": "95b45d1e-e2ec-4165-844b-d693fd38ac35",
+          "frozenTenantId": "7fbb516b-55d9-4c6b-8ca4-b0963cc515c6",
+          "labels": {
+            "property": "ที่พักสมมติ / Frozen synthetic property",
+            "propertyAddress": "Frozen synthetic address",
+            "room": "PDF-101",
+            "tenant": "ผู้เช่าสมมติ / Frozen synthetic tenant",
+            "leaseNumber": "PDF-b39c71cc-68ea-408e-aaa7-92e4107c5ba2"
+          },
+          "finalTotal": "1040.00",
+          "allocatedAmount": "0.20"
+        }
+      ]
+    },
+    "cancellation": null
+  },
+  "after": {
+    "id": "eaae829d-706c-4d70-b7bf-d2895707aa17",
+    "number": "REC-202610-0003",
+    "paymentId": "4cff9825-65a3-4cdd-a6ef-70ba9c3074c2",
+    "fingerprint": "511b9b9afd2455c58c4bd1620971b5af8bb726e7bbae4574a8119204fbd8431c",
+    "snapshot": {
+      "schemaVersion": "receipt.v1",
+      "paymentId": "4cff9825-65a3-4cdd-a6ef-70ba9c3074c2",
+      "reference": "PAY-0e36768d-ca7c-4ece-8bfe-7c904730f474",
+      "amount": "0.30",
+      "method": "BANK_TRANSFER",
+      "receivedAt": "2026-10-22T18:01:02.000Z",
+      "externalReference": "SYNTHETIC-9f02d67c-cea0-40c3-8586-935c1a46f2f6",
+      "issuedAt": "2026-10-23T23:05:01.619Z",
+      "issuedBy": {
+        "id": "d7f7d0be-e390-406b-b042-750bf9d8daa0",
+        "name": "Synthetic PDF ADMIN"
+      },
+      "number": "REC-202610-0003",
+      "invoices": [
+        {
+          "invoiceId": "5d9a6708-e9f7-4be0-8952-90e2f73d2206",
+          "number": "INV-202602-0002",
+          "frozenLeaseId": "0c92eb2e-b419-44b7-a38b-6795f5375abc",
+          "frozenTenantId": "7fbb516b-55d9-4c6b-8ca4-b0963cc515c6",
+          "labels": {
+            "property": "ที่พักสมมติ / Frozen synthetic property",
+            "propertyAddress": "Frozen synthetic address",
+            "room": "PDF-101",
+            "tenant": "ผู้เช่าสมมติ / Frozen synthetic tenant",
+            "leaseNumber": "PDF-b39c71cc-68ea-408e-aaa7-92e4107c5ba2"
+          },
+          "finalTotal": "1040.00",
+          "allocatedAmount": "0.10"
+        },
+        {
+          "invoiceId": "f2eceb94-b041-4e43-861c-54420cd391b9",
+          "number": "INV-202603-0001",
+          "frozenLeaseId": "95b45d1e-e2ec-4165-844b-d693fd38ac35",
+          "frozenTenantId": "7fbb516b-55d9-4c6b-8ca4-b0963cc515c6",
+          "labels": {
+            "property": "ที่พักสมมติ / Frozen synthetic property",
+            "propertyAddress": "Frozen synthetic address",
+            "room": "PDF-101",
+            "tenant": "ผู้เช่าสมมติ / Frozen synthetic tenant",
+            "leaseNumber": "PDF-b39c71cc-68ea-408e-aaa7-92e4107c5ba2"
+          },
+          "finalTotal": "1040.00",
+          "allocatedAmount": "0.20"
+        }
+      ]
+    },
+    "cancellation": {
+      "id": "cbcf788a-3a99-4a36-a998-e9da3a263c08",
+      "reversalId": "ec291712-74e1-4ea9-ab59-82fae21bc5f8",
+      "reason": "Synthetic PDF cancellation",
+      "actorId": "d7f7d0be-e390-406b-b042-750bf9d8daa0",
+      "createdAt": "2026-10-23T23:05:04.539Z"
+    }
+  }
+}

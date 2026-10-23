@@ -1,0 +1,17 @@
+{"verified":true,"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","project":"taky-payment-qa2-isolated","host":"127.0.0.1","port":55489,"mode":"integration"}
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.12 [39m[90m/private/tmp/taky-receipt-pdf[39m
+
+ [32m✓[39m tests/integration/receipt-pdf.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 19044[2mms[22m[39m
+     [33m[2m✓[22m[39m exports frozen receipt facts and separately appends reversal cancellation without read mutations [33m 2994[2mms[22m[39m
+     [33m[2m✓[22m[39m enforces real session expiry and disabled user, while an ADMIN demoted to STAFF retains allowed read access [33m 1039[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m   Start at [22m 06:04:44
+[2m   Duration [22m 21.83s[2m (transform 833ms, setup 0ms, import 2.12s, tests 19.04s, environment 0ms)[22m
+
+(node:42132) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Command exit: 0; signal: none
+QA outcome: 0

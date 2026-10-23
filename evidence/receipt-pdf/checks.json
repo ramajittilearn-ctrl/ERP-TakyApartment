@@ -1,0 +1,372 @@
+[
+  {
+    "name": "normal: A4",
+    "passed": true,
+    "detail": "1"
+  },
+  {
+    "name": "normal: exact received amount",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: exact allocations and original invoice totals",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: allocation sum",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: all original invoice numbers",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: snapshot number on every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: operator and bank reference",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: frozen receipt timestamps in Bangkok",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: fingerprint",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: no missing glyphs",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: actual Baht and superscript-three glyph",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: record notice every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: page numbering",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "normal: no false cancellation",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: A4",
+    "passed": true,
+    "detail": "1"
+  },
+  {
+    "name": "cancelled: exact received amount",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: exact allocations and original invoice totals",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: allocation sum",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: all original invoice numbers",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: snapshot number on every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: operator and bank reference",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: frozen receipt timestamps in Bangkok",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: fingerprint",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: no missing glyphs",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: actual Baht and superscript-three glyph",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: record notice every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: page numbering",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: cancellation every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancelled: cancellation provenance",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: A4",
+    "passed": true,
+    "detail": "3"
+  },
+  {
+    "name": "long: exact received amount",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: exact allocations and original invoice totals",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: allocation sum",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: all original invoice numbers",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: snapshot number on every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: operator and bank reference",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: frozen receipt timestamps in Bangkok",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: fingerprint",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: no missing glyphs",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: actual Baht and superscript-three glyph",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: record notice every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: page numbering",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: cancellation every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: cancellation provenance",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "long: full oversized blocks retained",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: A4",
+    "passed": true,
+    "detail": "19"
+  },
+  {
+    "name": "hundred: exact received amount",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: exact allocations and original invoice totals",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: allocation sum",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: all original invoice numbers",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: snapshot number on every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: operator and bank reference",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: frozen receipt timestamps in Bangkok",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: fingerprint",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: no missing glyphs",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: actual Baht and superscript-three glyph",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: record notice every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: page numbering",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: no false cancellation",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "hundred: continuation table heading",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: A4",
+    "passed": true,
+    "detail": "1"
+  },
+  {
+    "name": "maximum: exact received amount",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: exact allocations and original invoice totals",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: allocation sum",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: all original invoice numbers",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: snapshot number on every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: operator and bank reference",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: frozen receipt timestamps in Bangkok",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: fingerprint",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: no missing glyphs",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: actual Baht and superscript-three glyph",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: record notice every page",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: page numbering",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "maximum: no false cancellation",
+    "passed": true,
+    "detail": ""
+  }
+]

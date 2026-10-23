@@ -1,0 +1,806 @@
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+เลขอ้างอิงรับชำระ / Payment reference: PAY-SYNTHETIC-RECORD
+ยอดรับชำระ / Received amount: ฿100.00
+วิธีชำระ / Method: โอนเงิน / Bank transfer
+เลขอ้างอิงธนาคาร / Bank reference: SYNTHETIC-BANK-REFERENCE
+เวลารับชำระ / Received (Bangkok): 23/10/2026 01:01:02
+เวลาออก / Issued (Bangkok): 23/10/2026 01:05:06
+ผู้บันทึกออกเอกสาร / Issuing operator: เจ้าหน้าที่ สมมติ / Synthetic operator
+Operator ID: 00000000-0000-4000-8000-000000000002
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+INV-SYNTHETIC-001 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-002 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-003 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-004 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-005 ฿1,000.10 ฿1.00
+หน้า / Page 1 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-006 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-007 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-008 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-009 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-010 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+หน้า / Page 2 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-011 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-012 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-013 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-014 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-015 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-016 ฿1,000.10 ฿1.00
+หน้า / Page 3 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-017 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-018 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-019 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-020 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-021 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+หน้า / Page 4 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-022 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-023 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-024 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-025 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-026 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-027 ฿1,000.10 ฿1.00
+หน้า / Page 5 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-028 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-029 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-030 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-031 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-032 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+หน้า / Page 6 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-033 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-034 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-035 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-036 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-037 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-038 ฿1,000.10 ฿1.00
+หน้า / Page 7 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-039 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-040 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-041 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-042 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-043 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+หน้า / Page 8 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-044 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-045 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-046 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-047 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-048 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-049 ฿1,000.10 ฿1.00
+หน้า / Page 9 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-050 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-051 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-052 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-053 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-054 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+หน้า / Page 10 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-055 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-056 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-057 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-058 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-059 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-060 ฿1,000.10 ฿1.00
+หน้า / Page 11 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-061 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-062 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-063 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-064 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-065 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+หน้า / Page 12 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-066 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-067 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-068 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-069 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-070 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-071 ฿1,000.10 ฿1.00
+หน้า / Page 13 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-072 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-073 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-074 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-075 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-076 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+หน้า / Page 14 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-077 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-078 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-079 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-080 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-081 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-082 ฿1,000.10 ฿1.00
+หน้า / Page 15 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-083 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-084 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-085 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-086 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-087 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+หน้า / Page 16 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-088 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-089 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-090 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-091 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-092 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-093 ฿1,000.10 ฿1.00
+หน้า / Page 17 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-094 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-095 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-096 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-097 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-098 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+หน้า / Page 18 / 19
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-099 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-100 ฿1,000.10 ฿1.00
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+ยอดรับชำระเดิม / Original received amount: ฿100.00
+Snapshot SHA-256: 9a3c64648b1d239c8a8f224ff37b2fb44d691f1cc1b24745ba0c4173ab765814
+Payment ID: 00000000-0000-4000-8000-000000000001
+หน้า / Page 19 / 19

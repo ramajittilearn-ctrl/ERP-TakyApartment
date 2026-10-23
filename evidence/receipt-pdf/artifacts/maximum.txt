@@ -1,0 +1,23 @@
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+เลขอ้างอิงรับชำระ / Payment reference: PAY-SYNTHETIC-RECORD
+ยอดรับชำระ / Received amount: ฿999,999,999,999.99
+วิธีชำระ / Method: โอนเงิน / Bank transfer
+เลขอ้างอิงธนาคาร / Bank reference: SYNTHETIC-BANK-REFERENCE
+เวลารับชำระ / Received (Bangkok): 23/10/2026 01:01:02
+เวลาออก / Issued (Bangkok): 23/10/2026 01:05:06
+ผู้บันทึกออกเอกสาร / Issuing operator: เจ้าหน้าที่ สมมติ / Synthetic operator
+Operator ID: 00000000-0000-4000-8000-000000000002
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+INV-SYNTHETIC-1 ฿999,999,999,999.99 ฿999,999,999,999.99
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+ยอดรับชำระเดิม / Original received amount: ฿999,999,999,999.99
+Snapshot SHA-256: 05b10359443e83e8b606ad355ba836cc20adc2dbbfff871166d21b9140b5716e
+Payment ID: 00000000-0000-4000-8000-000000000001
+หน้า / Page 1 / 1

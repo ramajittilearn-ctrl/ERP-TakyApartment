@@ -1,0 +1,75 @@
+PASS normal: A4 1
+PASS normal: exact received amount 
+PASS normal: exact allocations and original invoice totals 
+PASS normal: allocation sum 
+PASS normal: all original invoice numbers 
+PASS normal: snapshot number on every page 
+PASS normal: operator and bank reference 
+PASS normal: frozen receipt timestamps in Bangkok 
+PASS normal: fingerprint 
+PASS normal: no missing glyphs 
+PASS normal: actual Baht and superscript-three glyph 
+PASS normal: record notice every page 
+PASS normal: page numbering 
+PASS normal: no false cancellation 
+PASS cancelled: A4 1
+PASS cancelled: exact received amount 
+PASS cancelled: exact allocations and original invoice totals 
+PASS cancelled: allocation sum 
+PASS cancelled: all original invoice numbers 
+PASS cancelled: snapshot number on every page 
+PASS cancelled: operator and bank reference 
+PASS cancelled: frozen receipt timestamps in Bangkok 
+PASS cancelled: fingerprint 
+PASS cancelled: no missing glyphs 
+PASS cancelled: actual Baht and superscript-three glyph 
+PASS cancelled: record notice every page 
+PASS cancelled: page numbering 
+PASS cancelled: cancellation every page 
+PASS cancelled: cancellation provenance 
+PASS long: A4 3
+PASS long: exact received amount 
+PASS long: exact allocations and original invoice totals 
+PASS long: allocation sum 
+PASS long: all original invoice numbers 
+PASS long: snapshot number on every page 
+PASS long: operator and bank reference 
+PASS long: frozen receipt timestamps in Bangkok 
+PASS long: fingerprint 
+PASS long: no missing glyphs 
+PASS long: actual Baht and superscript-three glyph 
+PASS long: record notice every page 
+PASS long: page numbering 
+PASS long: cancellation every page 
+PASS long: cancellation provenance 
+PASS long: full oversized blocks retained 
+PASS hundred: A4 19
+PASS hundred: exact received amount 
+PASS hundred: exact allocations and original invoice totals 
+PASS hundred: allocation sum 
+PASS hundred: all original invoice numbers 
+PASS hundred: snapshot number on every page 
+PASS hundred: operator and bank reference 
+PASS hundred: frozen receipt timestamps in Bangkok 
+PASS hundred: fingerprint 
+PASS hundred: no missing glyphs 
+PASS hundred: actual Baht and superscript-three glyph 
+PASS hundred: record notice every page 
+PASS hundred: page numbering 
+PASS hundred: no false cancellation 
+PASS hundred: continuation table heading 
+PASS maximum: A4 1
+PASS maximum: exact received amount 
+PASS maximum: exact allocations and original invoice totals 
+PASS maximum: allocation sum 
+PASS maximum: all original invoice numbers 
+PASS maximum: snapshot number on every page 
+PASS maximum: operator and bank reference 
+PASS maximum: frozen receipt timestamps in Bangkok 
+PASS maximum: fingerprint 
+PASS maximum: no missing glyphs 
+PASS maximum: actual Baht and superscript-three glyph 
+PASS maximum: record notice every page 
+PASS maximum: page numbering 
+PASS maximum: no false cancellation 
+74/74 checks passed

@@ -1,0 +1,13 @@
+
+> taky-apartment-erp@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.12 /private/tmp/taky-receipt-pdf
+
+
+ Test Files  17 passed (17)
+      Tests  289 passed (289)
+   Start at  23:28:52
+   Duration  8.32s (transform 4.68s, setup 0ms, import 14.95s, tests 12.95s, environment 1ms)
+

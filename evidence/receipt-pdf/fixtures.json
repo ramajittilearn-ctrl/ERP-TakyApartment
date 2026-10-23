@@ -1,0 +1,1739 @@
+{
+  "normal": {
+    "id": "00000000-0000-4000-8000-000000000005",
+    "number": "REC-202610-0042",
+    "paymentId": "00000000-0000-4000-8000-000000000001",
+    "fingerprint": "810c4bbe83b17a06a13afd523093eead93b567c05d90564f2a17f8fb364b90e7",
+    "snapshot": {
+      "schemaVersion": "receipt.v1",
+      "paymentId": "00000000-0000-4000-8000-000000000001",
+      "reference": "PAY-SYNTHETIC-RECORD",
+      "amount": "0.30",
+      "method": "BANK_TRANSFER",
+      "receivedAt": "2026-10-22T18:01:02.000Z",
+      "externalReference": "SYNTHETIC-BANK-REFERENCE",
+      "issuedAt": "2026-10-22T18:05:06.000Z",
+      "issuedBy": {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "name": "เจ้าหน้าที่ สมมติ / Synthetic operator"
+      },
+      "number": "REC-202610-0042",
+      "invoices": [
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000011",
+          "number": "INV-SYNTHETIC-1",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "0.10"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000012",
+          "number": "INV-SYNTHETIC-2",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-202",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "2000.20",
+          "allocatedAmount": "0.20"
+        }
+      ]
+    },
+    "cancellation": null
+  },
+  "cancelled": {
+    "id": "00000000-0000-4000-8000-000000000005",
+    "number": "REC-202610-0042",
+    "paymentId": "00000000-0000-4000-8000-000000000001",
+    "fingerprint": "810c4bbe83b17a06a13afd523093eead93b567c05d90564f2a17f8fb364b90e7",
+    "snapshot": {
+      "schemaVersion": "receipt.v1",
+      "paymentId": "00000000-0000-4000-8000-000000000001",
+      "reference": "PAY-SYNTHETIC-RECORD",
+      "amount": "0.30",
+      "method": "BANK_TRANSFER",
+      "receivedAt": "2026-10-22T18:01:02.000Z",
+      "externalReference": "SYNTHETIC-BANK-REFERENCE",
+      "issuedAt": "2026-10-22T18:05:06.000Z",
+      "issuedBy": {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "name": "เจ้าหน้าที่ สมมติ / Synthetic operator"
+      },
+      "number": "REC-202610-0042",
+      "invoices": [
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000011",
+          "number": "INV-SYNTHETIC-1",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "0.10"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000012",
+          "number": "INV-SYNTHETIC-2",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-202",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "2000.20",
+          "allocatedAmount": "0.20"
+        }
+      ]
+    },
+    "cancellation": {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "reversalId": "00000000-0000-4000-8000-000000000007",
+      "actorId": "00000000-0000-4000-8000-000000000008",
+      "createdAt": "2026-10-23T19:01:02.000Z",
+      "reason": "ยกเลิกรายการสมมติ / Synthetic reversal reason"
+    }
+  },
+  "long": {
+    "id": "00000000-0000-4000-8000-000000000005",
+    "number": "REC-202610-0042",
+    "paymentId": "00000000-0000-4000-8000-000000000001",
+    "fingerprint": "401501a0b1d7a05a1a9fcf7285f4d74cfaa54cc7403a12bcc79ebf8132cd57a4",
+    "snapshot": {
+      "schemaVersion": "receipt.v1",
+      "paymentId": "00000000-0000-4000-8000-000000000001",
+      "reference": "PAY-SYNTHETIC-RECORD",
+      "amount": "0.30",
+      "method": "BANK_TRANSFER",
+      "receivedAt": "2026-10-22T18:01:02.000Z",
+      "externalReference": "SYNTHETIC-BANK-REFERENCE",
+      "issuedAt": "2026-10-22T18:05:06.000Z",
+      "issuedBy": {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "name": "เจ้าหน้าที่ สมมติ / Synthetic operator"
+      },
+      "number": "REC-202610-0042",
+      "invoices": [
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000011",
+          "number": "INV-SYNTHETIC-1",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ ที่อยู่สมมติสำหรับทดสอบการตัดบรรทัดและแบ่งหน้ากระดาษ  ADDRESS-END",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติผู้เช่าสมมติ TENANT-END",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "0.10"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000012",
+          "number": "INV-SYNTHETIC-2",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-202",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "2000.20",
+          "allocatedAmount": "0.20"
+        }
+      ]
+    },
+    "cancellation": {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "reversalId": "00000000-0000-4000-8000-000000000007",
+      "actorId": "00000000-0000-4000-8000-000000000008",
+      "createdAt": "2026-10-23T19:01:02.000Z",
+      "reason": "เหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติเหตุผลสมมติ REASON-END"
+    }
+  },
+  "hundred": {
+    "id": "00000000-0000-4000-8000-000000000005",
+    "number": "REC-202610-0042",
+    "paymentId": "00000000-0000-4000-8000-000000000001",
+    "fingerprint": "9a3c64648b1d239c8a8f224ff37b2fb44d691f1cc1b24745ba0c4173ab765814",
+    "snapshot": {
+      "schemaVersion": "receipt.v1",
+      "paymentId": "00000000-0000-4000-8000-000000000001",
+      "reference": "PAY-SYNTHETIC-RECORD",
+      "amount": "100.00",
+      "method": "BANK_TRANSFER",
+      "receivedAt": "2026-10-22T18:01:02.000Z",
+      "externalReference": "SYNTHETIC-BANK-REFERENCE",
+      "issuedAt": "2026-10-22T18:05:06.000Z",
+      "issuedBy": {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "name": "เจ้าหน้าที่ สมมติ / Synthetic operator"
+      },
+      "number": "REC-202610-0042",
+      "invoices": [
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000100",
+          "number": "INV-SYNTHETIC-001",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000101",
+          "number": "INV-SYNTHETIC-002",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000102",
+          "number": "INV-SYNTHETIC-003",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000103",
+          "number": "INV-SYNTHETIC-004",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000104",
+          "number": "INV-SYNTHETIC-005",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000105",
+          "number": "INV-SYNTHETIC-006",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000106",
+          "number": "INV-SYNTHETIC-007",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000107",
+          "number": "INV-SYNTHETIC-008",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000108",
+          "number": "INV-SYNTHETIC-009",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000109",
+          "number": "INV-SYNTHETIC-010",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000110",
+          "number": "INV-SYNTHETIC-011",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000111",
+          "number": "INV-SYNTHETIC-012",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000112",
+          "number": "INV-SYNTHETIC-013",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000113",
+          "number": "INV-SYNTHETIC-014",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000114",
+          "number": "INV-SYNTHETIC-015",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000115",
+          "number": "INV-SYNTHETIC-016",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000116",
+          "number": "INV-SYNTHETIC-017",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000117",
+          "number": "INV-SYNTHETIC-018",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000118",
+          "number": "INV-SYNTHETIC-019",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000119",
+          "number": "INV-SYNTHETIC-020",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000120",
+          "number": "INV-SYNTHETIC-021",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000121",
+          "number": "INV-SYNTHETIC-022",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000122",
+          "number": "INV-SYNTHETIC-023",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000123",
+          "number": "INV-SYNTHETIC-024",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000124",
+          "number": "INV-SYNTHETIC-025",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000125",
+          "number": "INV-SYNTHETIC-026",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000126",
+          "number": "INV-SYNTHETIC-027",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000127",
+          "number": "INV-SYNTHETIC-028",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000128",
+          "number": "INV-SYNTHETIC-029",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000129",
+          "number": "INV-SYNTHETIC-030",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000130",
+          "number": "INV-SYNTHETIC-031",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000131",
+          "number": "INV-SYNTHETIC-032",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000132",
+          "number": "INV-SYNTHETIC-033",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000133",
+          "number": "INV-SYNTHETIC-034",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000134",
+          "number": "INV-SYNTHETIC-035",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000135",
+          "number": "INV-SYNTHETIC-036",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000136",
+          "number": "INV-SYNTHETIC-037",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000137",
+          "number": "INV-SYNTHETIC-038",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000138",
+          "number": "INV-SYNTHETIC-039",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000139",
+          "number": "INV-SYNTHETIC-040",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000140",
+          "number": "INV-SYNTHETIC-041",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000141",
+          "number": "INV-SYNTHETIC-042",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000142",
+          "number": "INV-SYNTHETIC-043",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000143",
+          "number": "INV-SYNTHETIC-044",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000144",
+          "number": "INV-SYNTHETIC-045",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000145",
+          "number": "INV-SYNTHETIC-046",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000146",
+          "number": "INV-SYNTHETIC-047",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000147",
+          "number": "INV-SYNTHETIC-048",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000148",
+          "number": "INV-SYNTHETIC-049",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000149",
+          "number": "INV-SYNTHETIC-050",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000150",
+          "number": "INV-SYNTHETIC-051",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000151",
+          "number": "INV-SYNTHETIC-052",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000152",
+          "number": "INV-SYNTHETIC-053",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000153",
+          "number": "INV-SYNTHETIC-054",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000154",
+          "number": "INV-SYNTHETIC-055",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000155",
+          "number": "INV-SYNTHETIC-056",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000156",
+          "number": "INV-SYNTHETIC-057",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000157",
+          "number": "INV-SYNTHETIC-058",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000158",
+          "number": "INV-SYNTHETIC-059",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000159",
+          "number": "INV-SYNTHETIC-060",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000160",
+          "number": "INV-SYNTHETIC-061",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000161",
+          "number": "INV-SYNTHETIC-062",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000162",
+          "number": "INV-SYNTHETIC-063",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000163",
+          "number": "INV-SYNTHETIC-064",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000164",
+          "number": "INV-SYNTHETIC-065",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000165",
+          "number": "INV-SYNTHETIC-066",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000166",
+          "number": "INV-SYNTHETIC-067",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000167",
+          "number": "INV-SYNTHETIC-068",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000168",
+          "number": "INV-SYNTHETIC-069",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000169",
+          "number": "INV-SYNTHETIC-070",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000170",
+          "number": "INV-SYNTHETIC-071",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000171",
+          "number": "INV-SYNTHETIC-072",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000172",
+          "number": "INV-SYNTHETIC-073",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000173",
+          "number": "INV-SYNTHETIC-074",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000174",
+          "number": "INV-SYNTHETIC-075",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000175",
+          "number": "INV-SYNTHETIC-076",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000176",
+          "number": "INV-SYNTHETIC-077",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000177",
+          "number": "INV-SYNTHETIC-078",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000178",
+          "number": "INV-SYNTHETIC-079",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000179",
+          "number": "INV-SYNTHETIC-080",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000180",
+          "number": "INV-SYNTHETIC-081",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000181",
+          "number": "INV-SYNTHETIC-082",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000182",
+          "number": "INV-SYNTHETIC-083",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000183",
+          "number": "INV-SYNTHETIC-084",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000184",
+          "number": "INV-SYNTHETIC-085",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000185",
+          "number": "INV-SYNTHETIC-086",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000186",
+          "number": "INV-SYNTHETIC-087",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000187",
+          "number": "INV-SYNTHETIC-088",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000188",
+          "number": "INV-SYNTHETIC-089",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000189",
+          "number": "INV-SYNTHETIC-090",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000190",
+          "number": "INV-SYNTHETIC-091",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000191",
+          "number": "INV-SYNTHETIC-092",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000192",
+          "number": "INV-SYNTHETIC-093",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000193",
+          "number": "INV-SYNTHETIC-094",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000194",
+          "number": "INV-SYNTHETIC-095",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000195",
+          "number": "INV-SYNTHETIC-096",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000196",
+          "number": "INV-SYNTHETIC-097",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000197",
+          "number": "INV-SYNTHETIC-098",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000198",
+          "number": "INV-SYNTHETIC-099",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        },
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000199",
+          "number": "INV-SYNTHETIC-100",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "1000.10",
+          "allocatedAmount": "1.00"
+        }
+      ]
+    },
+    "cancellation": null
+  },
+  "maximum": {
+    "id": "00000000-0000-4000-8000-000000000005",
+    "number": "REC-202610-0042",
+    "paymentId": "00000000-0000-4000-8000-000000000001",
+    "fingerprint": "05b10359443e83e8b606ad355ba836cc20adc2dbbfff871166d21b9140b5716e",
+    "snapshot": {
+      "schemaVersion": "receipt.v1",
+      "paymentId": "00000000-0000-4000-8000-000000000001",
+      "reference": "PAY-SYNTHETIC-RECORD",
+      "amount": "999999999999.99",
+      "method": "BANK_TRANSFER",
+      "receivedAt": "2026-10-22T18:01:02.000Z",
+      "externalReference": "SYNTHETIC-BANK-REFERENCE",
+      "issuedAt": "2026-10-22T18:05:06.000Z",
+      "issuedBy": {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "name": "เจ้าหน้าที่ สมมติ / Synthetic operator"
+      },
+      "number": "REC-202610-0042",
+      "invoices": [
+        {
+          "invoiceId": "00000000-0000-4000-8000-000000000011",
+          "number": "INV-SYNTHETIC-1",
+          "frozenLeaseId": "00000000-0000-4000-8000-000000000003",
+          "frozenTenantId": "00000000-0000-4000-8000-000000000004",
+          "labels": {
+            "property": "ที่พักสมมติ / Synthetic residence m³",
+            "propertyAddress": "99 ถนนสมมติ กรุงเทพมหานคร / Synthetic address",
+            "room": "A-201",
+            "tenant": "ผู้เช่าสมมติ / Synthetic tenant",
+            "leaseNumber": "LEASE-SYNTHETIC-204"
+          },
+          "finalTotal": "999999999999.99",
+          "allocatedAmount": "999999999999.99"
+        }
+      ]
+    },
+    "cancellation": null
+  }
+}

@@ -1,0 +1,35 @@
+ข้อมูลใบเสร็จรับเงิน / RECEIPT RECORD
+REC-202610-0042 ยกเลิก / CANCELLED
+สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
+เลขอ้างอิงรับชำระ / Payment reference: PAY-SYNTHETIC-RECORD
+ยอดรับชำระ / Received amount: ฿0.30
+วิธีชำระ / Method: โอนเงิน / Bank transfer
+เลขอ้างอิงธนาคาร / Bank reference: SYNTHETIC-BANK-REFERENCE
+เวลารับชำระ / Received (Bangkok): 23/10/2026 01:01:02
+เวลาออก / Issued (Bangkok): 23/10/2026 01:05:06
+ผู้บันทึกออกเอกสาร / Issuing operator: เจ้าหน้าที่ สมมติ / Synthetic operator
+Operator ID: 00000000-0000-4000-8000-000000000002
+ใบแจ้งหนี้ / Invoice ยอดใบแจ้งหนี้ / Total จัดสรร / Allocated
+INV-SYNTHETIC-1 ฿1,000.10 ฿0.10
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-201
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+INV-SYNTHETIC-2 ฿2,000.20 ฿0.20
+ที่พัก / Property: ที่พักสมมติ / Synthetic residence m³
+ที่อยู่ที่พัก / Property address: 99 ถนนสมมติ กรุงเทพมหานคร /
+Synthetic address
+ห้อง / Room: A-202
+ผู้เช่า / Tenant: ผู้เช่าสมมติ / Synthetic tenant
+สัญญา / Lease: LEASE-SYNTHETIC-204
+ยอดรับชำระเดิม / Original received amount: ฿0.30
+ข้อมูลการยกเลิกเพิ่มเติม / CANCELLATION
+เหตุผล / Reason: ยกเลิกรายการสมมติ / Synthetic reversal reason
+เวลายกเลิก / Cancelled (Bangkok): 24/10/2026 02:01:02
+Actor ID: 00000000-0000-4000-8000-000000000008
+Reversal ID: 00000000-0000-4000-8000-000000000007
+Snapshot SHA-256: 810c4bbe83b17a06a13afd523093eead93b567c05d90564f2a17f8fb364b90e7
+Payment ID: 00000000-0000-4000-8000-000000000001
+หน้า / Page 1 / 1

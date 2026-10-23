@@ -1,5 +1,5 @@
 import PDFDocument from "pdfkit";
-import { resolve } from "node:path";
+import { pdfFontRuns, registerPdfFonts } from "../pdf/fonts";
 
 export type InvoicePdfDocument = {
   invoiceNumber: string;
@@ -23,38 +23,10 @@ export type InvoicePdfDocument = {
   voidReason: string | null;
 };
 
-const THAI_FONT = resolve(
-  process.cwd(),
-  "node_modules/@fontsource/noto-sans-thai/files/noto-sans-thai-thai-400-normal.woff",
-);
-const LATIN_FONT = resolve(
-  process.cwd(),
-  "node_modules/@fontsource/noto-sans-thai/files/noto-sans-thai-latin-400-normal.woff",
-);
 const PAGE_WIDTH = 595.28;
 const PAGE_HEIGHT = 841.89;
 const MARGIN = 46;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
-
-type Run = { text: string; font: "Thai" | "Latin" | "Helvetica" };
-
-function runsFor(text: string): Run[] {
-  const graphemes = new Intl.Segmenter("th", { granularity: "grapheme" });
-  const runs: Run[] = [];
-  for (const { segment } of graphemes.segment(text)) {
-    // Baht is Script=Common, despite living in the packaged Thai font subset.
-    // Superscript three is absent from both subsets, but exists in WinAnsi Helvetica.
-    const font = /[\p{Script=Thai}\u0e3f]/u.test(segment)
-      ? "Thai"
-      : segment === "³"
-        ? "Helvetica"
-        : "Latin";
-    const previous = runs[runs.length - 1];
-    if (previous && previous.font === font) previous.text += segment;
-    else runs.push({ text: segment, font });
-  }
-  return runs;
-}
 
 function dateText(iso: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
@@ -114,8 +86,7 @@ export async function renderInvoicePdf(
     doc.on("end", () => resolvePromise(new Uint8Array(Buffer.concat(chunks))));
     doc.on("error", reject);
   });
-  doc.registerFont("Thai", THAI_FONT);
-  doc.registerFont("Latin", LATIN_FONT);
+  registerPdfFonts(doc);
 
   let y = 42;
   const left = MARGIN;
@@ -123,7 +94,7 @@ export async function renderInvoicePdf(
 
   const measure = (value: string, size: number): number => {
     let width = 0;
-    for (const run of runsFor(value)) {
+    for (const run of pdfFontRuns(value)) {
       doc.font(run.font).fontSize(size);
       width += doc.widthOfString(run.text);
     }
@@ -137,7 +108,7 @@ export async function renderInvoicePdf(
     color = "#203047",
   ) => {
     let cursor = x;
-    for (const run of runsFor(value)) {
+    for (const run of pdfFontRuns(value)) {
       doc.font(run.font).fontSize(size).fillColor(color);
       doc.text(run.text, cursor, top, { lineBreak: false, continued: false });
       cursor += doc.widthOfString(run.text);

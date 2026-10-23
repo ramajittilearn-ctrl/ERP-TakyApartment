@@ -1,0 +1,39 @@
+{
+  "id": "34060c4f-b1cb-4be3-b661-593eb9937fd1",
+  "number": "REC-202610-0001",
+  "paymentId": "83a28230-79de-486b-8857-f75ef0bad0f9",
+  "fingerprint": "a42a6caca578f016b86789c1188593bd9f6e1d49609bfb0d319fe4df9937f0ef",
+  "snapshot": {
+    "schemaVersion": "receipt.v1",
+    "paymentId": "83a28230-79de-486b-8857-f75ef0bad0f9",
+    "reference": "PAY-2e139729-fce6-4ac5-be6c-9767fae268c1",
+    "amount": "0.30",
+    "method": "BANK_TRANSFER",
+    "receivedAt": "2026-10-22T18:01:02.000Z",
+    "externalReference": "SYNTHETIC-fadec665-e386-4af8-84ca-4afd1adb2e2c",
+    "issuedAt": "2026-10-23T23:09:43.913Z",
+    "issuedBy": {
+      "id": "bedb36b8-e678-4634-bab0-f7350a334fe7",
+      "name": "ผู้ดูแลทดสอบ Demo"
+    },
+    "number": "REC-202610-0001",
+    "invoices": [
+      {
+        "invoiceId": "7a7d42cd-c4b3-4193-8f01-51c400965abf",
+        "number": "INV-202601-0001",
+        "frozenLeaseId": "64fce956-da4c-45ee-a1a1-96204e1156dd",
+        "frozenTenantId": "ecb889f1-5ff1-40d0-9345-0847bed99edb",
+        "labels": {
+          "property": "ที่พักสมมติ / Synthetic PDF 9e317361-0dce-4a14-8d0f-1c6fd1babef5",
+          "propertyAddress": "99 ถนนสมมติ / Synthetic address",
+          "room": "PDF101",
+          "tenant": "ผู้เช่าสมมติ / Synthetic PDF 9e317361-0dce-4a14-8d0f-1c6fd1babef5",
+          "leaseNumber": "PDF-9e317361-0dce-4a14-8d0f-1c6fd1babef5"
+        },
+        "finalTotal": "1000.00",
+        "allocatedAmount": "0.30"
+      }
+    ]
+  },
+  "cancellation": null
+}

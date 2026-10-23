@@ -7,6 +7,24 @@ export function ReceiptView({ receipt }: { receipt: ReceiptDto }) {
   return (
     <section aria-label="ข้อมูลใบเสร็จรับเงิน">
       <h3>ใบเสร็จ {snapshot.number}</h3>
+      <p>
+        <a
+          href={`/api/v1/receipts/${receipt.id}/pdf/`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          เปิด PDF / พิมพ์
+        </a>{" "}
+        ·{" "}
+        <a
+          href={`/api/v1/receipts/${receipt.id}/pdf/?download=1`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          ดาวน์โหลด PDF
+        </a>
+      </p>
+      <p>พิมพ์หรือบันทึกเป็น PDF ผ่านตัวอ่าน PDF ของเบราว์เซอร์</p>
       {receipt.cancellation && (
         <div role="status">
           <strong>ใบเสร็จถูกยกเลิก</strong>
@@ -67,8 +85,7 @@ export function ReceiptView({ receipt }: { receipt: ReceiptDto }) {
         <p style={{ overflowWrap: "anywhere" }}>{receipt.fingerprint}</p>
       </details>
       <Notice>
-        แสดงข้อมูลใบเสร็จที่บันทึกไว้
-        การพิมพ์เอกสารใช้งานจริงรอการกำหนดข้อมูลผู้ออกตามกฎหมาย
+        สำเนาข้อมูลใบเสร็จจากระบบ ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด
       </Notice>
     </section>
   );
