@@ -7,7 +7,11 @@ const text = (max: number) =>
     .min(1)
     .max(max)
     .refine(
-      (v) => !/[\u0000-\u001f\u007f]/.test(v),
+      (v) =>
+        !Array.from(v).some(
+          (character) =>
+            character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+        ),
       "Control characters are not allowed",
     );
 export const expenseMoney = z.string().regex(/^(?:0|[1-9]\d{0,11})\.\d{2}$/);
