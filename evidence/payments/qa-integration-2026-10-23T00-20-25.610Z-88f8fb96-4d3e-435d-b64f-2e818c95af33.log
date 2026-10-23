@@ -1,0 +1,11 @@
+
+ RUN  v4.1.12 /private/tmp/taky-payment-development
+
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  07:20:15
+   Duration  10.48s (transform 340ms, setup 0ms, import 524ms, tests 9.87s, environment 0ms)
+
+(node:95184) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)

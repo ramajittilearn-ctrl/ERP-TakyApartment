@@ -1,0 +1,68 @@
+
+ RUN  v4.1.12 /private/tmp/taky-payment-development
+
+ ❯ tests/integration/payments.test.ts (22 tests | 20 failed) 4675ms
+     × confirms partial and full settlements, preserves pending balance, then reverses and voids immutable history 336ms
+     × keeps same-key replay stable after transition and rejects changed bodies or operations 338ms
+     × rejects STAFF transitions, disabled actors, stale versions and demo leases 244ms
+     × enforces exact allocation sums, same lease and simultaneous invoice caps 159ms
+     × requires audited cash duplicate review and releases cancelled bank reference 181ms
+     × serializes pending cancellation versus confirmation and receipts across leases 196ms
+     × rejects direct mutation, scope toggles, orphan children and incomplete final confirmation 183ms
+     × settles multiple invoices on one lease with explicit amounts 228ms
+     × rolls back all financial rows and numbering after-allocation 266ms
+     × rolls back all financial rows and numbering after-receipt 171ms
+     × rolls back all financial rows and numbering after-audit 121ms
+     × rolls back all financial rows and numbering after-command 178ms
+     × rejects a correctly hashed receipt with false tenant/allocation content at commit 201ms
+     × prevents direct SQL concurrent confirmations exceeding an invoice cap 122ms
+     × keeps direct SQL confirmation versus direct VOID mutually exclusive 134ms
+     × rejects confirmation after void or revision won first without losing pending draft 122ms
+     × rejects receipt suffix 0000 and matches SQL canonical SHA for Thai text 159ms
+     × retains receipt issuer display name after rename and reversal 494ms
+     × rejects standalone orphan receipt and mismatched cancellation links 221ms
+     × fails monthly sequence exhaustion without changing payment or allocations 223ms
+
+ Test Files  1 failed (1)
+      Tests  20 failed | 2 passed (22)
+   Start at  07:12:54
+   Duration  5.36s (transform 261ms, setup 0ms, import 479ms, tests 4.67s, environment 0ms)
+
+(node:93440) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 20 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > confirms partial and full settlements, preserves pending balance, then reverses and voids immutable history
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > keeps same-key replay stable after transition and rejects changed bodies or operations
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > rejects STAFF transitions, disabled actors, stale versions and demo leases
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > enforces exact allocation sums, same lease and simultaneous invoice caps
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > requires audited cash duplicate review and releases cancelled bank reference
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > serializes pending cancellation versus confirmation and receipts across leases
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > rejects direct mutation, scope toggles, orphan children and incomplete final confirmation
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > settles multiple invoices on one lease with explicit amounts
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > rolls back all financial rows and numbering after-allocation
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > rolls back all financial rows and numbering after-receipt
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > rolls back all financial rows and numbering after-audit
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > rolls back all financial rows and numbering after-command
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > rejects a correctly hashed receipt with false tenant/allocation content at commit
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > prevents direct SQL concurrent confirmations exceeding an invoice cap
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > keeps direct SQL confirmation versus direct VOID mutually exclusive
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > rejects confirmation after void or revision won first without losing pending draft
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > rejects receipt suffix 0000 and matches SQL canonical SHA for Thai text
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > retains receipt issuer display name after rename and reversal
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > rejects standalone orphan receipt and mismatched cancellation links
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > fails monthly sequence exhaustion without changing payment or allocations
+DriverAdapterError: column reference "r.id" is ambiguous
+ ❯ PgTransaction.onError node_modules/@prisma/adapter-pg/dist/index.mjs:666:11
+ ❯ PgTransaction.performIO node_modules/@prisma/adapter-pg/dist/index.mjs:661:12
+ ❯ PgTransaction.executeRaw node_modules/@prisma/adapter-pg/dist/index.mjs:634:13
+ ❯ n node_modules/@prisma/client-engine-runtime/src/transaction-manager/transaction-manager.ts:538:12
+ ❯ gr.#f node_modules/@prisma/client-engine-runtime/src/transaction-manager/transaction-manager.ts:579:6
+ ❯ node_modules/@prisma/client-engine-runtime/src/transaction-manager/transaction-manager.ts:322:8
+ ❯ node_modules/@prisma/client-engine-runtime/src/transaction-manager/transaction-manager.ts:507:13
+ ❯ gr.#m node_modules/@prisma/client-engine-runtime/src/transaction-manager/transaction-manager.ts:523:13
+ ❯ gr.#d node_modules/@prisma/client-engine-runtime/src/transaction-manager/transaction-manager.ts:505:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/20]⎯
+

@@ -1,0 +1,25 @@
+# Payment domain implementation checkpoint
+
+Implementation owner: `/root/payment_domain_impl`. Baseline: local snapshot branch `codex/payment-domain`, parent commit `b3b0833`. Original source Git ancestry is unavailable in this copied snapshot.
+
+The Stage 3D-1 payment domain and additive migration are implemented, automatically verified and independently accepted. Local commit and controlled integration are owned by the root and remain pending at this handoff. The accepted engineering contract, policy authorization and DR-01 through DR-03 govern this unit. No Owner approval request is pending from this implementation owner.
+
+Owned changes are the additive 38-model Prisma schema, one payment migration, payment contracts/domain/service/exports, invoice void/revise active-payment guards, payment unit and PostgreSQL tests, legacy migration rehearsal and scoped evidence. The schema adds five models while preserving original Payment fields and values. Contracts and service exports are frozen.
+
+Dependency bootstrap removed only this worktree's tracked node_modules symlink and replaced it with an independent APFS clone. Prisma generation ran only in that real directory. The ignore rule now covers node_modules whether it is a directory or symlink. Rehearsal staging uses separate ignored directories for each run.
+
+The root executed the final pristine rehearsal on synthetic database `taky_payment_test_2b5214bd52_r4`. It preserved every original column value of three historical payments and three allocations, seven original constraints, seven indexes and the original PaymentStatus enum order. All 14 migrations deployed successfully. Evidence is `legacy-migration-rehearsal.json` and the immutable `qa-rehearsal-2026-10-23T00-19-31.923Z-92d27e1d-5d10-4574-8784-41f2e5a9cc74.log`.
+
+The root then executed the final PostgreSQL suite successfully. All 22 cases passed in `qa-integration-2026-10-23T00-20-25.610Z-88f8fb96-4d3e-435d-b64f-2e818c95af33.log`. Coverage includes partial/full/multi-invoice settlement, authorization, replay, immutable history, managed scope flags, bank identity, duplicate handling, direct SQL invoice-cap and VOID races, concurrent receipt numbering, reversal/cancellation linkage, false hashed receipts, suffix zero, issuer rename preservation, sequence exhaustion, four transaction rollback failpoints and final financial invariant queries.
+
+The implementation owner executed Prisma format/validate/generate, TypeScript typecheck, scoped ESLint, Git whitespace checks and the complete unit suite. All 159 unit tests across 12 files passed, including 13 payment boundary/domain cases. Logs are `all-unit-tests.log`, `unit-tests.log`, `typecheck.log` and `scoped-eslint.log`.
+
+The fresh independent reviewer `/root/payment_final_review` accepted the code and migration in `final-review.md`. FR-01 and FR-02 are closed with inspected corrections and live negative-test evidence. The report records hashes of the reviewed migration, service and PostgreSQL tests. The implementer did not approve their own component.
+
+Earlier failures and corrections remain visible. The first rehearsal omitted the historical Invoice dueDate and failed before the payment migration. Its raw phase log was overwritten once. The original failed database is retained, and `qa-rehearsal-attempt1-transcript-note.md` explicitly reconstructs the failure from tool output. It is not a preserved raw log. Later attempts use immutable timestamped logs; earlier successful rehearsal reports are retained separately as `legacy-migration-rehearsal-r2.json` and `legacy-migration-rehearsal-r3.json`.
+
+The r2 PostgreSQL run exposed PL/pgSQL row-variable/SQL-alias collisions. The migration now uses distinct v_payment, v_invoice and v_receipt variables, without conflict suppression. The r3 run passed 21 of 22 cases. Its remaining failure occurred during parallel synthetic fixture approvals using the existing billing service's Serializable transactions. Fixture provisioning is now sequential; actual payment races remain concurrent and assertions were not weakened. No production billing code changed. The failed r2/r3 databases and immutable integration logs remain retained by the root. No database was reset or dropped.
+
+This handoff covers the payment domain only. API routes, UI/browser behavior, private evidence storage, post-VOID exceptions, receipt rendering and legal issuer identity, actual bank configuration, real historical mapping, Owner UAT, backup commissioning and production release are separate work. Operations inventory/restore integration must accommodate the five added models while preserving version 2 archives. No registry integration, Owner UAT acceptance, whole Stage 3D completion or production readiness is claimed here. A pg client query-queue deprecation warning remains a dependency-upgrade concern; it did not fail the current PostgreSQL suite.
+
+All source, migration and test files are frozen for the root's reviewed local commit and serial integration.

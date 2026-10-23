@@ -1,0 +1,10 @@
+Legacy migration rehearsal PASS: 3 payments, 3 allocations, 7 original constraints preserved.
+Loaded Prisma config from evidence/payments/migration-staging/a2a26870-3417-4ca5-9161-005a8e88e163/prisma.config.ts.
+
+Prisma schema loaded from evidence/payments/migration-staging/a2a26870-3417-4ca5-9161-005a8e88e163/schema.prisma.
+Loaded Prisma config from evidence/payments/migration-staging/a2a26870-3417-4ca5-9161-005a8e88e163/prisma.config.ts.
+
+Prisma schema loaded from evidence/payments/migration-staging/a2a26870-3417-4ca5-9161-005a8e88e163/schema.prisma.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.

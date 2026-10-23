@@ -44,6 +44,12 @@ enum PaymentStatus {
   PENDING
   CONFIRMED
   REVERSED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
 }
 
 enum DepositKind {
@@ -433,6 +439,24 @@ model Payment {
   allocations PaymentAllocation[]
   attachments Attachment[]
 
+  methodCode          PaymentMethod?
+  legacyUnmapped      Boolean          @default(true)
+  version             Int              @default(1)
+  recordedById        String?          @db.Uuid
+  confirmedById       String?          @db.Uuid
+  confirmedAt         DateTime?        @db.Timestamptz(3)
+  reversedAt          DateTime?        @db.Timestamptz(3)
+  cancelledAt         DateTime?        @db.Timestamptz(3)
+  cancelledById       String?          @db.Uuid
+  cancelReason        String?          @db.VarChar(1000)
+  externalReference   String?          @db.VarChar(120)
+  receivingAccountKey String?          @db.VarChar(80)
+  recordedBy          User?            @relation("PaymentRecordedBy", fields: [recordedById], references: [id], onDelete: Restrict)
+  confirmedBy         User?            @relation("PaymentConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
+  cancelledBy         User?            @relation("PaymentCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+  reversal            PaymentReversal?
+  receipt             Receipt?
+
   @@index([leaseId])
   @@index([status, receivedAt])
 }
@@ -525,6 +549,13 @@ model User {
   DuePolicyConfiguredBy       PropertyDuePolicy[]          @relation("DuePolicyConfiguredBy")
   InvoiceIssuedBy             Invoice[]                    @relation("InvoiceIssuedBy")
   InvoiceVoidedBy             Invoice[]                    @relation("InvoiceVoidedBy")
+  paymentsRecorded            Payment[]                    @relation("PaymentRecordedBy")
+  paymentsConfirmed           Payment[]                    @relation("PaymentConfirmedBy")
+  paymentsCancelled           Payment[]                    @relation("PaymentCancelledBy")
+  paymentsReversed            PaymentReversal[]            @relation("PaymentReversedBy")
+  receiptsIssued              Receipt[]                    @relation("ReceiptIssuedBy")
+  receiptsCancelled           ReceiptCancellation[]        @relation("ReceiptCancelledBy")
+  paymentCommands             PaymentCommand[]             @relation("PaymentCommandActor")
 }
 
 model Session {
@@ -690,4 +721,59 @@ model InvoiceCommand {
   actor              User     @relation("InvoiceCommandActor", fields: [actorId], references: [id], onDelete: Restrict)
 
   @@unique([actorId, commandKey])
+}
+
+model PaymentReversal {
+  id                  String               @id @default(uuid()) @db.Uuid
+  paymentId           String               @unique @db.Uuid
+  payment             Payment              @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  reason              String               @db.VarChar(1000)
+  actorId             String               @db.Uuid
+  actor               User                 @relation("PaymentReversedBy", fields: [actorId], references: [id], onDelete: Restrict)
+  createdAt           DateTime             @default(now()) @db.Timestamptz(3)
+  receiptCancellation ReceiptCancellation?
+}
+
+model Receipt {
+  id              String               @id @default(uuid()) @db.Uuid
+  number          String               @unique @db.VarChar(40)
+  paymentId       String               @unique @db.Uuid
+  payment         Payment              @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  issuedAt        DateTime             @db.Timestamptz(3)
+  issuedById      String               @db.Uuid
+  issuedBy        User                 @relation("ReceiptIssuedBy", fields: [issuedById], references: [id], onDelete: Restrict)
+  snapshotVersion String               @db.VarChar(20)
+  snapshot        Json
+  fingerprint     String               @db.Char(64)
+  cancellation    ReceiptCancellation?
+}
+
+model ReceiptCancellation {
+  id         String          @id @default(uuid()) @db.Uuid
+  receiptId  String          @unique @db.Uuid
+  receipt    Receipt         @relation(fields: [receiptId], references: [id], onDelete: Restrict)
+  reversalId String          @unique @db.Uuid
+  reversal   PaymentReversal @relation(fields: [reversalId], references: [id], onDelete: Restrict)
+  reason     String          @db.VarChar(1000)
+  actorId    String          @db.Uuid
+  actor      User            @relation("ReceiptCancelledBy", fields: [actorId], references: [id], onDelete: Restrict)
+  createdAt  DateTime        @default(now()) @db.Timestamptz(3)
+}
+
+model PaymentCommand {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  actor              User     @relation("PaymentCommandActor", fields: [actorId], references: [id], onDelete: Restrict)
+  commandKey         String   @db.VarChar(100)
+  operation          String   @db.VarChar(40)
+  requestFingerprint String   @db.Char(64)
+  result             Json
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([actorId, commandKey])
+}
+
+model ReceiptMonthCounter {
+  month String @id @db.Char(6)
+  value Int
 }

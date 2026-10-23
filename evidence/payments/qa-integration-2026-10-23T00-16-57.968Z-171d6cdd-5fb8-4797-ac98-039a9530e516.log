@@ -1,0 +1,43 @@
+
+ RUN  v4.1.12 /private/tmp/taky-payment-development
+
+ ❯ tests/integration/payments.test.ts (22 tests | 1 failed) 8754ms
+     × serializes pending cancellation versus confirmation and receipts across leases 220ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 21 passed (22)
+   Start at  07:16:48
+   Duration  9.11s (transform 149ms, setup 0ms, import 276ms, tests 8.75s, environment 0ms)
+
+(node:94391) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/payments.test.ts > Stage 3D managed payment lifecycle > serializes pending cancellation versus confirmation and receipts across leases
+PrismaClientKnownRequestError: 
+Invalid `tx.auditLog.create()` invocation in
+/private/tmp/taky-payment-development/src/server/billing/service.ts:668:23
+
+  665     approvedAt,
+  666   },
+  667 });
+→ 668 await tx.auditLog.create(
+Transaction failed due to a write conflict or a deadlock. Please retry your transaction
+ ❯ vn.handleRequestError node_modules/@prisma/client/src/runtime/RequestHandler.ts:238:12
+ ❯ vn.handleAndLogRequestError node_modules/@prisma/client/src/runtime/RequestHandler.ts:184:11
+ ❯ vn.request node_modules/@prisma/client/src/runtime/RequestHandler.ts:153:11
+ ❯ a node_modules/@prisma/client/src/runtime/getPrismaClient.ts:1012:23
+ ❯ src/server/billing/service.ts:668:5
+    666|       },
+    667|     });
+    668|     await tx.auditLog.create({
+       |     ^
+    669|       data: {
+    670|         actorId: actor.id,
+ ❯ Proxy._transactionWithCallback node_modules/@prisma/client/src/runtime/getPrismaClient.ts:859:17
+ ❯ fixture tests/integration/payments.test.ts:124:7
+ ❯ closed tests/integration/payments.test.ts:141:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+

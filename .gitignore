@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 .next/
 out/
 tmp/
@@ -11,3 +11,5 @@ playwright-report/
 .local/
 *.taky.enc
 *.backup-key
+
+/evidence/payments/migration-staging/

@@ -1,0 +1,9 @@
+
+ RUN  v4.1.12 /private/tmp/taky-payment-development
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  06:59:57
+   Duration  401ms (transform 123ms, setup 0ms, import 286ms, tests 18ms, environment 0ms)
+

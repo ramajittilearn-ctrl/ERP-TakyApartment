@@ -668,12 +668,27 @@ export async function issueInvoice(actor: Actor, input: unknown) {
     ),
   );
 }
+async function assertNoActivePayments(
+  tx: Prisma.TransactionClient,
+  invoiceId: string,
+) {
+  if (
+    await tx.paymentAllocation.findFirst({
+      where: { invoiceId, payment: { status: "CONFIRMED" } },
+    })
+  )
+    fail(
+      "INVOICE_HAS_PAYMENTS",
+      "Reverse active payments before voiding or revising the invoice",
+    );
+}
 export async function voidInvoice(actor: Actor, input: unknown) {
   authorize(actor, true);
   const data = voidInvoiceInput.parse(input);
   return invoiceDtoSchema.parse(
     await command(actor, "VOID_INVOICE", data, async (tx) => {
       const row = await lockedInvoice(tx, data.invoiceId, data.expectedVersion);
+      await assertNoActivePayments(tx, row.id);
       if (row.status !== "ISSUED")
         fail("INVOICE_STATE", "ยกเลิกได้เฉพาะใบแจ้งหนี้ที่ออกแล้ว");
       const updated = await tx.invoice.update({
@@ -1053,6 +1068,7 @@ export async function reviseInvoice(actor: Actor, input: unknown) {
   return invoiceDtoSchema.parse(
     await command(actor, "REVISE_INVOICE", data, async (tx) => {
       const row = await lockedInvoice(tx, data.invoiceId, data.expectedVersion);
+      await assertNoActivePayments(tx, row.id);
       if (row.status !== "ISSUED")
         fail("INVOICE_STATE", "แก้ไขได้เฉพาะใบแจ้งหนี้ที่ออกแล้ว");
       if (await tx.invoice.findUnique({ where: { previousInvoiceId: row.id } }))
