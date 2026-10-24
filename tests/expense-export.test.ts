@@ -92,10 +92,22 @@ describe("expense CSV contract", () => {
     expect(rows).toHaveLength(2);
     expect(rows[1][0]).toBe("summary");
   });
-  it.each(["=1+1", " +1", "\t-1", "\r\n@SUM(A1)", "\u0000 =1", "\uFEFF=1"])(
-    "neutralizes formula prefixes %j",
-    (value) => expect(expenseCsvCell(value)).toBe(`"'${value}"`),
-  );
+  it.each([
+    "=1+1",
+    " +1",
+    "\t-1",
+    "\r\n@SUM(A1)",
+    "\u0000 =1",
+    "\uFEFF=1",
+    "\u0085=1",
+    "\u009F+1",
+  ])("neutralizes formula prefixes %j", (value) => {
+    expect(expenseCsvCell(value)).toBe(`"'${value}"`);
+    const rows = parseCsv(
+      expenseCsv({ ...data, items: [{ ...item, vendor: value }] }),
+    );
+    expect(rows[2][expenseCsvColumns.indexOf("vendor")]).toBe(`'${value}`);
+  });
   it("shares list predicates and rejects export pagination, duplicates and unknown fields", () => {
     const filters = `propertyId=${id}&from=2026-10-01&to=2026-10-31&kind=OPEX&status=POSTED&query=Synthetic`;
     expect(

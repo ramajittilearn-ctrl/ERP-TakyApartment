@@ -77,7 +77,7 @@ afterAll(() => db.$disconnect());
 async function fixture(kind: "OPEX" | "CAPEX" = "OPEX") {
   const property = await db.property.create({
     data: {
-      code: `EXPORT-${key()}`,
+      code: `EX-${key().replaceAll("-", "").slice(0, 29)}`,
       name: "Synthetic export property",
       address: "Synthetic address",
     },

@@ -27,3 +27,13 @@ Do not run these against an existing UAT or production database. Main coordinate
 5. Run cross-module regressions after corrections and controlled integration. Keep evidence with exact source revisions. Review app shell wording alongside the explicit local demo banner. Agent UAT acceptance and actual deployment remain separate statuses.
 
 The concurrent export test runs a genuine approval alongside export and reconciles returned rows to totals; it does not inject a pause between individual SELECT statements. The transaction's RepeatableRead setting is explicit in the source. A reviewer may require a stronger deterministic interleaving probe before acceptance.
+
+## Independent review corrections
+
+EUI-01 identified inaccessible recovery when an uncertain command's action dialog closed and the user opened a selected expense detail. Recovery now belongs inside that detail Modal as well as the action Modal; the page instance renders only when neither dialog is open. A seventh guarded browser case commits capture, loses its response, closes the action, opens an already persisted row's detail and retries using keyboard focus inside that dialog. It asserts byte-identical replay, one command record and the expected two distinct expenses. Main must execute that browser case; its authorship alone is not verification.
+
+EUI-02 identified leading C1 controls before spreadsheet formula characters. CSV formatting now skips Unicode Cc and whitespace while finding the first significant character. Parsed CSV fixtures cover U+0085 before `=` and U+009F before `+`, alongside prior ASCII/whitespace cases. Stored values remain unchanged. This proves the escaped-byte contract, not execution in a specific spreadsheet application.
+
+Main's first real export PG attempt failed fixture-dependent cases because a property code exceeded 32 characters. The source correction bounds both PG and browser property codes to 32 characters with 116 bits of random identity. Schema, migration and financial guards remain unchanged. The immutable failed database log belongs to Main and is not included in this correction commit. Main owns the reviewed rerun through the dedicated helper described in `export-qa-instructions.md`.
+
+After these corrections, the full local unit suite passed 331/331 in 20 files. Typecheck, standard full lint and changed-file Prettier passed. Logs are `review-correction-unit.log`, `review-correction-typecheck.log` and `review-correction-lint.log`. Independent correction review and Main's PG/build/browser gates remain pending.

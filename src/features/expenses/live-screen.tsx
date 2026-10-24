@@ -492,7 +492,9 @@ function LiveExpenses({
         การกลับรายการภายหลังแก้ยอดปัจจุบันของวันเดิม ไม่ใช่การบันทึกเงินคืน
       </Notice>
       {success && <SuccessMessage>{success}</SuccessMessage>}
-      {!action && <CommandRecovery attempt={attempt} actorId={actorId} />}
+      {!action && !selectedId && (
+        <CommandRecovery attempt={attempt} actorId={actorId} />
+      )}
       <div className={styles.actions}>
         <Button
           disabled={blocked || !!optionsError || !properties.length}
@@ -740,6 +742,7 @@ function LiveExpenses({
         description="ข้อมูลต้นฉบับและประวัติที่บันทึกในฐานข้อมูลจริง"
         wide
       >
+        <CommandRecovery attempt={attempt} actorId={actorId} />
         {detailError ? (
           <ErrorMessage>{detailError}</ErrorMessage>
         ) : !detail || detail.id !== selectedId ? (

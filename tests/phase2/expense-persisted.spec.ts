@@ -39,7 +39,7 @@ async function fixture() {
   });
   const property = await db.property.create({
     data: {
-      code: `EXP-UI-${key()}`,
+      code: `EU-${key().replaceAll("-", "").slice(0, 29)}`,
       name: `Synthetic Expense ${key()}`,
       address: "Synthetic expense address",
     },
@@ -563,4 +563,87 @@ test("expense persisted mobile keyboard, validation retention, max precision and
   expect(await db.expense.count({ where: { propertyId: f.property.id } })).toBe(
     1,
   );
+});
+
+test("expense persisted uncertain command stays keyboard reachable in selected detail", async ({
+  page,
+}) => {
+  const f = await fixture();
+  const existing = await createExpense(f.admin, {
+    propertyId: f.property.id,
+    categoryId: f.category.id,
+    description: `Synthetic preexisting detail ${key()}`,
+    vendor: "Synthetic existing vendor",
+    amount: "1.00",
+    occurredAt: "2026-10-24",
+    method: "CASH",
+    commandKey: key(),
+  });
+  await signIn(page.request);
+  await page.goto("/expenses/");
+  await showProperty(page, f.property.id);
+  const bodies: string[] = [];
+  await page.route(/\/api\/v1\/expenses\/?(?:\?.*)?$/, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    bodies.push(route.request().postData() ?? "");
+    const response = await route.fetch();
+    expect(response.status()).toBe(201);
+    if (bodies.length === 1) await route.abort("failed");
+    else await route.fulfill({ response });
+  });
+  const entryDialog = await capture(page, f, "8.00");
+  await entryDialog
+    .getByRole("button", { name: "บันทึกค่าใช้จ่ายรออนุมัติ", exact: true })
+    .click();
+  await expect(
+    entryDialog.getByRole("button", {
+      name: "ลองส่งคำสั่งเดิมอีกครั้ง",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await entryDialog
+    .getByRole("button", { name: "ปิดแบบฟอร์ม", exact: true })
+    .click();
+  await page
+    .getByRole("button", {
+      name: `ดูค่าใช้จ่าย ${existing.description}`,
+      exact: true,
+    })
+    .click();
+  const detailDialog = page.getByRole("dialog", {
+    name: "รายละเอียดค่าใช้จ่าย",
+    exact: true,
+  });
+  await expect(detailDialog).toContainText(existing.id);
+  const recovery = detailDialog.getByRole("region", {
+    name: "ติดตามผลคำสั่งค่าใช้จ่าย",
+    exact: true,
+  });
+  await expect(recovery).toBeVisible();
+  const retry = recovery.getByRole("button", {
+    name: "ลองส่งคำสั่งเดิมอีกครั้ง",
+    exact: true,
+  });
+  await retry.focus();
+  await expect(retry).toBeFocused();
+  const replay = page.waitForResponse(
+    (response) =>
+      /\/api\/v1\/expenses\/$/.test(new URL(response.url()).pathname) &&
+      response.request().method() === "POST",
+  );
+  await page.keyboard.press("Enter");
+  expect((await replay).status()).toBe(201);
+  await expect(detailDialog).toContainText("8.00 บาท");
+  await expect(recovery).toHaveCount(0);
+  expect(bodies).toHaveLength(2);
+  expect(bodies[0]).toBe(bodies[1]);
+  const body = createExpenseInput.parse(JSON.parse(bodies[0]));
+  expect(await db.expense.count({ where: { propertyId: f.property.id } })).toBe(
+    2,
+  );
+  expect(
+    await db.expenseCommand.count({
+      where: { actorId: f.admin.id, commandKey: body.commandKey },
+    }),
+  ).toBe(1);
 });

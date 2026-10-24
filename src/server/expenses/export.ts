@@ -39,10 +39,7 @@ export const expenseCsvColumns = [
 export function expenseCsvCell(value: string | number | null | undefined) {
   const text = value === null || value === undefined ? "" : String(value);
   const first = Array.from(text).find(
-    (character) =>
-      character.charCodeAt(0) > 32 &&
-      character.charCodeAt(0) !== 127 &&
-      !/\s/u.test(character),
+    (character) => !/[\s\p{Cc}]/u.test(character),
   );
   const safe = first && "=+-@".includes(first) ? `'${text}` : text;
   return `"${safe.replaceAll('"', '""')}"`;
