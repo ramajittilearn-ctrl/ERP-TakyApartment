@@ -1,0 +1,52 @@
+# Expense UI and CSV independent implementation review
+
+Reviewer: `/root/payment_financial_review`. Candidate: `6cedc189ba0d2a9427723546f2a0c4924dc40a12` in `/private/tmp/taky-expense-ui`. The reviewer did not implement this candidate and changed only this report. Findings were sent directly to Main for relay to the implementation owner.
+
+Status: static implementation corrections accepted through `ef80c00aa830915a21e29154360d7e1375b5183f`. EUI-02 passed independent formatter/parser retest; EUI-01 passed source re-review and has a new authored keyboard replay browser test, whose runtime result is still required. No real PostgreSQL export, browser, build or deployment gate is approved by this report.
+
+Read AGENTS.md, the installed Next.js route-handler documentation, the accepted expense UI contract/design review, installed Pstack Codex/Poteto/TypeScript/type discipline/Unslop guidance and relevant React guidance. Inspected the live screen, form/transport/journal/recovery modules, page/shell changes, export filter/predicate/transaction/formatter/route changes and authored unit, PostgreSQL and browser tests.
+
+## Findings and correction retest
+
+| ID | Severity | Location and reproduction | Required correction |
+|---|---|---|---|
+| EUI-01 | Medium | `src/features/expenses/live-screen.tsx:495` places recovery outside dialogs whenever no action is open. The detail Modal at lines 734-793 contains no recovery, while the action Modal includes it at line 803. Row detail buttons remain usable during an uncertain command. After a response is lost, close the action form and open an existing expense detail. The active Radix modal makes the page recovery inert, so its retry control is unavailable inside that dialog. This violates the explicit recovery-inside-active-modal contract. | Put the same recovery controls inside the active detail dialog, or prevent opening details while a command is unresolved with a clear explanation. Avoid duplicate accessible recovery controls behind the modal. Add a real response-loss browser regression that closes the action, opens detail, reaches retry by keyboard inside that dialog and proves the exact original request/key replay produces one committed record. |
+| EUI-02 | Medium | `src/server/expenses/export.ts:40` skips ASCII controls through 32, DEL and JavaScript whitespace when choosing a cell's first significant character, but does not skip C1 controls U+0080 through U+009F. Thus a note such as U+0085 followed by `=1`, or U+009F followed by `+1`, bypasses the required leading-control formula-prefix neutralization. These code points are accepted by the current text/note boundaries. This is a deterministic mismatch with the explicit formatter contract; this review does not claim a tested spreadsheet execution exploit for these exact code points. | Treat all supported leading control characters as ignorable when detecting the dangerous prefix, for example Unicode Cc controls plus whitespace, and test C1-prefixed `=`, `+`, `-` and `@` through the actual formatter/parser. Retain exact stored text and prepend the apostrophe only to exported values. |
+
+The implementation owner corrected both findings in `ef80c00aa830915a21e29154360d7e1375b5183f`. The reviewer independently inspected the exact diff from the original candidate. Recovery now renders within the selected detail Modal, and page recovery renders only when neither detail nor action modal is open. The action modal retains its recovery controls. This removes the inaccessible page-only control without creating a second accessible copy behind the detail modal. EUI-01 is closed at the source level, pending the real browser regression result.
+
+The seventh authored browser case creates an existing record, submits a second capture with real response loss after HTTP 201, closes the action form, opens existing detail, finds recovery inside that dialog, verifies focus, presses Enter to replay, and compares both serialized bodies while asserting one command result and exactly the two intended expense records. The reviewer inspected these assertions but did not execute this browser case.
+
+The formatter now skips Unicode Cc controls and JavaScript whitespace. New C1 fixtures cover U+0085 followed by `=1` and U+009F followed by `+1`. Every hostile fixture also passes through actual CSV formatting and parsing, and asserts the exported vendor contains an initial apostrophe followed by the unchanged original text. The independent focused retest passed. EUI-02 is closed.
+
+Main's first real PostgreSQL export attempt failed four cases during Property fixture creation, before those export paths ran; only session denial/pagination passed. The retained log is `database-qa-2026-10-24T04-43-56.466Z-54e17648-2d95-4d24-96e4-3ad68ae28ac9.log`, with child exit 1 and QA outcome 1. The source was `EXPORT-` plus a complete UUID, 43 characters, exceeding the actual `Property.code` VARCHAR(40). The correction uses 32-character synthetic codes for export and browser fixtures. The reviewer verified schema length 40 and the shorter construction. This is a fixture correction, not a schema change and not evidence that the real column limit is 32. Main is rerunning the corrected runtime suite; the earlier failed log remains preserved.
+
+No financial High/Critical implementation defect was identified in the reviewed increment.
+
+## Inspected financial and security behavior
+
+Capture preserves money as decimal text, normalizes fractional digits with string operations and rejects exponent/overprecision rather than rounding. Amount display never converts money through Number. Aggregate response validation accepts totals beyond the entry ceiling. Date entry stays an ISO date; timestamp presentation uses Bangkok.
+
+Only the authenticated server page supplies actor ID and initial ADMIN capability. Existing financial services continue to recheck enabled current roles. Client ADMIN controls are convenience and financial requests use the journal rather than a direct mutation fetch. Strict request schemas reject forged lifecycle/classification fields and the server remains authoritative for stale versions and category eligibility.
+
+The journal registers an attempt synchronously, freezes its body/path/key, survives client route unsubscribe and fences results by actor/generation. Network failures and malformed success bodies remain uncertain. Later definite rejection cannot erase earlier uncertainty, and IDEMPOTENCY_CONFLICT cannot be dismissed into a new command. Authentication loss follows explicit reconciliation/login behavior. Pagehide clears transient journal state. No localStorage/sessionStorage financial body persistence was introduced.
+
+List and detail reads use abort/freshness checks; a detail is rendered only if its ID matches the selection. Old-filter results are hidden while a current filter loads, and CSV is disabled until the list corresponds to those filters. The explicit demo screen remains separate from persisted commands and totals.
+
+List and export share the normalized predicate builder. Export requires current actor authorization, counts before fetching and rejects more than 10,000 matches before writing any CSV bytes. Authorization, rows, duplicate counts, exclusions and totals use the same RepeatableRead transaction. Export totals derive from the complete bounded DTO result using integer satang. The new batched duplicate query preserves the existing predicate and avoids an export-sized per-row query loop. No schema/migration or financial transition implementation was changed by this increment.
+
+CSV has fixed rectangular columns, an empty-result summary, exact monetary strings, immutable lifecycle fields and explicit current-view correction semantics. It quotes every cell, doubles quotes, uses BOM/CRLF and neutralizes formula prefixes after leading ASCII controls/whitespace and Unicode whitespace. EUI-02 identifies the remaining C1 control gap. Stored text remains unchanged. The fixed attachment filename derives from server time. Unknown, duplicate and pagination export parameters fail rather than silently truncate results. The route retains no-store JSON errors before CSV emission.
+
+## Verification actually executed
+
+The reviewer ran `./node_modules/.bin/vitest run tests/expense-ui.test.ts tests/expense-export.test.ts tests/expense-export-route.test.ts tests/expenses.test.ts tests/expense-route.test.ts`. It exited 0 with 61 tests in 5 files passed. This covers pure journal/transport behavior, input normalization, formula-prefix formatting, CSV parsing/metadata, route envelopes/denials and existing expense contracts. These tests do not replace real session, PostgreSQL, browser or accessibility evidence.
+
+After correction the reviewer reran the same focused command at `ef80c00aa830915a21e29154360d7e1375b5183f`. It exited 0 with 63 tests in 5 files passed, including the C1 formatter/parser regressions. The reviewer executed no database, Docker, browser or application build command.
+
+## Runtime coverage to inspect after Main executes it
+
+The authored PostgreSQL export suite checks genuine stored-session authorization through the replaced Next cookie boundary, list/export filter parity, large exact totals, empty and reversal exports, duplicate counts, concurrent approval consistency and the all-or-error 10,000/10,001 boundary. The concurrent case uses Promise.all and verifies self-consistent returned rows/totals; it does not force a commit between SELECTs. Require the actual result log before claiming those checks passed.
+
+Seven authored browser cases now cover STAFF capture and real API approval denial, ADMIN lifecycle/categories/corrections, response loss with navigation/replay, real isolated ADMIN demotion/logout, 105-row paging/downloaded CSV, mobile keyboard/Axe/demo separation and EUI-01's detail-modal keyboard recovery. They had not been executed for this review. Deliberately delayed filter/detail A responses arriving after B are still not exercised by these cases. Retain actual downloaded CSV, keyboard/accessibility and exact revision evidence. Browser screenshots or authored assertions alone are not a pass.
+
+Main owns guarded runtime execution, build serialization and controlled integration. Recheck the corrected source and actual PostgreSQL/browser evidence before closing this increment. The previously accepted bounded expense backend does not automatically establish UI/CSV acceptance.
