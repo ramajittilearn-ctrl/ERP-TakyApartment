@@ -1,0 +1,65 @@
+ Container taky-inventory-v4-proof-20261024-attempt1 Creating 
+ Container taky-inventory-v4-proof-20261024-attempt1 Created 
+PASS baseline v2 and unchanged unversioned legacy inventory
+PASS equal-count decimal mutation Property
+PASS equal-count decimal mutation Floor
+PASS equal-count decimal mutation Room
+PASS equal-count decimal mutation Tenant
+PASS equal-count decimal mutation Lease
+PASS equal-count decimal mutation SecurityDeposit
+PASS equal-count decimal mutation UtilityMeter
+PASS equal-count decimal mutation MeterReading
+PASS equal-count decimal mutation MeterReadingCorrection
+PASS equal-count decimal mutation MeterReplacement
+PASS equal-count decimal mutation UtilityRate
+PASS equal-count decimal mutation BillingPeriod
+PASS equal-count decimal mutation BillingRateSelection
+PASS equal-count decimal mutation BillingConsumptionApproval
+PASS equal-count decimal mutation Invoice
+PASS equal-count decimal mutation InvoiceItem
+PASS equal-count decimal mutation Payment
+PASS equal-count decimal mutation PaymentAllocation
+PASS equal-count decimal mutation ExpenseCategory
+PASS equal-count decimal mutation Expense
+PASS equal-count decimal mutation MaintenanceRequest
+PASS equal-count decimal mutation User
+PASS equal-count decimal mutation Session
+PASS equal-count decimal mutation LoginThrottle
+PASS equal-count decimal mutation Attachment
+PASS equal-count decimal mutation AuditLog
+PASS equal-count decimal mutation BackupHistory
+PASS equal-count decimal mutation BillingPeriodFreeze
+PASS equal-count decimal mutation BillingFreezeLease
+PASS equal-count decimal mutation InvoiceCorrection
+PASS equal-count decimal mutation InvoiceMonthCounter
+PASS equal-count decimal mutation PropertyDuePolicy
+PASS equal-count decimal mutation InvoiceCommand
+PASS deletion, NULL/empty distinction, large numeric precision and reordered rows
+PASS real pg_dump exported-snapshot consistency and private-socket pg_restore inventory comparison
+PASS unknown/missing v2 version rejection
+PASS v2 live row differs from exported snapshot before pg_dump
+PASS actual historical33 v2 33-table exported snapshot pg_dump/pg_restore (database=inventory_historical33_restore)
+PASS actual historical33 unversioned legacy pg_dump/pg_restore
+PASS v3 live row differs from exported snapshot before pg_dump
+PASS v3 restored equal-count mutation PaymentReversal
+PASS v3 restored equal-count mutation Receipt
+PASS v3 restored equal-count mutation ReceiptCancellation
+PASS v3 restored equal-count mutation PaymentCommand
+PASS v3 restored equal-count mutation ReceiptMonthCounter
+PASS actual migrated38 v3 38-table exported snapshot pg_dump/pg_restore (database=inventory_migrated38_restore)
+PASS all14 actual migrations; synthetic inventory-only payment fixture; trigger state origin/enabled
+PASS v4 migration preserves every historical expense/category column
+PASS v4 live row differs from exported snapshot before pg_dump
+PASS v4 restored equal-count mutation PaymentReversal
+PASS v4 restored equal-count mutation Receipt
+PASS v4 restored equal-count mutation ReceiptCancellation
+PASS v4 restored equal-count mutation PaymentCommand
+PASS v4 restored equal-count mutation ReceiptMonthCounter
+PASS v4 restored equal-count mutation ExpenseCommand.result
+PASS v4 restored equal-count mutation Expense.note
+PASS v4 restored equal-count mutation ExpenseCategory.active
+PASS actual migrated39 v4 39-table exported snapshot pg_dump/pg_restore (database=inventory_migrated39_restore)
+PASS all15 actual migrations; v4 default captures all39 tables and added expense columns
+
+Main observed process exit: 0
+
