@@ -380,6 +380,25 @@ describe("persisted expenses with real PostgreSQL integrity", () => {
         .totals,
     ).toEqual({ opex: "0.00", capex: "10000.01", total: "10000.01" });
   });
+  it("aggregates two posted maximum amounts above one-entry NUMERIC precision without loss", async () => {
+    const f = await fixture();
+    const first = await pending(f, "999999999999.99");
+    const second = await pending(f, "999999999999.99");
+    await postExpense(admin, posting(first.id));
+    await postExpense(admin, posting(second.id));
+    const result = await listExpenses(admin, {
+      propertyId: f.property.id,
+      limit: 1,
+    });
+    expect(result.total).toBe(2);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]?.amount).toBe("999999999999.99");
+    expect(result.totals).toEqual({
+      opex: "1999999999999.98",
+      capex: "0.00",
+      total: "1999999999999.98",
+    });
+  });
   it.each(["post/post", "post/cancel", "reverse/reverse"])(
     "allows exactly one committed conflicting %s transition",
     async (kind) => {
@@ -566,15 +585,59 @@ describe("persisted expenses with real PostgreSQL integrity", () => {
     ).rejects.toThrow();
     expect((await getExpense(admin, row.id)).status).toBe("PENDING");
   });
-  it("rejects numeric NaN at the database boundary with otherwise valid managed provenance", async () => {
+  it("rejects raw numeric NaN specifically by the managed constraint after an equivalent finite SQL insert succeeds", async () => {
     const f = await fixture();
     const row = await pending(f);
-    await expect(db.$executeRaw`INSERT INTO "Expense"(id,"propertyId","categoryId",description,amount,"occurredAt","updatedAt","legacyUnmapped",status,version,vendor,method,"recordedById","categoryNameSnapshot","categoryKindSnapshot")
-      SELECT gen_random_uuid(),"propertyId","categoryId",description,'NaN'::numeric,"occurredAt",now(),false,'PENDING',1,vendor,method,"recordedById","categoryNameSnapshot","categoryKindSnapshot" FROM "Expense" WHERE id=${row.id}::uuid`).rejects.toThrow();
-    await expect(
-      db.$executeRaw`UPDATE "Expense" SET amount='NaN'::numeric,status='POSTED',version=2,"postedById"=${admin.id}::uuid,"postedAt"=now() WHERE id=${row.id}::uuid`,
-    ).rejects.toThrow();
+    const client = new Client({ connectionString: process.env.DATABASE_URL });
+    await client.connect();
+    const insertSql = `INSERT INTO "Expense"(id,"propertyId","categoryId",description,amount,"occurredAt","updatedAt","legacyUnmapped",status,version,vendor,method,"recordedById","categoryNameSnapshot","categoryKindSnapshot")
+      SELECT gen_random_uuid(),"propertyId","categoryId",description,$1::numeric,"occurredAt",now(),false,'PENDING',1,vendor,method,"recordedById","categoryNameSnapshot","categoryKindSnapshot" FROM "Expense" WHERE id=$2::uuid RETURNING id,amount,status`;
+    try {
+      await client.query("BEGIN");
+      try {
+        const control = await client.query<{
+          id: string;
+          amount: string;
+          status: string;
+        }>(insertSql, ["1.00", row.id]);
+        expect(control.rowCount).toBe(1);
+        expect(control.rows[0]).toMatchObject({
+          amount: "1.00",
+          status: "PENDING",
+        });
+        expect(
+          await client
+            .query(
+              'SELECT count(*)::int AS n FROM "Expense" WHERE id=$1::uuid',
+              [control.rows[0]?.id],
+            )
+            .then((result) => result.rows[0]?.n),
+        ).toBe(1);
+      } finally {
+        await client.query("ROLLBACK");
+      }
+      await expect(
+        client.query(insertSql, ["NaN", row.id]),
+      ).rejects.toMatchObject({
+        code: "23514",
+        constraint: "Expense_lifecycle_shape",
+      });
+      await expect(
+        client.query(
+          `UPDATE "Expense" SET amount='NaN'::numeric,status='POSTED',version=2,"postedById"=$1::uuid,"postedAt"=now() WHERE id=$2::uuid`,
+          [admin.id, row.id],
+        ),
+      ).rejects.toMatchObject({
+        code: "P0001",
+        message: "Expense original fields and version are immutable",
+      });
+    } finally {
+      await client.end();
+    }
     expect((await getExpense(admin, row.id)).amount).toBe("1234.56");
+    expect(
+      (await listExpenses(admin, { propertyId: f.property.id })).total,
+    ).toBe(1);
     expect(
       (await listExpenses(admin, { propertyId: f.property.id })).totals.total,
     ).toBe("0.00");

@@ -262,6 +262,32 @@ async function main() {
           ],
         ),
       );
+    const { listExpenses } = await import("../../src/server/expenses");
+    const { db } = await import("../../src/server/db");
+    let managedReadProof;
+    try {
+      const actor = await db.user.findUniqueOrThrow({
+        where: { id: ids.user },
+      });
+      const result = await listExpenses(actor, { propertyId: ids.property });
+      assert.equal(result.scope, "managed-only");
+      assert.equal(result.excludedLegacyCount, 2);
+      assert.equal(result.total, 0);
+      assert.deepEqual(result.items, []);
+      assert.deepEqual(result.totals, {
+        opex: "0.00",
+        capex: "0.00",
+        total: "0.00",
+      });
+      managedReadProof = {
+        scope: result.scope,
+        excludedLegacyCount: result.excludedLegacyCount,
+        managedRows: result.total,
+        totals: result.totals,
+      };
+    } finally {
+      await db.$disconnect();
+    }
     const report = {
       result: "PASS",
       database: url.pathname.slice(1),
@@ -275,6 +301,7 @@ async function main() {
       preservedIndexes: originalIndexes.length,
       legacyInsertFence: "omitted and explicit true rejected",
       legacyUpdate: "rejected",
+      managedReadProof,
       stage,
     };
     writeFileSync(

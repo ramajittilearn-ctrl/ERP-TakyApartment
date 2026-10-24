@@ -34,3 +34,15 @@ The NaN test intentionally uses raw SQL copying a valid managed row and replacin
 Exactly one new Prisma model, ExpenseCommand, requires the next frozen restore registry, plus additive Expense/ExpenseCategory columns and User backrelations. Enums ExpenseStatus and ExpenseMethod are new. Migration is `202610240001_phase4_expenses`. Category provenance uses createdById/changedById and User relations expenseCategoriesCreated/Changed. Existing rows retain null managed/category provenance; a post-migration legacy INSERT is forbidden.
 
 No expense UI, CSV endpoint or restore-registry changes belong to this backend handoff. The accepted full Phase4 unit still requires those later components and browser agent UAT. Possible-duplicate warnings use exact property/vendor/date/amount matching and never reject legitimate repeated entries. DTOs expose possibleDuplicateCount on fresh create/detail/list reads. Command replay preserves the original result snapshot. Deposits remain separate.
+
+## ER-03 / ER-04 verification coverage correction
+
+The Main Agent reported that the original 21-case PostgreSQL run and first pristine migration rehearsal passed. Their existing attempt logs and JSON reports remain unchanged. The following source-only additions need new actual execution by Main and independent review:
+
+- The migration rehearsal now calls actual `listExpenses` against its preserved legacy fixture after upgrade. It requires managed-only scope, excludedLegacyCount exactly 2, managed count 0, no returned items and exact OPEX/CAPEX/total zero. It includes that observed response in the attempt JSON as managedReadProof. Main must run this enhanced rehearsal on a new pristine database; never reset or rerun pristine setup against the first upgraded database.
+- The integration suite adds two separately created and posted maximum amounts on one synthetic property and category. Its actual service query uses limit 1 but must return full-filter totals of 1999999999999.98 and total count 2, proving aggregate precision beyond the single-row NUMERIC ceiling.
+- The NaN regression now uses one identical parameterized raw SQL INSERT for both a finite 1.00 positive control and NaN. The positive control must insert one PENDING row and expose amount 1.00, then its explicit test transaction rolls back. The NaN call must report SQLSTATE 23514 and constraint Expense_lifecycle_shape, not just an arbitrary rejection. The separate original-row NaN UPDATE must report P0001 with the exact immutability guard message. The original row and totals must remain unchanged.
+
+Only tests and this handoff/evidence changed. Cached `tsc --noEmit --incremental` and ESLint on both changed test files exited 0; logs are typecheck-er03-er04.log and lint-er03-er04.log. No database, Docker, build, full-suite or browser command ran for this correction.
+
+The earlier sandbox termination request for the stuck default build was aborted after waiting. Main subsequently confirmed the old owned build PID was absent. There is no observed successful build exit and no webpack retry by this implementer. Main owns serialized heavy verification.
