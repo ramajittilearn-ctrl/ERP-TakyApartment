@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: frozen registry covers every current Prisma model exactly once
+ok 1 - frozen registry covers every current Prisma model exactly once
+  ---
+  duration_ms: 9.156
+  type: 'test'
+  ...
+# Subtest: v2 registry stays frozen at the exact historical 33 models
+ok 2 - v2 registry stays frozen at the exact historical 33 models
+  ---
+  duration_ms: 0.401791
+  type: 'test'
+  ...
+# Subtest: v3 stays frozen at 38 models and v4 appends only ExpenseCommand
+ok 3 - v3 stays frozen at 38 models and v4 appends only ExpenseCommand
+  ---
+  duration_ms: 0.147417
+  type: 'test'
+  ...
+# Subtest: legacy, v2 and v3 SQL bytes remain identical to the accepted baseline
+ok 4 - legacy, v2 and v3 SQL bytes remain identical to the accepted baseline
+  ---
+  duration_ms: 1.783167
+  type: 'test'
+  ...
+# Subtest: v2 hashes all full rows with its fixed registry
+ok 5 - v2 hashes all full rows with its fixed registry
+  ---
+  duration_ms: 0.148583
+  type: 'test'
+  ...
+# Subtest: v3 hashes all full rows with its fixed registry
+ok 6 - v3 hashes all full rows with its fixed registry
+  ---
+  duration_ms: 0.116625
+  type: 'test'
+  ...
+# Subtest: v4 hashes all full rows with its fixed registry
+ok 7 - v4 hashes all full rows with its fixed registry
+  ---
+  duration_ms: 0.201334
+  type: 'test'
+  ...
+# Subtest: absent version selects legacy, explicit unknown versions fail closed
+ok 8 - absent version selects legacy, explicit unknown versions fail closed
+  ---
+  duration_ms: 1.226542
+  type: 'test'
+  ...
+# Subtest: v2 requires exact canonical fingerprints before any DB access
+ok 9 - v2 requires exact canonical fingerprints before any DB access
+  ---
+  duration_ms: 2.8215
+  type: 'test'
+  ...
+# Subtest: v3 requires exact canonical fingerprints before any DB access
+ok 10 - v3 requires exact canonical fingerprints before any DB access
+  ---
+  duration_ms: 1.145625
+  type: 'test'
+  ...
+# Subtest: v4 requires exact canonical fingerprints before any DB access
+ok 11 - v4 requires exact canonical fingerprints before any DB access
+  ---
+  duration_ms: 1.226875
+  type: 'test'
+  ...
+# Subtest: arbitrarily large counts remain strings without Number rounding
+ok 12 - arbitrarily large counts remain strings without Number rounding
+  ---
+  duration_ms: 0.349625
+  type: 'test'
+  ...
+# Subtest: verifyDatabase rejects malformed inventory before filesystem or database setup
+ok 13 - verifyDatabase rejects malformed inventory before filesystem or database setup
+  ---
+  duration_ms: 0.1245
+  type: 'test'
+  ...
+# Subtest: archive verification and both restore routes reject unsupported inventory before database commands
+ok 14 - archive verification and both restore routes reject unsupported inventory before database commands
+  ---
+  duration_ms: 181.310792
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 283.483792

@@ -41,7 +41,11 @@ export const INVENTORY_TABLES_V3 = Object.freeze([
   "PaymentCommand",
   "ReceiptMonthCounter",
 ]);
-export const INVENTORY_TABLES = INVENTORY_TABLES_V3;
+export const INVENTORY_TABLES_V4 = Object.freeze([
+  ...INVENTORY_TABLES_V3,
+  "ExpenseCommand",
+]);
+export const INVENTORY_TABLES = INVENTORY_TABLES_V4;
 
 export const LEGACY_INVENTORY_SQL = `SELECT jsonb_build_object(
  'schema', (SELECT encode(sha256(convert_to(string_agg(table_name||':'||column_name||':'||data_type||':'||is_nullable,',' ORDER BY table_name,ordinal_position),'UTF8')),'hex') FROM information_schema.columns WHERE table_schema='public'),
@@ -65,11 +69,13 @@ function versionSql(version, registry) {
 }
 export const INVENTORY_SQL_V2 = versionSql(2, INVENTORY_TABLES_V2);
 export const INVENTORY_SQL_V3 = versionSql(3, INVENTORY_TABLES_V3);
-export const INVENTORY_SQL = INVENTORY_SQL_V3;
+export const INVENTORY_SQL_V4 = versionSql(4, INVENTORY_TABLES_V4);
+export const INVENTORY_SQL = INVENTORY_SQL_V4;
 export function inventorySql(version) {
   if (version === 1) return LEGACY_INVENTORY_SQL;
   if (version === 2) return INVENTORY_SQL_V2;
   if (version === 3) return INVENTORY_SQL_V3;
+  if (version === 4) return INVENTORY_SQL_V4;
   throw new Error("Unsupported inventory version");
 }
 
@@ -81,10 +87,18 @@ export function inventoryVersion(expected) {
       throw new Error("Missing inventory version");
     return 1;
   }
-  if (expected.version !== 2 && expected.version !== 3)
+  if (
+    expected.version !== 2 &&
+    expected.version !== 3 &&
+    expected.version !== 4
+  )
     throw new Error("Unsupported inventory version");
   const registry =
-    expected.version === 2 ? INVENTORY_TABLES_V2 : INVENTORY_TABLES_V3;
+    expected.version === 2
+      ? INVENTORY_TABLES_V2
+      : expected.version === 3
+        ? INVENTORY_TABLES_V3
+        : INVENTORY_TABLES_V4;
   const tables = expected.tables;
   if (
     !tables ||

@@ -3,15 +3,17 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { encrypt, run, sha256 } from "../../operations/archive.mjs";
 import { restoreProduction } from "../../operations/production-restore.mjs";
 import {
   INVENTORY_TABLES,
   INVENTORY_TABLES_V2,
   INVENTORY_TABLES_V3,
+  INVENTORY_TABLES_V4,
   INVENTORY_SQL_V2,
   INVENTORY_SQL_V3,
+  INVENTORY_SQL_V4,
   INVENTORY_SQL,
   LEGACY_INVENTORY_SQL,
   inventoryVersion,
@@ -24,13 +26,16 @@ import {
   restoreIsolated,
 } from "../../operations/database.mjs";
 
-function complete(version = 3) {
+function complete(version = 4) {
   return {
     version,
     tables: Object.fromEntries(
-      (version === 2 ? INVENTORY_TABLES_V2 : INVENTORY_TABLES_V3).map(
-        (name) => [name, { count: "0", sha256: "a".repeat(64) }],
-      ),
+      (version === 2
+        ? INVENTORY_TABLES_V2
+        : version === 3
+          ? INVENTORY_TABLES_V3
+          : INVENTORY_TABLES_V4
+      ).map((name) => [name, { count: "0", sha256: "a".repeat(64) }]),
     ),
   };
 }
@@ -42,9 +47,9 @@ test("frozen registry covers every current Prisma model exactly once", async () 
   const models = [...schema.matchAll(/^model (\w+) \{/gm)].map(
     (match) => match[1],
   );
-  assert.equal(models.length, 38);
+  assert.equal(models.length, 39);
   assert.deepEqual([...INVENTORY_TABLES].sort(), models.sort());
-  assert.equal(new Set(INVENTORY_TABLES).size, 38);
+  assert.equal(new Set(INVENTORY_TABLES).size, 39);
   assert(Object.isFrozen(INVENTORY_TABLES));
   assert.doesNotMatch(
     schema,
@@ -90,11 +95,45 @@ test("v2 registry stays frozen at the exact historical 33 models", () => {
   ]);
   assert(Object.isFrozen(INVENTORY_TABLES_V2));
   assert.deepEqual(INVENTORY_TABLES_V3.slice(0, 33), INVENTORY_TABLES_V2);
-  assert.equal(INVENTORY_SQL, INVENTORY_SQL_V3);
+  assert.equal(INVENTORY_SQL, INVENTORY_SQL_V4);
+});
+test("v3 stays frozen at 38 models and v4 appends only ExpenseCommand", () => {
+  assert.deepEqual(INVENTORY_TABLES_V3.slice(33), [
+    "PaymentReversal",
+    "Receipt",
+    "ReceiptCancellation",
+    "PaymentCommand",
+    "ReceiptMonthCounter",
+  ]);
+  assert.equal(INVENTORY_TABLES_V3.length, 38);
+  assert(Object.isFrozen(INVENTORY_TABLES_V3));
+  assert.deepEqual(INVENTORY_TABLES_V4, [
+    ...INVENTORY_TABLES_V3,
+    "ExpenseCommand",
+  ]);
+  assert(Object.isFrozen(INVENTORY_TABLES_V4));
+});
+test("legacy, v2 and v3 SQL bytes remain identical to the accepted baseline", () => {
+  for (const [query, expected] of [
+    [
+      LEGACY_INVENTORY_SQL,
+      "50e172a8a8f7cd334850584a63a5d883f7243107ea167786774cf91bbb2ca42c",
+    ],
+    [
+      INVENTORY_SQL_V2,
+      "7d1844a4bc13e06bf2befb700d2d323cc8193c4653d8b5f11ea7919402fa0ca5",
+    ],
+    [
+      INVENTORY_SQL_V3,
+      "8aaa7d4186ba2012dd1949ecbbf6a06cbb15cb504f0c0be76995ec08cc27146b",
+    ],
+  ])
+    assert.equal(createHash("sha256").update(query).digest("hex"), expected);
 });
 for (const [version, registry, query] of [
   [2, INVENTORY_TABLES_V2, INVENTORY_SQL_V2],
   [3, INVENTORY_TABLES_V3, INVENTORY_SQL_V3],
+  [4, INVENTORY_TABLES_V4, INVENTORY_SQL_V4],
 ])
   test(`v${version} hashes all full rows with its fixed registry`, () => {
     assert(query.startsWith(LEGACY_INVENTORY_SQL.replace(/;$/, "")));
@@ -114,8 +153,8 @@ for (const [version, registry, query] of [
   });
 test("absent version selects legacy, explicit unknown versions fail closed", () => {
   assert.equal(inventoryVersion({ schema: "legacy" }), 1);
-  assert.equal(inventoryVersion(complete()), 3);
-  for (const version of [undefined, null, 1, 4, "2", "3", false])
+  assert.equal(inventoryVersion(complete()), 4);
+  for (const version of [undefined, null, 1, 5, "2", "3", "4", false])
     assert.throws(
       () => inventoryVersion({ ...complete(), version }),
       /Unsupported inventory version/,
@@ -129,7 +168,7 @@ test("absent version selects legacy, explicit unknown versions fail closed", () 
   for (const malformed of [null, [], "inventory"])
     assert.throws(() => inventoryVersion(malformed), /Invalid inventory/);
 });
-for (const version of [2, 3])
+for (const version of [2, 3, 4])
   test(`v${version} requires exact canonical fingerprints before any DB access`, async () => {
     const bad = [];
     for (const key of ["__proto__", "constructor", "prototype"]) {
@@ -172,7 +211,7 @@ for (const version of [2, 3])
 test("arbitrarily large counts remain strings without Number rounding", () => {
   const value = complete();
   value.tables.Payment.count = "90071992547409931234567890";
-  assert.equal(inventoryVersion(value), 3);
+  assert.equal(inventoryVersion(value), 4);
   assert.equal(value.tables.Payment.count, "90071992547409931234567890");
 });
 

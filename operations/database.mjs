@@ -21,7 +21,7 @@ export function sql(query, env = process.env, version = 1) {
     },
   });
 }
-export async function inventory(env = process.env, version = 3) {
+export async function inventory(env = process.env, version = 4) {
   const query = inventorySql(version);
   return JSON.parse(await sql(query, env, version));
 }
@@ -33,7 +33,7 @@ export async function assertInventory(expected, env = process.env) {
     "Restored database inventory differs from snapshot",
   );
 }
-export async function exportSnapshot(version = 3) {
+export async function exportSnapshot(version = 4) {
   const query = inventorySql(version);
   const child = spawn("psql", ["-X", "-v", "ON_ERROR_STOP=1", "-At"], {
     env: {

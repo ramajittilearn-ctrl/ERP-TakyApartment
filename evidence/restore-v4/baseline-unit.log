@@ -1,0 +1,86 @@
+TAP version 13
+# Subtest: frozen registry covers every current Prisma model exactly once
+not ok 1 - frozen registry covers every current Prisma model exactly once
+  ---
+  duration_ms: 3.363458
+  type: 'test'
+  location: '/private/tmp/taky-restore-v4/tests/ops/inventory.test.mjs:37:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    39 !== 38
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 38
+  actual: 39
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/taky-restore-v4/tests/ops/inventory.test.mjs:45:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: v2 registry stays frozen at the exact historical 33 models
+ok 2 - v2 registry stays frozen at the exact historical 33 models
+  ---
+  duration_ms: 0.6155
+  type: 'test'
+  ...
+# Subtest: v2 hashes all full rows with its fixed registry
+ok 3 - v2 hashes all full rows with its fixed registry
+  ---
+  duration_ms: 0.172583
+  type: 'test'
+  ...
+# Subtest: v3 hashes all full rows with its fixed registry
+ok 4 - v3 hashes all full rows with its fixed registry
+  ---
+  duration_ms: 0.152791
+  type: 'test'
+  ...
+# Subtest: absent version selects legacy, explicit unknown versions fail closed
+ok 5 - absent version selects legacy, explicit unknown versions fail closed
+  ---
+  duration_ms: 0.585541
+  type: 'test'
+  ...
+# Subtest: v2 requires exact canonical fingerprints before any DB access
+ok 6 - v2 requires exact canonical fingerprints before any DB access
+  ---
+  duration_ms: 1.019416
+  type: 'test'
+  ...
+# Subtest: v3 requires exact canonical fingerprints before any DB access
+ok 7 - v3 requires exact canonical fingerprints before any DB access
+  ---
+  duration_ms: 0.64175
+  type: 'test'
+  ...
+# Subtest: arbitrarily large counts remain strings without Number rounding
+ok 8 - arbitrarily large counts remain strings without Number rounding
+  ---
+  duration_ms: 0.086583
+  type: 'test'
+  ...
+# Subtest: verifyDatabase rejects malformed inventory before filesystem or database setup
+ok 9 - verifyDatabase rejects malformed inventory before filesystem or database setup
+  ---
+  duration_ms: 0.299334
+  type: 'test'
+  ...
+# Subtest: archive verification and both restore routes reject unsupported inventory before database commands
+ok 10 - archive verification and both restore routes reject unsupported inventory before database commands
+  ---
+  duration_ms: 61.81175
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 9
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 114.420375
