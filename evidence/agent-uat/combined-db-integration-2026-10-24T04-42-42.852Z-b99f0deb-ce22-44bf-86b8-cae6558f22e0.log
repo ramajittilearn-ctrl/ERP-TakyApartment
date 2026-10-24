@@ -1,0 +1,48 @@
+{"mode":"integration","attempt":"2026-10-24T04-42-42.852Z-b99f0deb-ce22-44bf-86b8-cae6558f22e0","project":"taky-remediation-integration-d7fd72f9c44a489094ca94e7","runId":"d7fd72f9c44a489094ca94e7","role":"int_d7fd72f9c44a489094ca94e7","database":"taky_phase2_test","host":"127.0.0.1","port":55451,"subnet":"10.253.244.0/28","volume":"taky-remediation-integration-d7fd72f9c44a489094ca94e7_database","origin":"http://127.0.0.1:3820","planValidated":true}
+{"attested":true,"database":"taky_phase2_test","role":"int_d7fd72f9c44a489094ca94e7","public_tables":40,"host":"127.0.0.1","port":55451}
+{"selectedFiles":["tests/integration/auth-throttle.test.ts","tests/integration/billing-preview.test.ts","tests/integration/finance-foundation.test.ts","tests/integration/foundation.test.ts","tests/integration/invoices.test.ts","tests/integration/meter-reading.test.ts","tests/integration/room-assignment.test.ts"],"excludedFiles":["tests/integration/payments.test.ts","tests/integration/payment-routes.test.ts","tests/integration/receipt-pdf.test.ts","tests/integration/expenses.test.ts"]}
+Stage: node_modules/.bin/vitest run --config vitest.integration.config.ts tests/integration/auth-throttle.test.ts tests/integration/billing-preview.test.ts tests/integration/finance-foundation.test.ts tests/integration/foundation.test.ts tests/integration/invoices.test.ts tests/integration/meter-reading.test.ts tests/integration/room-assignment.test.ts --exclude tests/integration/payments.test.ts --exclude tests/integration/payment-routes.test.ts --exclude tests/integration/receipt-pdf.test.ts --exclude tests/integration/expenses.test.ts
+
+ RUN  v4.1.12 /private/tmp/taky-development
+
+ ✓ tests/integration/billing-preview.test.ts (23 tests) 6021ms
+     ✓ reports missing inputs and never defaults to zero  398ms
+     ✓ uses contractual rent, separate dates, exact raw totals and read-only deterministic previews  546ms
+     ✓ requires complete verified replacement segments and preserves separate physical meter sources  540ms
+     ✓ supports read-only closed preview but closure alone does not authorize issuing or retrospective approvals  719ms
+     ✓ does not silently assign a multi-period actual reading to its final month  331ms
+     ✓ bills explicit ADMIN allocations to each nonoverlapping lease without exceeding room usage  453ms
+ ✓ tests/integration/auth-throttle.test.ts (8 tests) 6109ms
+     ✓ allows unrelated ADMIN and STAFF login when the legacy global bucket is exhausted  375ms
+     ✓ gives existing and unknown identifiers the same five-attempt allowance and errors  1926ms
+     ✓ normalizes case and whitespace before counting attempts  1491ms
+     ✓ counts concurrent attempts atomically  605ms
+     ✓ resets its own attempt allowance after a successful login  867ms
+ ✓ tests/integration/invoices.test.ts (21 tests) 5429ms
+     ✓ blocks draft PDF data and enforces the existing invoice read role  328ms
+     ✓ freezes every eligible lease atomically, preserves labels and exact engine parity  653ms
+     ✓ requires due configuration and resolves explicit policy only when refreshed  391ms
+     ✓ allocates globally unique canonical-month numbers under simultaneous issue and same-key retry  459ms
+     ✓ does not branch concurrent revisions  303ms
+     ✓ retains unprepared and VOID lease reservations and overlays latest corrections under room caps  436ms
+ ✓ tests/integration/meter-reading.test.ts (14 tests) 3650ms
+     ✓ applies migration and exposes both utility slots before setup  459ms
+     ✓ confirms readings in chronological order and rechecks stale drafts  1511ms
+ ✓ tests/integration/foundation.test.ts (10 tests) 1790ms
+     ✓ throttles invalid credentials persistently  840ms
+ ✓ tests/integration/room-assignment.test.ts (9 tests) 849ms
+ ✓ tests/integration/finance-foundation.test.ts (7 tests) 459ms
+
+ Test Files  7 passed (7)
+      Tests  92 passed (92)
+   Start at  11:42:43
+   Duration  27.15s (transform 787ms, setup 0ms, import 1.97s, tests 24.31s, environment 1ms)
+
+(node:84815) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:84877) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:84887) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Stage outcome: {"exitCode":0,"signal":null,"error":null}
+Outcome: 0

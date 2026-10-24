@@ -8,3 +8,5 @@ Repository URL: https://github.com/ramajittilearn-ctrl/ERP-TakyApartment
 Development branch: https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/tree/codex/project-integration-snapshot
 
 Owner reported 404. Main rechecked repository/ref through the authenticated connector successfully. The in-app browser visibly showed the repository 404 with a Sign in link and no authenticated account. Main opened that existing GitHub sign-in destination for handoff. Browser access requires signing in to the owner account or another account with repository permission. No repository visibility, credentials or permission changes were made.
+
+2026-10-24: pushed accepted expense backend and v4 restore through df6571869817b6b78175223105e5367326d2b005. Native push exit0; independent GitHub API ref returned exact same SHA. Original branch ancestry limitation and private login requirements remain.

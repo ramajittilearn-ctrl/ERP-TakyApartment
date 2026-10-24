@@ -74,3 +74,13 @@ Restore-v4 owner commit2a59899 was independently code-reviewed. Main executed it
 The expense UI/CSV owner is implementing in /private/tmp/taky-expense-ui from expense83d6819. Own source, query/export additions and narrow AppShell classification only; no financial command, schema or operations writes. Owner reports329 local unit tests and typecheck, with real-session/export and six browser cases authored but not executed. Main must inspect freeze, assign independent review and run actual evidence. Do not accept implementation-owner counts as those runtime gates.
 
 Fresh baseline regression plan d7fd72f9c44a489094ca94e7 is prepared but not started. Updated /private/tmp/taky-combined-db-qa/runner.cjs pins it, preserves v1 helpers, selects seven baseline files and excludes four separately guarded suites explicitly. Validate-plan passed. Old owned integration project4896c4d1e00a0ca6939fd8bc still occupies port55451/subnet10.253.244.0/28. Stop only that owned project without volume deletion before starting the new plan. Never stop QA2, whose database storage is tmpfs and still contains accepted test evidence. All UAT/operational projects remain protected.
+
+## Verified continuation on 2026-10-24
+
+Integrated restore implementation as3067aa5 and actual reviewed evidence asdf65718. Main reran all54 operations tests successfully. Pushed reviewed development branch through df6571869817b6b78175223105e5367326d2b005 and independently verified exact GitHub ref. Private browser login remains a separate access issue.
+
+Fresh isolated baseline d7fd72f9c44a489094ca94e7 applied15 migrations and passed92/92 tests in seven files. Only old owned regression project4896 was stopped, preserving its volume. QA2 tmpfs project remains running. Current baseline container remains owned and isolated.
+
+Expense UI candidate6cedc18 received independent61 focused tests and two Medium findings: recovery inaccessible inside detail modal, and C1-leading controls missed formula-prefix neutralization. Owner correcting both. First actual export PG attempt failed4/5 at fixture Property.code length before export behavior; one genuine session denial case passed. This is preserved evidence, not an export runtime acceptance. Owner correcting fixture under real32-character schema. New dedicated export helper is /private/tmp/taky-expense-export-qa/runner.cjs.
+
+FIN-NaN-01 rollback reproduction helper is under review; its first oversized synthetic property code was caught before any DB execution. No payment vulnerability claim yet.
