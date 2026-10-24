@@ -1,0 +1,12 @@
+{"mode":"rehearsal2","source":{"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","project":"taky-payment-qa2-isolated","host":"127.0.0.1","port":55489},"targets":{"integration":"taky_expense_test_2b5214bd52_integration1","rehearsal":"taky_expense_test_2b5214bd52_rehearsal1","rehearsal2":"taky_expense_test_2b5214bd52_rehearsal2"},"planValidated":true}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+{"attested":true,"database":"taky_expense_test_2b5214bd52_rehearsal2","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+Loaded Prisma config from ../taky-expense-migration-UEOwu8/prisma.config.ts.
+
+Prisma schema loaded from ../taky-expense-migration-UEOwu8/schema.prisma.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Expense migration rehearsal PASS: 2 original expense rows, 1 category, 1 attachment, 13 constraints and 12 indexes preserved.
+Child exit: 0; signal: none; timeout: false; outputLimit: false
+QA outcome: 0

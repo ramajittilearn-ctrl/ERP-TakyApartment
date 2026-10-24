@@ -1,0 +1,4 @@
+{"mode":"create-rehearsal2","source":{"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","project":"taky-payment-qa2-isolated","host":"127.0.0.1","port":55489},"targets":{"integration":"taky_expense_test_2b5214bd52_integration1","rehearsal":"taky_expense_test_2b5214bd52_rehearsal1","rehearsal2":"taky_expense_test_2b5214bd52_rehearsal2"},"planValidated":true}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+Created isolated database: taky_expense_test_2b5214bd52_rehearsal2
+QA outcome: 0

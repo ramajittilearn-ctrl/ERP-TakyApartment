@@ -1,0 +1,5 @@
+# Restore inventory v4 independent design review
+
+Main reviewed the bounded contract against the accepted v3 baseline and expense39-model schema. Design accepted before implementation. Version4 appends only ExpenseCommand and uses complete row JSON for new existing-table columns. Historical registries/order and legacy/v2/v3 SQL SHA256 must stay byte-identical. Unversioned legacy semantics remain; explicit version validation still precedes all restore mutations.
+
+The real isolated harness must retain old33 legacy/v2, old38 v3 and new39 v4 stages, using real migrations and fresh restore databases. Each snapshot must restore the captured state while live source changes, and equal-count new-column/command mutation must change fingerprints. Replica-mode synthetic archive fixtures are not lifecycle proof; verify all triggers return to origin-enabled. Main executes actual Docker/PostgreSQL and another reviewer accepts implementation/evidence before integration. No operational22-table source or production volume is touched.

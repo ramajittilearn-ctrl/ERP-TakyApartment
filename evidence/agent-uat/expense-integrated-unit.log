@@ -1,0 +1,9 @@
+
+ RUN  v4.1.12 /private/tmp/taky-development
+
+
+ Test Files  20 passed (20)
+      Tests  322 passed (322)
+   Start at  11:30:22
+   Duration  5.09s (transform 3.09s, setup 0ms, import 9.57s, tests 7.98s, environment 10ms)
+

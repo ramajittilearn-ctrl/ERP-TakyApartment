@@ -1,0 +1,13 @@
+Datasource "db": PostgreSQL database "taky_expense_test_2b5214bd52_rehearsal1", schema "public" at "127.0.0.1:55489"
+
+15 migrations found in prisma/migrations
+
+Applying migration `202610240001_phase4_expenses`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 202610240001_phase4_expenses/
+    └─ migration.sql
+
+All migrations have been successfully applied.

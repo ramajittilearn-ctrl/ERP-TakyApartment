@@ -1,0 +1,11 @@
+# Expense UI and CSV independent design review
+
+Main reviewed the expense UI contract against the frozen expense backend DTOs/routes, the accepted payment journal and the explicit Phase 4 defaults. Design accepted for isolated implementation. No UI, export service or behavioral acceptance is established by this review.
+
+The separate persisted default and explicitly selected demo preserve monetary source ownership. Current-role API checks, strict parsed DTOs, exact text amounts, stale-read fencing and versioned explicit approval/corrections match the reviewed domain. The journal keeps uncertain commands and original keys across menu navigation; recovery belongs inside the active modal and must survive permission errors after a lost response. No client number calculation or silent automatic retry is acceptable.
+
+The complete filtered CSV export is accepted as a bounded read-only increment. It must share actual list predicates and one RepeatableRead snapshot for authorization, rows, exclusions and summary. Ten thousand rows is an explicit all-or-error bound. Empty exports retain summary metadata. Formula-prefix neutralization must be tested on actual downloaded bytes, including leading controls and whitespace; quoting alone is insufficient. Numeric aggregates may exceed one-entry precision. The export is a current corrected ledger view, with no statutory or reconciled-cash claim.
+
+Implementation owner may own the expense feature/page, the new export formatter/route and only the narrowly needed expense contracts/query/service/index changes. Backend owner must first freeze or transfer those files. No schema or restore inventory changes belong to UI work. Main alone changes AppShell expense classification at integration and coordinates dependency commits.
+
+Acceptance includes independent code review and real-session PG/export and guarded browser evidence, especially populated databases, exact totals, uncertain responses, role changes, category deactivation, CSV boundaries and mobile keyboard access. The recent receipt integration test demonstrated why tests must select their actual entity using supported filters instead of assume an empty first page. Preserve that lesson in the populated expense browser cases.

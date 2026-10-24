@@ -1,0 +1,23 @@
+# Expense database QA runner
+
+This temporary driver runs only the expense integration test and migration rehearsal from `/private/tmp/taky-expenses-development`. It never drops or resets a database and never runs Docker. It pins the existing QA2 source endpoint, database, role, project metadata, and private environment paths. Configuration files must be regular files owned by the current user. The private environment must deny group and other access. No credential values are printed.
+
+Supported commands are `node /private/tmp/taky-expenses-qa/runner.cjs MODE`, where MODE is one of:
+
+- `validate-plan` validates local metadata and the private URL only. It does not connect to PostgreSQL.
+- `preflight` attests the actual source database and role without mutation.
+- `create-integration` attests the source, refuses an existing target, then creates exactly `taky_expense_test_2b5214bd52_integration1` with the pinned role as owner.
+- `create-rehearsal` similarly creates exactly `taky_expense_test_2b5214bd52_rehearsal1`.
+- `setup` attests the source and integration target, requires zero public tables, then runs Prisma migration deploy against the integration target only.
+- `integration` attests both databases and requires fifteen applied migrations including `202610240001_phase4_expenses`, then runs only `tests/integration/expenses.test.ts`.
+- `rehearsal` attests the source and rehearsal target, requires zero public tables, then runs `node --import tsx tests/integration/expenses-migration-rehearsal.ts`. That script deploys the fourteen-migration baseline, writes synthetic legacy fixtures, and deploys the fifteenth migration to verify preservation.
+
+Use creation once per target. Run integration setup once, then the integration tests. Run rehearsal only on its untouched target. Failed or completed databases remain intact. Do not rerun setup or rehearsal on a partially initialized database. There is no cleanup or reset mode.
+
+Every connecting command acquires the same exclusive `/private/tmp/taky-expenses-qa/operation.lock`. A stale lock is never automatically removed. Manual inspection must establish that no operation or child remains before recovery. The runner releases only the lock inode that it acquired. Parent termination may leave the lock and a child process for manual inspection.
+
+Children receive only an explicit environment allowlist, the attested target URL, and a private synthetic session secret. Ambient PostgreSQL variables and `NODE_OPTIONS` are excluded. `DOTENV_CONFIG_PATH=/dev/null` prevents the Prisma configuration's dotenv import from loading a project environment file. Setup has a two-minute limit; integration and rehearsal have ten-minute limits. On timeout or excessive output, the driver terminates the entire child process group. It preserves all target data.
+
+Each attempt writes an exclusive timestamp-and-UUID evidence log under the worktree's `evidence/expenses/`. Credentials and database URLs are redacted. The migration rehearsal also writes its own uniquely named preservation artifacts.
+
+Preparation validation is limited to `node --check` and `validate-plan`. These checks do not establish database access, migration success, or test success. The Main Agent must independently review and execute the driver when the implementation and review are ready.

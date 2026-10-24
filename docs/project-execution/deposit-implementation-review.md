@@ -1,0 +1,20 @@
+# Managed deposit implementation design review
+
+Main independently reviewed the new contract against the previous deposit findings and the actual source gate, payment service, migration and operations snapshot code. This is a design review, with no deposit code or database test claim.
+
+The separate managed ledger, immutable originals, explicit historical review, restricted reversal targets and gross/reversed/net equations resolve the original representation and reconciliation concerns. The mixed bank transfer restriction is explicit and avoids a general transfer framework. Retain the requirement for an independent review of the affected Payment change and real cross-stream races.
+
+Two concrete corrections are required before managed posting implementation.
+
+1. Every new managed money invariant must explicitly reject PostgreSQL numeric NaN as well as require positive amounts. Expense independent review identified that NUMERIC(14,2) and a positive comparison alone admit NaN. Apply the finite guard to entries, positive openings and every derived database path, and add raw direct-SQL tests. Arbitrary-precision totals still remain valid; do not cap totals to one entry.
+2. The direct-SQL statement trigger must acquire the existing shared source gate before the incoming-bank gate, matching the service order before any row locks. A statement trigger that acquires only the bank gate can then reach an existing source-gate trigger in reverse order, including when invoice closing requests the exclusive source gate. Specify deterministic actual-connection tests involving a concurrent exclusive close and both statement/service bank commands. Unsupported manual locking may fail atomically, but ordinary supported SQL trigger paths must have a compatible order.
+
+The upload protocol needs explicit deployment defaults rather than the adjective conservative. Select a concrete total ceiling and per-actor admission rate under the standing authorization. Existing backup exportSnapshot is a REPEATABLE READ READ ONLY session and currently has no attachment-publication advisory lock. The proposed new consistency gate must be a held session advisory lock or acquired before starting the read-only snapshot transaction, with release in finally on every outcome. Verify exact PostgreSQL session-lock permission/behavior rather than assuming an xact lock in a read-only snapshot works. Document lock order and do not add the source gate afterwards. This is a required implementation dependency, not a claim that current backup is already safe for new uploads.
+
+Pending those clarifications, pure arithmetic, strict boundary types and read-only characterization may proceed. No schema or financial command implementation is approved by this review yet. Actual legal issuer/account identifiers, existing historical balances and operational key custody remain factual release work. Their absence does not require another blanket permission request.
+
+## Correction verification and design acceptance
+
+Main reread the corrected contract. It now explicitly excludes NaN for positive entries and zero-capable openings, preserves arbitrary-precision totals, and requires raw SQL attempts. Direct SQL statement triggers acquire source gate 73422193 shared before bank admission and row locks. The deterministic close/bank acceptance cases cover both supported command paths. Upload limits are concrete: 5 MiB per file, ten attempts per rolling ten minutes per ADMIN, one active upload per actor and 5 GiB retained-volume ceiling. Backup holds a dedicated publication session lock before inventory and the separate read-only snapshot, detects lock-owner loss and releases in outer finally. These changes resolve the design findings.
+
+Design accepted for staged local implementation under the standing authorization. This does not accept any unimplemented migration, Payment change, upload security, backup operation or financial behavior. Each material unit still requires independent code review and actual PostgreSQL/filesystem/browser evidence before integration. Main coordinates shared schema and newest restore registry after the expense baseline.

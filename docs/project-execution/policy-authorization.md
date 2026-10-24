@@ -40,3 +40,13 @@ Read-only deployment discovery found the existing taky-erp project healthy and b
 ## Phase 4 expense development defaults
 
 Recorded 2026-10-24 under the standing broad completion authorization. Main adopts the independently reviewed expense contract: STAFF/ADMIN may prepare immutable pending records; ADMIN posts, cancels or fully reverses; corrections cancel/reverse then recreate; categories are global, immutable in name/kind and may be deactivated; existing rows remain explicitly unverified and excluded from managed totals. New inserts cannot enter the legacy shape. Totals use current POSTED records by occurredAt and frozen OPEX/CAPEX category, so a later reversal corrects the original occurrence period. These are recorded approved expenses, without claims of reconciled cash flow, statutory profit or depreciation. No tax, outgoing bank reference uniqueness or automatic deposit expense is inferred. Independent implementation and real database/browser gates remain.
+
+## Stage 3E deposit development defaults
+
+Main adopts the independently corrected deposit implementation contract for local implementation under the standing authorization. ADMIN posts and reviews; STAFF reads. Contractual Lease.deposit and unverified legacy rows remain separate from managed held liability. Positive top-ups, full immutable reversal of original entries only, explicit historical review and exact gross/reversed/net totals are selected. Every deposit event uses retained private evidence and an operator assertion; no automatic bank transfer or verification is claimed. Mixed rent/deposit incoming transfers are explicitly unsupported in this unit and cannot use fabricated reference suffixes. Cross-stream identity admission and affected Payment changes need independent financial review.
+
+Private evidence limits and no-expiry retention are technical defaults in the reviewed contract, with authorization, file validation, backup publication consistency and real restore tests required. Real legal identity, actual bank account labels, actual historical opening balances, encryption/key custody and deployment storage facts remain factual release work. No seed fixture supplies them.
+
+## GitHub publication instruction
+
+Owner explicitly asked to push completed work to GitHub. Main may publish reviewed local milestones to the dedicated development branch and continue updating it without another routine permission request. First push was verified at 97d6bfca38820d667cf65173eaebb39e357c3100. Main/protected/UAT branches remain unchanged; no production acceptance follows from publication.
