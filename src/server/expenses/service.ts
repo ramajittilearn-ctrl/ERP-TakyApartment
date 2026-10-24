@@ -12,6 +12,8 @@ import {
   createExpenseCategoryInput,
   setExpenseCategoryActiveInput,
   expenseListInput,
+  expenseExportInput,
+  type ExpenseExportDto,
   expenseId,
   expenseDtoSchema,
   categoryDtoSchema,
@@ -19,7 +21,8 @@ import {
   type CategoryDto,
   type ExpenseListDto,
 } from "./contracts";
-import { expenseFingerprint } from "./domain";
+import { expenseFingerprint, expenseTotals } from "./domain";
+import { expenseWhere } from "./query";
 function fail(code: string, message: string, status = 409): never {
   throw new AppError(status, code, message);
 }
@@ -480,26 +483,7 @@ export async function listExpenses(
   return db.$transaction(
     async (tx) => {
       await authorize(tx, actor);
-      const where: Prisma.ExpenseWhereInput = {
-        legacyUnmapped: false,
-        isDemo: false,
-        propertyId: data.propertyId,
-        categoryId: data.categoryId,
-        categoryKindSnapshot: data.kind,
-        status: data.status,
-        occurredAt: {
-          ...(data.from ? { gte: new Date(data.from + "T00:00:00Z") } : {}),
-          ...(data.to ? { lte: new Date(data.to + "T00:00:00Z") } : {}),
-        },
-        ...(data.query
-          ? {
-              OR: [
-                { description: { contains: data.query, mode: "insensitive" } },
-                { vendor: { contains: data.query, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      };
+      const where = expenseWhere(data);
       const rows = await tx.expense.findMany({
         where,
         orderBy: [
@@ -539,5 +523,64 @@ export async function listExpenses(
       };
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+  );
+}
+
+export const EXPENSE_EXPORT_LIMIT = 10000;
+export async function exportExpenses(
+  actor: Actor,
+  input: unknown,
+): Promise<ExpenseExportDto> {
+  const filters = expenseExportInput.parse(input);
+  return db.$transaction(
+    async (tx) => {
+      await authorize(tx, actor);
+      const where = expenseWhere(filters);
+      const count = await tx.expense.count({ where });
+      if (count > EXPENSE_EXPORT_LIMIT)
+        fail(
+          "EXPORT_TOO_LARGE",
+          "มีมากกว่า 10,000 รายการ กรุณาระบุตัวกรองให้แคบลง",
+          422,
+        );
+      const rows = await tx.expense.findMany({
+        where,
+        take: EXPENSE_EXPORT_LIMIT,
+        orderBy: [
+          { occurredAt: "desc" },
+          { createdAt: "desc" },
+          { id: "desc" },
+        ],
+      });
+      // One database query counts possible duplicates without an export-sized N+1 loop.
+      const duplicateCounts = rows.length
+        ? await tx.$queryRaw<{ id: string; count: bigint }[]>(Prisma.sql`
+      SELECT a.id, count(b.id)::bigint AS count FROM "Expense" a
+      LEFT JOIN "Expense" b ON b.id <> a.id AND b."propertyId"=a."propertyId"
+        AND b.vendor=a.vendor AND b."occurredAt"=a."occurredAt" AND b.amount=a.amount
+        AND b."legacyUnmapped"=false AND b."isDemo"=false AND b.status IN ('PENDING','POSTED')
+        AND a.status IN ('PENDING','POSTED')
+      WHERE a.id IN (${Prisma.join(rows.map((row) => Prisma.sql`${row.id}::uuid`))}) GROUP BY a.id
+    `)
+        : [];
+      const counts = new Map(
+        duplicateCounts.map((row) => [row.id, Number(row.count)]),
+      );
+      const items = rows.map((row) => dto(row, counts.get(row.id) ?? 0));
+      return {
+        scope: "managed-only",
+        filters,
+        generatedAt: new Date().toISOString(),
+        items,
+        excludedLegacyCount: await tx.expense.count({
+          where: { legacyUnmapped: true, propertyId: filters.propertyId },
+        }),
+        totals: expenseTotals(items),
+      };
+    },
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+      timeout: 30000,
+    },
   );
 }

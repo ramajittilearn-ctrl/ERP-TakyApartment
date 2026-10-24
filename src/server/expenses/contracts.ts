@@ -63,19 +63,27 @@ export const setExpenseCategoryActiveInput = z.strictObject({
   expectedVersion: z.number().int().positive(),
   commandKey,
 });
+const expenseFilters = {
+  propertyId: expenseId.optional(),
+  from: z.iso.date().optional(),
+  to: z.iso.date().optional(),
+  kind: expenseKind.optional(),
+  categoryId: expenseId.optional(),
+  status: expenseStatus.optional(),
+  query: text(100).optional(),
+};
+const validRange = (v: { from?: string; to?: string }) =>
+  !v.from || !v.to || v.from <= v.to;
+export const expenseExportInput = z
+  .strictObject(expenseFilters)
+  .refine(validRange, "Date range is reversed");
 export const expenseListInput = z
   .strictObject({
-    propertyId: expenseId.optional(),
-    from: z.iso.date().optional(),
-    to: z.iso.date().optional(),
-    kind: expenseKind.optional(),
-    categoryId: expenseId.optional(),
-    status: expenseStatus.optional(),
-    query: text(100).optional(),
+    ...expenseFilters,
     offset: z.number().int().min(0).max(100000).default(0),
     limit: z.number().int().min(1).max(100).default(50),
   })
-  .refine((v) => !v.from || !v.to || v.from <= v.to, "Date range is reversed");
+  .refine(validRange, "Date range is reversed");
 export const categoryDtoSchema = z.strictObject({
   id: expenseId,
   name: text(100),
@@ -131,4 +139,13 @@ export type ExpenseListDto = {
   total: number;
   excludedLegacyCount: number;
   totals: { opex: string; capex: string; total: string };
+};
+
+export type ExpenseExportDto = {
+  scope: "managed-only";
+  filters: z.infer<typeof expenseExportInput>;
+  generatedAt: string;
+  excludedLegacyCount: number;
+  totals: ExpenseListDto["totals"];
+  items: ExpenseDto[];
 };

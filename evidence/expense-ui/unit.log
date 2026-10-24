@@ -1,0 +1,9 @@
+
+ RUN  v4.1.12 /private/tmp/taky-expense-ui
+
+
+ Test Files  20 passed (20)
+      Tests  329 passed (329)
+   Start at  11:35:48
+   Duration  1.47s (transform 972ms, setup 0ms, import 2.73s, tests 1.98s, environment 1ms)
+

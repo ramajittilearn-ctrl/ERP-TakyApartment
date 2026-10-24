@@ -22,6 +22,7 @@ export function AppShell({
     "/meters",
     "/billing",
     "/payments",
+    "/expenses",
   ].some((route) => path.startsWith(route));
   const [menu, setMenu] = useState(false);
   const [help, setHelp] = useState(false);
