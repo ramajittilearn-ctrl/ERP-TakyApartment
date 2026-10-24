@@ -1,0 +1,283 @@
+{"started":"2026-10-23T23:14:41.579Z","command":"npx playwright test --output evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results","runId":"9dd280a08ff74e199d8e303d","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_9dd280a08ff74e199d8e303d"}}
+
+Running 72 tests using 1 worker
+
+(node:45220) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"9dd280a08ff74e199d8e303d","database":"taky_phase2_test","role":"e2e_9dd280a08ff74e199d8e303d","proxy":"http://127.0.0.1:3822"}
+  ✓   1 tests/phase2/app.spec.ts:20:5 › unauthenticated pages redirect and all CRUD APIs reject access (3.1s)
+  ✓   2 tests/phase2/app.spec.ts:70:5 › secure cookie, CSRF rejection, staff authorization and logout revocation (646ms)
+  ✓   3 tests/phase2/app.spec.ts:107:5 › real login form and all fifteen room records (5.5s)
+  ✓   4 tests/phase2/app.spec.ts:125:5 › properties and floors CRUD; validation and referenced deletes (6.2s)
+  ✓   5 tests/phase2/app.spec.ts:184:5 › room edits persist across refresh and grid filters work (5.1s)
+  ✓   6 tests/phase2/app.spec.ts:211:5 › tenant and lease UI create, update and delete draft (12.9s)
+  ✓   7 tests/phase2/app.spec.ts:339:9 › 1440px dashboard protected responsive smoke and accessibility (4.2s)
+  ✓   8 tests/phase2/app.spec.ts:339:9 › 1440px rooms protected responsive smoke and accessibility (4.3s)
+  ✓   9 tests/phase2/app.spec.ts:339:9 › 1440px tenants protected responsive smoke and accessibility (7.6s)
+  ✓  10 tests/phase2/app.spec.ts:339:9 › 1440px leases protected responsive smoke and accessibility (4.1s)
+  ✓  11 tests/phase2/app.spec.ts:339:9 › 1440px billing protected responsive smoke and accessibility (4.4s)
+  ✓  12 tests/phase2/app.spec.ts:339:9 › 1440px payments protected responsive smoke and accessibility (2.4s)
+  ✓  13 tests/phase2/app.spec.ts:339:9 › 1440px expenses protected responsive smoke and accessibility (2.5s)
+  ✓  14 tests/phase2/app.spec.ts:339:9 › 1440px reports protected responsive smoke and accessibility (2.7s)
+  ✓  15 tests/phase2/app.spec.ts:339:9 › 1440px maintenance protected responsive smoke and accessibility (2.4s)
+  ✓  16 tests/phase2/app.spec.ts:339:9 › 1440px settings protected responsive smoke and accessibility (3.0s)
+  ✓  17 tests/phase2/app.spec.ts:339:9 › 768px dashboard protected responsive smoke and accessibility (5.3s)
+  ✓  18 tests/phase2/app.spec.ts:339:9 › 768px rooms protected responsive smoke and accessibility (4.3s)
+  ✓  19 tests/phase2/app.spec.ts:339:9 › 768px tenants protected responsive smoke and accessibility (2.3s)
+  ✓  20 tests/phase2/app.spec.ts:339:9 › 768px leases protected responsive smoke and accessibility (4.7s)
+  ✓  21 tests/phase2/app.spec.ts:339:9 › 768px billing protected responsive smoke and accessibility (4.7s)
+  ✓  22 tests/phase2/app.spec.ts:339:9 › 768px payments protected responsive smoke and accessibility (4.3s)
+  ✓  23 tests/phase2/app.spec.ts:339:9 › 768px expenses protected responsive smoke and accessibility (11.0s)
+  ✘  24 tests/phase2/app.spec.ts:339:9 › 768px reports protected responsive smoke and accessibility (52.1s)
+(node:46001) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"9dd280a08ff74e199d8e303d","database":"taky_phase2_test","role":"e2e_9dd280a08ff74e199d8e303d","proxy":"http://127.0.0.1:3822"}
+  ✓  25 tests/phase2/app.spec.ts:339:9 › 768px maintenance protected responsive smoke and accessibility (21.8s)
+  ✓  26 tests/phase2/app.spec.ts:339:9 › 768px settings protected responsive smoke and accessibility (5.4s)
+  ✓  27 tests/phase2/app.spec.ts:339:9 › 390px dashboard protected responsive smoke and accessibility (4.4s)
+  ✓  28 tests/phase2/app.spec.ts:339:9 › 390px rooms protected responsive smoke and accessibility (6.2s)
+  ✓  29 tests/phase2/app.spec.ts:339:9 › 390px tenants protected responsive smoke and accessibility (3.9s)
+  ✓  30 tests/phase2/app.spec.ts:339:9 › 390px leases protected responsive smoke and accessibility (10.1s)
+  ✓  31 tests/phase2/app.spec.ts:339:9 › 390px billing protected responsive smoke and accessibility (4.7s)
+  ✓  32 tests/phase2/app.spec.ts:339:9 › 390px payments protected responsive smoke and accessibility (3.0s)
+  ✓  33 tests/phase2/app.spec.ts:339:9 › 390px expenses protected responsive smoke and accessibility (2.9s)
+  ✓  34 tests/phase2/app.spec.ts:339:9 › 390px reports protected responsive smoke and accessibility (3.0s)
+  ✓  35 tests/phase2/app.spec.ts:339:9 › 390px maintenance protected responsive smoke and accessibility (3.4s)
+  ✓  36 tests/phase2/app.spec.ts:339:9 › 390px settings protected responsive smoke and accessibility (3.8s)
+  ✓  37 tests/phase2/billing-setup.spec.ts:38:5 › ADMIN completes a fictional monthly billing flow in the UI (33.3s)
+  ✓  38 tests/phase2/billing-setup.spec.ts:323:5 › billing rate history never carries selected values into a different period (7.8s)
+  ✓  39 tests/phase2/invoice-accessibility.spec.ts:5:5 › invoice loading, populated ready and recoverable error states remain accessible (7.2s)
+  ✓  40 tests/phase2/meter-reading.spec.ts:45:5 › mobile operator records water and electricity on separate actual dates (6.9s)
+  ✓  41 tests/phase2/meter-reading.spec.ts:141:5 › admin replacement keeps final and initial readings in the selected billing period (6.1s)
+  ✓  42 tests/phase2/meter-stage3c4.spec.ts:199:5 › 3C4 latest overview wins and unrelated drafts survive reload and filter navigation (5.5s)
+  ✓  43 tests/phase2/meter-stage3c4.spec.ts:340:7 › 3C4 1440px validation confirmation correction replacement history and STAFF restrictions (15.6s)
+  ✓  44 tests/phase2/meter-stage3c4.spec.ts:340:7 › 3C4 390px validation confirmation correction replacement history and STAFF restrictions (8.9s)
+  ✓  45 tests/phase2/payment-persisted.spec.ts:259:5 › payment persisted STAFF pending capture, Bangkok date, roles and reload (12.7s)
+(node:46001) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✓  46 tests/phase2/payment-persisted.spec.ts:299:5 › payment persisted ADMIN exact multi-invoice allocations, immutable receipt, reversal and pending cancellation (41.6s)
+  ✓  47 tests/phase2/payment-persisted.spec.ts:369:5 › payment persisted lost create response survives Next navigation and exact replay (3.9s)
+  ✓  48 tests/phase2/payment-persisted.spec.ts:421:5 › payment persisted cash duplicate review, explicit override and stale invoice rejection (12.5s)
+  ✓  49 tests/phase2/payment-persisted.spec.ts:486:5 › payment persisted invalid precision, maximum amount, keyboard and narrow accessibility (5.5s)
+  ✓  50 tests/phase2/payment-persisted.spec.ts:515:5 › payment persisted uncertain retry403 stays protected and logout never resurrects its command (7.8s)
+  ✓  51 tests/phase2/payment-persisted.spec.ts:576:5 › payment persisted lost confirmation replay remains uncertain after real ADMIN demotion (7.2s)
+  ✓  52 tests/phase2/payment-persisted.spec.ts:641:5 › payment persisted all-history allocations load the second balance page (48.7s)
+  ✓  53 tests/phase2/payment-persisted.spec.ts:667:5 › payment persisted malformed list and receipt mismatch remain failures, stale detail never overwrites selection (4.9s)
+  ✓  54 tests/phase2/payment-persisted.spec.ts:760:5 › payment persisted bank duplicate has no override and failed allocation paging cannot confirm (6.1s)
+  ✓  55 tests/phase2/payment-persisted.spec.ts:819:5 › payment persisted genuine doubleclick settles original POST while the view is unmounted (5.1s)
+  ✓  56 tests/phase2/payment-persisted.spec.ts:878:5 › payment persisted two ADMIN browser sessions race explicit allocations without overpayment (9.7s)
+  ✓  57 tests/phase2/payment-persisted.spec.ts:988:5 › payment persisted list pages beyond fifty managed records without inventing a total (9.7s)
+  ✓  58 tests/phase2/payment-persisted.spec.ts:1030:5 › payment persisted keyboard-only dialogs complete pending capture and receipt confirmation without runtime errors (27.1s)
+  ✓  59 tests/phase2/phase26.spec.ts:70:5 › floor-dependent assignment options contain database rooms and exclude occupied rooms (3.9s)
+  ✓  60 tests/phase2/phase26.spec.ts:167:5 › staff can create an unassigned tenant; incomplete assignment is rejected without a profile (4.4s)
+  ✓  61 tests/phase2/phase26.spec.ts:218:7 › Phase 2.6 linked profiles and explicit transfer at 1440px (8.4s)
+  ✓  62 tests/phase2/phase26.spec.ts:218:7 › Phase 2.6 linked profiles and explicit transfer at 834px (28.9s)
+  ✘  63 tests/phase2/phase26.spec.ts:218:7 › Phase 2.6 linked profiles and explicit transfer at 390px (48.4s)
+(node:47822) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"9dd280a08ff74e199d8e303d","database":"taky_phase2_test","role":"e2e_9dd280a08ff74e199d8e303d","proxy":"http://127.0.0.1:3822"}
+  ✘  64 tests/phase2/receipt-pdf.spec.ts:236:7 › receipt PDF persisted ADMIN opens inline, downloads real bytes and supports narrow keyboard actions (15.4s)
+(node:47905) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"9dd280a08ff74e199d8e303d","database":"taky_phase2_test","role":"e2e_9dd280a08ff74e199d8e303d","proxy":"http://127.0.0.1:3822"}
+(node:47905) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✘  65 tests/phase2/receipt-pdf.spec.ts:236:7 › receipt PDF persisted STAFF opens inline, downloads real bytes and supports narrow keyboard actions (45.7s)
+(node:48018) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"9dd280a08ff74e199d8e303d","database":"taky_phase2_test","role":"e2e_9dd280a08ff74e199d8e303d","proxy":"http://127.0.0.1:3822"}
+(node:48018) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✘  66 tests/phase2/receipt-pdf.spec.ts:333:5 › receipt PDF persisted cancellation remains original and revoked or disabled sessions cannot export (45.6s)
+(node:48230) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"9dd280a08ff74e199d8e303d","database":"taky_phase2_test","role":"e2e_9dd280a08ff74e199d8e303d","proxy":"http://127.0.0.1:3822"}
+  ✓  67 tests/phase2/target-safety.spec.ts:4:5 › API contexts reject unauthorized destinations and redirects before following them (1.5s)
+  ✓  68 tests/phase2/target-safety.spec.ts:26:5 › browser rejects an off-origin redirect without reaching its destination (1.0s)
+  ✓  69 tests/phase2/tenant-rent-persisted.spec.ts:19:5 › tenant contract rent survives room selection, save, reload and reselect (7.6s)
+  ✓  70 tests/phase2/tenant-rent-persisted.spec.ts:85:5 › a tenant without a room assignment has no invented contract rent (4.2s)
+  ✓  71 tests/phase2/tenant-rent-persisted.spec.ts:113:5 › room defaults fill untouched rent while explicit zero survives a room change and reload (2.4s)
+  ✓  72 tests/phase2/tenant-rent-persisted.spec.ts:180:5 › tenant rent entered after room selection survives immediate save and reload (3.9s)
+
+
+  1) tests/phase2/app.spec.ts:339:9 › 768px reports protected responsive smoke and accessibility ───
+
+    Test timeout of 45000ms exceeded.
+
+    Error: apiRequestContext.post: Test timeout of 45000ms exceeded.
+    Call log:
+      - → POST http://127.0.0.1:3820/api/auth/login/
+        - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36
+        - accept: */*
+        - accept-encoding: gzip,deflate,br
+        - Origin: http://127.0.0.1:3820
+        - content-type: application/json
+        - content-length: 89
+
+
+       6 | const origin = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3300";
+       7 | async function signIn(request: APIRequestContext, staff = false) {
+    >  8 |   const response = await request.post("/api/auth/login/", {
+         |                                  ^
+       9 |     headers: { Origin: origin },
+      10 |     data: {
+      11 |       identifier: staff ? "test-staff" : "test-admin",
+        at signIn (/private/tmp/taky-development/tests/phase2/app.spec.ts:8:34)
+        at /private/tmp/taky-development/tests/phase2/app.spec.ts:342:13
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-app-768px-reports-p-440e7-ive-smoke-and-accessibility/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-app-768px-reports-p-440e7-ive-smoke-and-accessibility/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-app-768px-reports-p-440e7-ive-smoke-and-accessibility/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-app-768px-reports-p-440e7-ive-smoke-and-accessibility/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/phase2/phase26.spec.ts:218:7 › Phase 2.6 linked profiles and explicit transfer at 390px ─
+
+    Test timeout of 45000ms exceeded.
+
+    Error: apiResponse.json: Response has been disposed
+
+       at phase2/fixtures.ts:18
+
+      16 |   const response = await request.get(path);
+      17 |   expect(response.status()).toBe(200);
+    > 18 |   return response.json();
+         |                   ^
+      19 | }
+      20 |
+      21 | export async function getRooms(
+        at getResponseData (/private/tmp/taky-development/tests/phase2/fixtures.ts:18:19)
+        at getTenants (/private/tmp/taky-development/tests/phase2/fixtures.ts:42:12)
+        at /private/tmp/taky-development/tests/phase2/phase26.spec.ts:358:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-phase26-Phase-2-6-l-23786--explicit-transfer-at-390px/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-phase26-Phase-2-6-l-23786--explicit-transfer-at-390px/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-phase26-Phase-2-6-l-23786--explicit-transfer-at-390px/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-phase26-Phase-2-6-l-23786--explicit-transfer-at-390px/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/phase2/receipt-pdf.spec.ts:236:7 › receipt PDF persisted ADMIN opens inline, downloads real bytes and supports narrow keyboard actions 
+
+    PrismaClientKnownRequestError: Transaction API error: Unable to start a transaction in the given time.
+
+      92 |   });
+      93 |   for (const kind of ["WATER", "ELECTRICITY"] as const) {
+    > 94 |     const rate = await createUtilityRate(admin, {
+         |                  ^
+      95 |       propertyId: property.id,
+      96 |       kind,
+      97 |       effectiveFrom: "2026-01-01",
+        at yr.#transformRequestError (/private/tmp/taky-development/node_modules/@prisma/client/src/runtime/core/engines/client/ClientEngine.ts:309:14)
+        at yr.transaction (/private/tmp/taky-development/node_modules/@prisma/client/src/runtime/core/engines/client/ClientEngine.ts:462:18)
+        at Proxy._transactionWithCallback (/private/tmp/taky-development/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:847:16)
+        at fixture (/private/tmp/taky-development/tests/phase2/receipt-pdf.spec.ts:94:18)
+        at /private/tmp/taky-development/tests/phase2/receipt-pdf.spec.ts:239:15
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-cda3e-rts-narrow-keyboard-actions/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-cda3e-rts-narrow-keyboard-actions/error-context.md
+
+    Error Context: evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-cda3e-rts-narrow-keyboard-actions/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-cda3e-rts-narrow-keyboard-actions/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-cda3e-rts-narrow-keyboard-actions/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/phase2/receipt-pdf.spec.ts:236:7 › receipt PDF persisted STAFF opens inline, downloads real bytes and supports narrow keyboard actions 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.click: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'ดูรายการ PAY-941c310c-0ef6-4bb3-b26e-9650aa44594b', exact: true })
+
+
+      162 |   await page
+      163 |     .getByRole("button", { name: `ดูรายการ ${reference}`, exact: true })
+    > 164 |     .click();
+          |      ^
+      165 |   const receipt = page.getByRole("region", {
+      166 |     name: "ข้อมูลใบเสร็จรับเงิน",
+      167 |     exact: true,
+        at showReceipt (/private/tmp/taky-development/tests/phase2/receipt-pdf.spec.ts:164:6)
+        at /private/tmp/taky-development/tests/phase2/receipt-pdf.spec.ts:246:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-ad907-rts-narrow-keyboard-actions/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-ad907-rts-narrow-keyboard-actions/error-context.md
+
+    Error Context: evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-ad907-rts-narrow-keyboard-actions/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-ad907-rts-narrow-keyboard-actions/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-ad907-rts-narrow-keyboard-actions/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) tests/phase2/receipt-pdf.spec.ts:333:5 › receipt PDF persisted cancellation remains original and revoked or disabled sessions cannot export 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.click: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'ดูรายการ PAY-f35f8159-f2fd-4386-9738-54fc92d9fc01', exact: true })
+
+
+      162 |   await page
+      163 |     .getByRole("button", { name: `ดูรายการ ${reference}`, exact: true })
+    > 164 |     .click();
+          |      ^
+      165 |   const receipt = page.getByRole("region", {
+      166 |     name: "ข้อมูลใบเสร็จรับเงิน",
+      167 |     exact: true,
+        at showReceipt (/private/tmp/taky-development/tests/phase2/receipt-pdf.spec.ts:164:6)
+        at /private/tmp/taky-development/tests/phase2/receipt-pdf.spec.ts:338:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-7edbb-bled-sessions-cannot-export/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-7edbb-bled-sessions-cannot-export/error-context.md
+
+    Error Context: evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-7edbb-bled-sessions-cannot-export/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-7edbb-bled-sessions-cannot-export/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-9dd280a08ff74e199d8e303d/test-results/phase2-receipt-pdf-receipt-7edbb-bled-sessions-cannot-export/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5 failed
+    tests/phase2/app.spec.ts:339:9 › 768px reports protected responsive smoke and accessibility ────
+    tests/phase2/phase26.spec.ts:218:7 › Phase 2.6 linked profiles and explicit transfer at 390px ──
+    tests/phase2/receipt-pdf.spec.ts:236:7 › receipt PDF persisted ADMIN opens inline, downloads real bytes and supports narrow keyboard actions 
+    tests/phase2/receipt-pdf.spec.ts:236:7 › receipt PDF persisted STAFF opens inline, downloads real bytes and supports narrow keyboard actions 
+    tests/phase2/receipt-pdf.spec.ts:333:5 › receipt PDF persisted cancellation remains original and revoked or disabled sessions cannot export 
+  67 passed (13.4m)
+
+{"finished":"2026-10-23T23:28:10.342Z","exitCode":1}

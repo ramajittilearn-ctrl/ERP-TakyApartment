@@ -1,0 +1,15 @@
+{"started":"2026-10-24T04:21:25.972Z","command":"npx playwright test --output evidence/remediation/browser-1285e1a7723d49c28a441bd5/test-results --grep receipt PDF persisted","runId":"1285e1a7723d49c28a441bd5","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_1285e1a7723d49c28a441bd5"}}
+
+Running 3 tests using 1 worker
+
+(node:79630) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"1285e1a7723d49c28a441bd5","database":"taky_phase2_test","role":"e2e_1285e1a7723d49c28a441bd5","proxy":"http://127.0.0.1:3822"}
+(node:79630) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✓  1 tests/phase2/receipt-pdf.spec.ts:241:7 › receipt PDF persisted ADMIN opens inline, downloads real bytes and supports narrow keyboard actions (7.3s)
+  ✓  2 tests/phase2/receipt-pdf.spec.ts:241:7 › receipt PDF persisted STAFF opens inline, downloads real bytes and supports narrow keyboard actions (3.2s)
+  ✓  3 tests/phase2/receipt-pdf.spec.ts:375:5 › receipt PDF persisted cancellation remains original and revoked or disabled sessions cannot export (3.3s)
+
+  3 passed (17.9s)
+
+{"finished":"2026-10-24T04:21:44.680Z","exitCode":0}

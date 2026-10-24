@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
+import { z } from "zod";
 import type { Download, Locator, Response } from "@playwright/test";
 import { test, expect, type Page } from "./guarded-test";
 import { browserTestTarget } from "../../src/server/browser-test-target";
 import { db } from "../../src/server/db";
+import { paymentPageSchema } from "../../src/features/payments/client";
 import {
   createBillingPeriod,
   createUtilityRate,
@@ -157,8 +159,11 @@ async function fixture() {
   };
 }
 
-async function showReceipt(page: Page, reference: string) {
+async function showReceipt(page: Page, reference: string, leaseId: string) {
   await page.goto("/payments/");
+  await page
+    .getByLabel("สัญญาเช่า (ข้อมูลปัจจุบัน)", { exact: true })
+    .selectOption(leaseId);
   await page
     .getByRole("button", { name: `ดูรายการ ${reference}`, exact: true })
     .click();
@@ -236,14 +241,55 @@ for (const role of ["ADMIN", "STAFF"] as const) {
   test(`receipt PDF persisted ${role} opens inline, downloads real bytes and supports narrow keyboard actions`, async ({
     page,
   }, testInfo) => {
+    if (role === "ADMIN") {
+      const foreign = await fixture();
+      for (let index = 0; index < 51; index++) {
+        await createPayment(foreign.admin, {
+          leaseId: foreign.lease.id,
+          amount: "0.01",
+          method: "BANK_TRANSFER",
+          receivedAt: "2026-10-23T18:01:02+00:00",
+          receivingAccountKey: "SYNTHETIC-RECEIPT-PAGINATION",
+          externalReference: `SYNTHETIC-PAGE-${key()}`,
+          commandKey: key(),
+        });
+      }
+    }
     const f = await fixture();
     await signIn(page, role === "STAFF");
+    if (role === "ADMIN") {
+      const response = await page.request.get(
+        "/api/v1/payments/?offset=0&limit=50",
+      );
+      expect(response.status()).toBe(200);
+      const unfiltered = z
+        .object({ data: paymentPageSchema })
+        .parse(await response.json()).data;
+      expect(unfiltered.items).toHaveLength(50);
+      expect(unfiltered.items.map((item) => item.reference)).not.toContain(
+        f.payment.reference,
+      );
+      await testInfo.attach(
+        "Target receipt is outside the default first page",
+        {
+          body: Buffer.from(
+            JSON.stringify({
+              targetLeaseId: f.lease.id,
+              targetReference: f.payment.reference,
+              unfilteredCount: unfiltered.items.length,
+              targetAbsent: true,
+            }),
+          ),
+          contentType: "application/json",
+        },
+      );
+    }
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());
     });
-    const region = await showReceipt(page, f.payment.reference);
+    const region = await showReceipt(page, f.payment.reference, f.lease.id);
     await expect(region).toContainText(f.receipt.number);
     await expect(region).toContainText(
       "ข้อมูลผู้ออกเอกสารตามกฎหมายยังไม่ได้กำหนด",
@@ -260,11 +306,9 @@ for (const role of ["ADMIN", "STAFF"] as const) {
     await expect(open).toHaveAttribute("href", path);
     await expect(open).toHaveAttribute("target", "_blank");
     await expect(open).toHaveAttribute("rel", "noopener noreferrer");
-    const inlineResponse = page
-      .context()
-      .waitForEvent("response", {
-        predicate: (response) => isPdf(response, path, false),
-      });
+    const inlineResponse = page.context().waitForEvent("response", {
+      predicate: (response) => isPdf(response, path, false),
+    });
     const popupPromise = page.waitForEvent("popup");
     await keyboardTabTo(page, open);
     await expect(open).toBeFocused();
@@ -275,11 +319,9 @@ for (const role of ["ADMIN", "STAFF"] as const) {
       .poll(() => popup.url())
       .toBe(`${browserTestTarget().origin}${path}`);
     await popup.close();
-    const attachmentResponse = page
-      .context()
-      .waitForEvent("response", {
-        predicate: (response) => isPdf(response, path, true),
-      });
+    const attachmentResponse = page.context().waitForEvent("response", {
+      predicate: (response) => isPdf(response, path, true),
+    });
     const downloaded = await clickDownload(page, download);
     const response = await attachmentResponse;
     pdfHeaders(response, f.receipt.number, true);
@@ -335,7 +377,7 @@ test("receipt PDF persisted cancellation remains original and revoked or disable
 }, testInfo) => {
   const f = await fixture();
   await signIn(page);
-  const region = await showReceipt(page, f.payment.reference);
+  const region = await showReceipt(page, f.payment.reference, f.lease.id);
   await reversePayment(f.admin, {
     paymentId: f.payment.id,
     expectedVersion: f.payment.version,
@@ -353,11 +395,9 @@ test("receipt PDF persisted cancellation remains original and revoked or disable
   expect(after.snapshot).toEqual(f.receipt.snapshot);
   expect(after.fingerprint).toBe(f.receipt.fingerprint);
   const pdfPath = `/api/v1/receipts/${f.receipt.id}/pdf/`;
-  const responsePromise = page
-    .context()
-    .waitForEvent("response", {
-      predicate: (response) => isPdf(response, pdfPath, true),
-    });
+  const responsePromise = page.context().waitForEvent("response", {
+    predicate: (response) => isPdf(response, pdfPath, true),
+  });
   const download = await clickDownload(
     page,
     region.getByRole("link", { name: "ดาวน์โหลด PDF", exact: true }),

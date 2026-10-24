@@ -1,0 +1,11 @@
+{
+  "project": "taky-remediation-browser-9dd280a08ff74e199d8e303d",
+  "runId": "9dd280a08ff74e199d8e303d",
+  "role": "e2e_9dd280a08ff74e199d8e303d",
+  "database": "taky_phase2_test",
+  "host": "127.0.0.1",
+  "port": 55452,
+  "subnet": "10.253.243.0/28",
+  "volume": "taky-remediation-browser-9dd280a08ff74e199d8e303d_database",
+  "origin": "http://127.0.0.1:3820"
+}
