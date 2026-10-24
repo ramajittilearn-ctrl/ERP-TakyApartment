@@ -647,3 +647,143 @@ test("expense persisted uncertain command stays keyboard reachable in selected d
     }),
   ).toBe(1);
 });
+
+test("expense persisted delayed filter and detail reads never overwrite a newer selection", async ({
+  page,
+}) => {
+  const a = await fixture(),
+    b = await fixture();
+  async function prepared(
+    f: Awaited<ReturnType<typeof fixture>>,
+    description: string,
+  ) {
+    return createExpense(f.admin, {
+      propertyId: f.property.id,
+      categoryId: f.category.id,
+      description,
+      vendor: "Synthetic delayed-read vendor",
+      amount: "0.10",
+      occurredAt: "2026-10-24",
+      method: "CASH",
+      commandKey: key(),
+    });
+  }
+  const firstA = await prepared(a, `Synthetic delayed A ${key()}`);
+  const firstB = await prepared(b, `Synthetic delayed B1 ${key()}`);
+  const secondB = await prepared(b, `Synthetic delayed B2 ${key()}`);
+  let startList = () => {},
+    releaseList = () => {},
+    finishList = () => {};
+  const listStarted = new Promise<void>((resolve) => {
+    startList = resolve;
+  });
+  const listHeld = new Promise<void>((resolve) => {
+    releaseList = resolve;
+  });
+  const listFinished = new Promise<void>((resolve) => {
+    finishList = resolve;
+  });
+  await page.route(/\/api\/v1\/expenses\/?(?:\?.*)?$/, async (route) => {
+    if (
+      route.request().method() !== "GET" ||
+      new URL(route.request().url()).searchParams.get("propertyId") !==
+        a.property.id
+    )
+      return route.continue();
+    const response = await route.fetch();
+    startList();
+    await listHeld;
+    try {
+      await route.fulfill({ response });
+    } catch {
+      /* The obsolete read may already be aborted by the client. */
+    } finally {
+      finishList();
+    }
+  });
+  await signIn(page.request);
+  await page.goto("/expenses/");
+  await page
+    .getByLabel("อาคารที่แสดง", { exact: true })
+    .selectOption(a.property.id);
+  await listStarted;
+  try {
+    await showProperty(page, b.property.id);
+    await expect(
+      page.getByRole("button", {
+        name: `ดูค่าใช้จ่าย ${firstB.description}`,
+        exact: true,
+      }),
+    ).toBeVisible();
+  } finally {
+    releaseList();
+  }
+  await listFinished;
+  await expect(
+    page.getByRole("button", {
+      name: `ดูค่าใช้จ่าย ${firstA.description}`,
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", {
+      name: `ดูค่าใช้จ่าย ${firstB.description}`,
+      exact: true,
+    }),
+  ).toBeVisible();
+  let startDetail = () => {},
+    releaseDetail = () => {},
+    finishDetail = () => {};
+  const detailStarted = new Promise<void>((resolve) => {
+    startDetail = resolve;
+  });
+  const detailHeld = new Promise<void>((resolve) => {
+    releaseDetail = resolve;
+  });
+  const detailFinished = new Promise<void>((resolve) => {
+    finishDetail = resolve;
+  });
+  await page.route(
+    new RegExp(`/api/v1/expenses/${firstB.id}/?$`),
+    async (route) => {
+      const response = await route.fetch();
+      startDetail();
+      await detailHeld;
+      try {
+        await route.fulfill({ response });
+      } catch {
+        /* The obsolete read may already be aborted by the client. */
+      } finally {
+        finishDetail();
+      }
+    },
+  );
+  await page
+    .getByRole("button", {
+      name: `ดูค่าใช้จ่าย ${firstB.description}`,
+      exact: true,
+    })
+    .click();
+  await detailStarted;
+  try {
+    await closeDetail(page);
+    await page
+      .getByRole("button", {
+        name: `ดูค่าใช้จ่าย ${secondB.description}`,
+        exact: true,
+      })
+      .click();
+    await expect(
+      page.getByRole("dialog", { name: "รายละเอียดค่าใช้จ่าย", exact: true }),
+    ).toContainText(secondB.id);
+  } finally {
+    releaseDetail();
+  }
+  await detailFinished;
+  const detail = page.getByRole("dialog", {
+    name: "รายละเอียดค่าใช้จ่าย",
+    exact: true,
+  });
+  await expect(detail).toContainText(secondB.id);
+  await expect(detail).not.toContainText(firstB.id);
+});

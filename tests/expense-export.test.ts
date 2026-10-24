@@ -101,6 +101,8 @@ describe("expense CSV contract", () => {
     "\uFEFF=1",
     "\u0085=1",
     "\u009F+1",
+    "\u0085-1",
+    "\u009F@SUM(A1)",
   ])("neutralizes formula prefixes %j", (value) => {
     expect(expenseCsvCell(value)).toBe(`"'${value}"`);
     const rows = parseCsv(

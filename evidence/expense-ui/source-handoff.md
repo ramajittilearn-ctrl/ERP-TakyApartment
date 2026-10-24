@@ -34,6 +34,11 @@ EUI-01 identified inaccessible recovery when an uncertain command's action dialo
 
 EUI-02 identified leading C1 controls before spreadsheet formula characters. CSV formatting now skips Unicode Cc and whitespace while finding the first significant character. Parsed CSV fixtures cover U+0085 before `=` and U+009F before `+`, alongside prior ASCII/whitespace cases. Stored values remain unchanged. This proves the escaped-byte contract, not execution in a specific spreadsheet application.
 
-Main's first real export PG attempt failed fixture-dependent cases because a property code exceeded 32 characters. The source correction bounds both PG and browser property codes to 32 characters with 116 bits of random identity. Schema, migration and financial guards remain unchanged. The immutable failed database log belongs to Main and is not included in this correction commit. Main owns the reviewed rerun through the dedicated helper described in `export-qa-instructions.md`.
+Main's first real export PG attempt failed fixture-dependent cases because its 43-character property code exceeded the actual 40-character schema limit. The source correction bounds both PG and browser property codes to 32 characters with 116 bits of random identity. Schema, migration and financial guards remain unchanged. The immutable failed database log belongs to Main and is not included in this correction commit. Main owns the reviewed rerun through the dedicated helper described in `export-qa-instructions.md`.
 
 After these corrections, the full local unit suite passed 331/331 in 20 files. Typecheck, standard full lint and changed-file Prettier passed. Logs are `review-correction-unit.log`, `review-correction-typecheck.log` and `review-correction-lint.log`. Independent correction review and Main's PG/build/browser gates remain pending.
+
+
+## Remaining review coverage
+
+A test-only follow-up adds parsed CSV assertions for all four C1-prefixed formula characters and an eighth guarded browser case that holds actual server responses for filter/detail A, selects B, releases A, and confirms B remains selected. Main requested that additional lint/typecheck/unit jobs wait while the production build runs. Those additional assertions are authored, not reported passed. App/export/PG source remains unchanged from `ef80c00`.
