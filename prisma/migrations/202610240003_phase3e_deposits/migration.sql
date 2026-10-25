@@ -179,6 +179,7 @@ CREATE FUNCTION deposit_account_guard() RETURNS trigger LANGUAGE plpgsql AS $$ B
  IF TG_OP='INSERT' THEN
   IF NEW."reviewState"<>'UNREVIEWED' OR NEW.version<>0 THEN RAISE EXCEPTION 'New deposit accounts start unreviewed'; END IF;
  ELSIF OLD."reviewState"='UNREVIEWED' THEN
+  IF NOT EXISTS(SELECT 1 FROM "Lease" l JOIN "Tenant" t ON t.id=l."tenantId" WHERE l.id=NEW."leaseId" AND NOT l."isDemo" AND NOT t."isDemo" AND l.status<>'DRAFT') THEN RAISE EXCEPTION 'Deposit review requires eligible non-demo lease and tenant'; END IF;
   IF NEW."leaseId"<>OLD."leaseId" OR NEW."reviewState"<>'REVIEWED' OR NEW.version<>1 OR NOT deposit_admin(NEW."reviewedById") OR NEW."legacyDigest" IS DISTINCT FROM deposit_legacy_digest(NEW."leaseId") THEN RAISE EXCEPTION 'Invalid historical review'; END IF;
  ELSE
   IF (to_jsonb(NEW)-'version') IS DISTINCT FROM (to_jsonb(OLD)-'version') OR NEW.version<>OLD.version+1 THEN RAISE EXCEPTION 'Deposit review immutable; version must advance once'; END IF;

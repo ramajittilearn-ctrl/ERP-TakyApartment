@@ -485,4 +485,87 @@ describe("managed deposit PostgreSQL core", () => {
       >`SELECT to_jsonb(l)::text AS value FROM "Lease" l WHERE id=${f.lease.id}::uuid`,
     ).toEqual(beforeLease);
   });
+  it.each(["DRAFT", "DEMO_LEASE", "DEMO_TENANT"] as const)(
+    "rejects raw zero-opening review for %s without changing financial state",
+    async (mode) => {
+      const f = await fixture();
+      await db.depositAccount.create({ data: { leaseId: f.lease.id } });
+      if (mode === "DRAFT")
+        await db.lease.update({
+          where: { id: f.lease.id },
+          data: { status: "DRAFT" },
+        });
+      else if (mode === "DEMO_LEASE")
+        await db.lease.update({
+          where: { id: f.lease.id },
+          data: { isDemo: true },
+        });
+      else
+        await db.tenant.update({
+          where: { id: f.lease.tenantId },
+          data: { isDemo: true },
+        });
+      const before = await db.depositAccount.findUniqueOrThrow({
+        where: { leaseId: f.lease.id },
+      });
+      const counts = {
+        entries: await db.depositEntry.count({
+          where: { leaseId: f.lease.id },
+        }),
+        audit: await db.auditLog.count({
+          where: { entity: "deposits", entityId: f.lease.id },
+        }),
+        commands: await db.depositCommand.count({
+          where: { actorId: admin.id },
+        }),
+      };
+      await expect(
+        db.$executeRaw`UPDATE "DepositAccount" SET "reviewState"='REVIEWED',version=1,"reviewedById"=${admin.id}::uuid,"reviewedAt"=CURRENT_TIMESTAMP,"legacyDigest"=deposit_legacy_digest(${f.lease.id}::uuid),"reviewReason"='Synthetic reviewed zero',"evidenceId"=${f.evidence.id}::uuid,"openingAmount"=0 WHERE "leaseId"=${f.lease.id}::uuid`,
+      ).rejects.toThrow(
+        "Deposit review requires eligible non-demo lease and tenant",
+      );
+      await expect(
+        service.reviewDepositAccount(admin, {
+          ...f.base,
+          openingAmount: "0.00",
+          verified: true,
+        }),
+      ).rejects.toMatchObject({
+        code: mode === "DRAFT" ? "LEASE_NOT_ACTIVE" : "LEASE_NOT_FOUND",
+      });
+      expect(
+        await db.depositAccount.findUniqueOrThrow({
+          where: { leaseId: f.lease.id },
+        }),
+      ).toEqual(before);
+      expect({
+        entries: await db.depositEntry.count({
+          where: { leaseId: f.lease.id },
+        }),
+        audit: await db.auditLog.count({
+          where: { entity: "deposits", entityId: f.lease.id },
+        }),
+        commands: await db.depositCommand.count({
+          where: { actorId: admin.id },
+        }),
+      }).toEqual(counts);
+    },
+  );
+  it.each(["ACTIVE", "ENDED", "CANCELLED"] as const)(
+    "permits raw zero-opening review for eligible %s leases",
+    async (status) => {
+      const f = await fixture();
+      await db.lease.update({ where: { id: f.lease.id }, data: { status } });
+      await db.depositAccount.create({ data: { leaseId: f.lease.id } });
+      await db.$executeRaw`UPDATE "DepositAccount" SET "reviewState"='REVIEWED',version=1,"reviewedById"=${admin.id}::uuid,"reviewedAt"=CURRENT_TIMESTAMP,"legacyDigest"=deposit_legacy_digest(${f.lease.id}::uuid),"reviewReason"='Synthetic reviewed zero',"evidenceId"=${f.evidence.id}::uuid,"openingAmount"=0 WHERE "leaseId"=${f.lease.id}::uuid`;
+      expect(
+        await db.depositAccount.findUniqueOrThrow({
+          where: { leaseId: f.lease.id },
+        }),
+      ).toMatchObject({ reviewState: "REVIEWED", version: 1 });
+      expect(
+        await db.depositEntry.count({ where: { leaseId: f.lease.id } }),
+      ).toBe(0);
+    },
+  );
 });
