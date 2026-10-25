@@ -50,7 +50,15 @@
     "call_293223defb3d411388dbd2ee0d77e0c8": {
       "output_line": 1090,
       "command_exit_zero_recorded": false,
-      "output_sha256": "5e39bbbe4534cefaf686b8718a9bcff6894827f10fa9b9ca84e9077fc84419ed"
+      "output_sha256": "5e39bbbe4534cefaf686b8718a9bcff6894827f10fa9b9ca84e9077fc84419ed",
+      "later_command_completion": {
+        "source_line": 1092,
+        "command_execution_id": "exec-d7b960bc-0d0b-4a7b-aef4-aa8ed9973996",
+        "process_id": "19294",
+        "status": "completed",
+        "exit_code": 0,
+        "note": "Initial tool response yielded a live process; later structured execution record confirms completion. This is historical command evidence, not a fresh generation or source verification claim."
+      }
     }
   },
   "recovery_verification": {
