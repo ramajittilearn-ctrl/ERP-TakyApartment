@@ -257,8 +257,8 @@ export function LiveLeases({
         </DataTable>
       </Card>
       <Notice>
-        เงินประกันแสดงยอดตามสัญญา การรับ /
-        คืนเงินประกันและบัญชีการเงินจะพัฒนาในระยะถัดไป
+        เงินประกันในหน้านี้แสดงยอดตามสัญญา ดูยอดคงถือและการรับ หัก คืนเงินได้ใน{" "}
+        <Link href="/deposits/">บัญชีเงินประกัน</Link>
       </Notice>
       <Modal
         open={!!detail}
@@ -313,6 +313,14 @@ export function LiveLeases({
               </div>
             </dl>
             <div className="form-actions">
+              {!detail.isDemo && (
+                <Link
+                  className="btn btn-secondary"
+                  href={`/deposits/${detail.id}/`}
+                >
+                  บัญชีเงินประกันสัญญานี้
+                </Link>
+              )}
               <Button onClick={() => setSelected("")}>ปิด</Button>
             </div>
           </>
