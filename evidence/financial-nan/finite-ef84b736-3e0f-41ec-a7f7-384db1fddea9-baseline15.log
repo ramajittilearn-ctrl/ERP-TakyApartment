@@ -1,0 +1,25 @@
+Datasource "db": PostgreSQL database "taky_payment_test_2b5214bd52_finite_alloc_blocker2", schema "public" at "127.0.0.1:55489"
+
+15 migrations found in prisma/migrations
+
+Applying migration `202610210001_phase3c3_invoice_lifecycle`
+Applying migration `202610210002_phase3c3_reference_capacity`
+Applying migration `202610210003_phase3c3_legacy_month_barrier`
+Applying migration `202610230001_phase3d_payments`
+Applying migration `202610240001_phase4_expenses`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 202610210001_phase3c3_invoice_lifecycle/
+    └─ migration.sql
+  └─ 202610210002_phase3c3_reference_capacity/
+    └─ migration.sql
+  └─ 202610210003_phase3c3_legacy_month_barrier/
+    └─ migration.sql
+  └─ 202610230001_phase3d_payments/
+    └─ migration.sql
+  └─ 202610240001_phase4_expenses/
+    └─ migration.sql
+
+All migrations have been successfully applied.

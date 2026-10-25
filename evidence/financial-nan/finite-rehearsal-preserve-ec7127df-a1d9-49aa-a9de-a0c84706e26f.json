@@ -1,0 +1,23 @@
+{
+  "result": "PASS",
+  "candidateVersion": "single-do-v2",
+  "scenario": "preserve",
+  "database": "taky_payment_test_2b5214bd52_finite_rehearsal2",
+  "attempt": "ec7127df-a1d9-49aa-a9de-a0c84706e26f",
+  "preservedPayments": 2,
+  "preservedAllocations": 1,
+  "triggersUnchanged": 389,
+  "historicalPaymentNaN": "preserved unchanged and legacy-only",
+  "constraints": [
+    {
+      "conname": "Allocation_amount_finite",
+      "convalidated": true
+    },
+    {
+      "conname": "Payment_managed_amount_finite",
+      "convalidated": true
+    }
+  ],
+  "managedNaNBlocks": false,
+  "legacyAllocationNaNBlocks": false
+}

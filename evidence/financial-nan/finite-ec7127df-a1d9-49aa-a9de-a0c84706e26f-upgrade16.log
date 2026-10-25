@@ -1,0 +1,13 @@
+Datasource "db": PostgreSQL database "taky_payment_test_2b5214bd52_finite_rehearsal2", schema "public" at "127.0.0.1:55489"
+
+16 migrations found in prisma/migrations
+
+Applying migration `202610240002_payment_finite_amounts`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 202610240002_payment_finite_amounts/
+    └─ migration.sql
+
+All migrations have been successfully applied.
