@@ -1,0 +1,28 @@
+services:
+  app:
+    environment:
+      EVIDENCE_VALIDATOR_ORIGIN: http://evidence-validator:3835
+      EVIDENCE_VALIDATOR_TOKEN: ${EVIDENCE_VALIDATOR_TOKEN:?Generate a private validator token first}
+    depends_on:
+      evidence-validator:
+        condition: service_healthy
+    networks: [private, evidence_validation]
+  evidence-validator:
+    build:
+      context: ./operations/evidence-validator
+    environment:
+      EVIDENCE_VALIDATOR_TOKEN: ${EVIDENCE_VALIDATOR_TOKEN:?Generate a private validator token first}
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1.0
+    pids_limit: 64
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777,noexec,nosuid,nodev
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    networks: [evidence_validation]
+networks:
+  evidence_validation:
+    internal: true
