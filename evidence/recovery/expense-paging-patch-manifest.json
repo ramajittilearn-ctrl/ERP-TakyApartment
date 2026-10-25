@@ -1,0 +1,13 @@
+{
+  "historical_commit": "2614fb6",
+  "base": "2f41e2c28d44c332ddffaf9a700d3270a835242b",
+  "file": "tests/phase2/expense-persisted.spec.ts",
+  "source_call_id": "call_bd8a4ac91e5b4b7ba17d50972a5ebae8",
+  "source_rollout": "rollout-2026-10-24T06-23-27-01a16b13-6af6-7c43-830a-78f500b2979f.jsonl",
+  "source_line": 746,
+  "patch_sha256": "94a5da306356abc9e1ec3d00ef5d87d5a86316885fc1567707a435df8401f301",
+  "before_sha256": "b23c07e847e4baa670c73ecaee982cdcdd813b867129ff867dfe02c59c6e63af",
+  "after_sha256": "aa5fad1a2940c59ee64faea3903914a9ba286e9569c5db394b265cc459d1bd91",
+  "method": "Extracted literal replacement as data and formatted with installed Prettier. No historical commands executed. Patch not applied to this branch or Main.",
+  "limits": "Restores only bounded fixture change. Historical overall browser run still failed; fresh runtime proof required."
+}

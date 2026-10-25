@@ -1,0 +1,27 @@
+--- a/tests/phase2/expense-persisted.spec.ts
++++ b/tests/phase2/expense-persisted.spec.ts
+@@ -471,9 +471,10 @@
+   page,
+ }) => {
+   const f = await fixture();
+-  const created = await Promise.all(
+-    Array.from({ length: 105 }, (_, i) =>
+-      createExpense(f.admin, {
++  const created: Awaited<ReturnType<typeof createExpense>>[] = [];
++  for (let i = 0; i < 105; i++) {
++    created.push(
++      await createExpense(f.admin, {
+         propertyId: f.property.id,
+         categoryId: f.category.id,
+         description: `Synthetic volume ${String(i).padStart(3, "0")}`,
+@@ -483,8 +484,8 @@
+         method: "CASH",
+         commandKey: key(),
+       }),
+-    ),
+-  );
++    );
++  }
+   await postExpense(f.admin, {
+     expenseId: created[0].id,
+     expectedVersion: 1,
