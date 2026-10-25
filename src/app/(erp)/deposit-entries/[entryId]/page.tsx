@@ -9,6 +9,7 @@ import {
 import { depositId } from "@/server/deposits/contracts";
 import { depositService } from "@/server/deposit-api/service";
 import { requirePageActor } from "@/server/http";
+import { AppError } from "@/server/errors";
 
 export default async function Page({
   params,
@@ -18,9 +19,14 @@ export default async function Page({
   const actor = await requirePageActor();
   const entryId = depositId.safeParse((await params).entryId);
   if (!entryId.success) notFound();
-  const document = await depositService.getDepositDocument(actor, {
-    entryId: entryId.data,
-  });
+  const document = await depositService
+    .getDepositDocument(actor, {
+      entryId: entryId.data,
+    })
+    .catch((error: unknown) => {
+      if (error instanceof AppError && error.status === 404) notFound();
+      throw error;
+    });
   const snapshot = document.documentSnapshot;
   return (
     <>

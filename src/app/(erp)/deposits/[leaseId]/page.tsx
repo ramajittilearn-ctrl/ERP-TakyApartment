@@ -5,6 +5,7 @@ import { depositId } from "@/server/deposits/contracts";
 import { depositSsrQuery } from "@/server/deposit-api/boundary";
 import { depositService } from "@/server/deposit-api/service";
 import { db } from "@/server/db";
+import { AppError } from "@/server/errors";
 import { requirePageActor } from "@/server/http";
 
 export default async function Page({
@@ -29,7 +30,12 @@ export default async function Page({
         tenant: { select: { name: true } },
       },
     }),
-    depositService.getLeaseDepositLedger(actor, { leaseId, ...query }),
+    depositService
+      .getLeaseDepositLedger(actor, { leaseId, ...query })
+      .catch((error: unknown) => {
+        if (error instanceof AppError && error.status === 404) notFound();
+        throw error;
+      }),
   ]);
   if (!lease) notFound();
   return (

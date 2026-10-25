@@ -53,3 +53,9 @@ The focused tests use real strict schemas and financial transport/journal behavi
 Main must obtain independent implementation review, run a real build and browser UAT, and verify the current-role/actor-header cases against stored sessions. Exercise actual upload/list/download, zero and positive opening review, receipt, deduction, refund, full reversal, same-lease evidence rejection and original snapshot document reads. Simulate a lost financial response, close/reopen the modal and prove the same command commits only once. Verify stale version recovery, STAFF reads, ADMIN demotion, actor switching, more than one ledger/evidence page and finite-value warnings.
 
 Main owns the six real PostgreSQL evidence tests, native validator runtime proof, migrations and backup/restore gates. This candidate does not claim those gates passed. Project work remains authorized through Stage 3E and Phase 4, then stops without Go-Live.
+
+## Independent review correction DUI01
+
+Main found that valid UUIDs for missing leases or deposit entries reached the generic SSR error boundary. Both pages now translate only service `AppError` status404 into Next's `notFound()`. Lease header and ledger reads remain concurrent. Authorization failures, unexpected database errors and framework authentication redirects continue to propagate.
+
+Three focused page-boundary tests passed, and full TypeScript plus scoped ESLint passed after this correction. The tests substitute data/authentication boundaries and do not establish HTTP status behavior. The guarded browser suite adds real authenticated missing-UUID requests with strict HTTP404 and not-found-UI assertions. They were authored but not run by this implementer. Installed Next documentation says streaming can retain HTTP200 after a loading fallback starts, so Main must inspect the actual response before accepting the runtime status claim.

@@ -190,6 +190,28 @@ async function tabTo(page: Page, target: Locator) {
 
 test.afterAll(() => db.$disconnect());
 
+test("deposit persisted valid missing UUID pages return not-found instead of the generic server error", async ({
+  page,
+}) => {
+  await signInDepositBrowser(page.request);
+  for (const path of [
+    `/deposits/${randomUUID()}/`,
+    `/deposit-entries/${randomUUID()}/`,
+  ]) {
+    const response = await page.goto(path);
+    expect(response?.status()).toBe(404);
+    await expect(
+      page.getByRole("heading", { name: "ไม่พบหน้าที่ต้องการ", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "ไม่สามารถแสดงข้อมูลได้",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+  }
+});
+
 test("deposit persisted genuine upload zero and positive review all movements immutable document and full totals", async ({
   page,
 }) => {
