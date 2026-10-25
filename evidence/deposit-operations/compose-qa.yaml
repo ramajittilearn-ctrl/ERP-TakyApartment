@@ -1,0 +1,17 @@
+name: taky-deposit-operations-qa-20261025
+services:
+  inventory:
+    build:
+      context: ../..
+      dockerfile: operations/Dockerfile
+    image: taky-deposit-operations-qa-20261025:local
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=1073741824,mode=1777
+    environment:
+      TMPDIR: /tmp
+      NODE_ENV: test
+    volumes:
+      - ../../prisma:/opt/taky/prisma:ro
+    entrypoint: ["node", "operations/verify-inventory-isolated.mjs"]

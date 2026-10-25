@@ -5,10 +5,12 @@ import path from "node:path";
 import assert from "node:assert/strict";
 import { run } from "./archive.mjs";
 import { createHash } from "node:crypto";
+import { verifyPublicationProtocol } from "./verify-publication-isolated.mjs";
 import {
   INVENTORY_TABLES_V2 as INVENTORY_TABLES,
   INVENTORY_TABLES_V3,
   INVENTORY_TABLES_V4,
+  INVENTORY_TABLES_V5,
 } from "./inventory.mjs";
 import {
   inventory,
@@ -149,13 +151,13 @@ await withTemp("inventory-acceptance", async (directory) => {
         dump,
       ]);
     } finally {
-      snapshot.close();
+      await snapshot.close();
     }
     await verifyDatabase(dump, snapshot.inventory);
     console.info(
       "PASS real pg_dump exported-snapshot consistency and private-socket pg_restore inventory comparison",
     );
-    for (const version of [null, 1, 5, "2"])
+    for (const version of [null, 1, 6, "2"])
       await assert.rejects(
         assertInventory({ ...twoRows, version }),
         /Unsupported inventory version/,
@@ -181,11 +183,13 @@ async function migratedCompatibility(directory) {
     .sort();
   assert.equal(
     names.length,
-    15,
+    17,
     "Review migration baseline before updating this harness",
   );
-  assert.equal(names.at(-2), "202610230001_phase3d_payments");
-  assert.equal(names.at(-1), "202610240001_phase4_expenses");
+  assert.equal(names[13], "202610230001_phase3d_payments");
+  assert.equal(names[14], "202610240001_phase4_expenses");
+  assert.equal(names[15], "202610240002_payment_finite_amounts");
+  assert.equal(names[16], "202610240003_phase3e_deposits");
   await sql("CREATE DATABASE inventory_migrated");
   process.env.PGDATABASE = "inventory_migrated";
   await sql(
@@ -200,7 +204,7 @@ async function migratedCompatibility(directory) {
       `INSERT INTO "_prisma_migrations" VALUES ('${name}', '${checksum}', now())`,
     );
   }
-  for (const name of names.slice(0, -2)) await migrate(name);
+  for (const name of names.slice(0, 13)) await migrate(name);
   const id = (number) =>
     `00000000-0000-4000-8000-${String(number).padStart(12, "0")}`;
   await sql(`
@@ -234,7 +238,7 @@ async function migratedCompatibility(directory) {
   console.info(
     "PASS actual historical33 unversioned legacy pg_dump/pg_restore",
   );
-  await migrate(names.at(-2));
+  await migrate(names[13]);
   assert.equal(
     await sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'"),
     "39",
@@ -264,7 +268,7 @@ async function migratedCompatibility(directory) {
       `SELECT jsonb_build_object('expense',(SELECT to_jsonb(t) FROM "Expense" t),'category',(SELECT to_jsonb(t) FROM "ExpenseCategory" t))`,
     ),
   );
-  await migrate(names.at(-1));
+  await migrate(names[14]);
   assert.equal(
     await sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'"),
     "40",
@@ -288,14 +292,58 @@ async function migratedCompatibility(directory) {
     INSERT INTO "ExpenseCommand" (id,"actorId","commandKey",operation,"requestFingerprint",result) VALUES ('${id(15)}','${id(6)}','synthetic-expense-inventory','expense.create',repeat('c',64),'{"synthetic":true}');
   `);
   await assertTriggers(true);
-  const newest = await inventory();
+  const newest = await inventory(process.env, 4);
   assert.equal(newest.version, 4);
   assert.equal(Object.keys(newest.tables).length, 39);
   await assertInventory(newest);
   await roundTrip(4, "migrated39", directory);
   console.info(
-    "PASS all15 actual migrations; v4 default captures all39 tables and added expense columns",
+    "PASS all15 actual migrations; frozen v4 captures all39 tables and added expense columns",
   );
+  await migrate(names[15]);
+  assert.equal(
+    await sql(
+      `SELECT count(*) FROM pg_constraint WHERE conname IN ('Payment_managed_amount_finite','Allocation_amount_finite') AND convalidated`,
+    ),
+    "2",
+  );
+  await roundTrip(4, "finite39", directory);
+  console.info(
+    "PASS all16 actual migrations; finite payment checks preserve v4 compatibility",
+  );
+  await migrate(names[16]);
+  assert.equal(
+    await sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'"),
+    "45",
+  );
+  // These private inventory-only rows exercise full-row restore fingerprints.
+  // They bypass lifecycle triggers only in this disposable transaction and do
+  // not establish real evidence acceptance or deposit financial correctness.
+  const retainedBytes = Buffer.from("inventory-proof\n");
+  const retainedSha256 = createHash("sha256")
+    .update(retainedBytes)
+    .digest("hex");
+  await sql(`BEGIN; SET LOCAL session_replication_role=replica;
+    INSERT INTO "Attachment" (id,"leaseId","uploadedById","storageKey","originalName","mimeType",bytes,sha256,"updatedAt") VALUES ('${id(16)}','${id(5)}','${id(6)}','synthetic/retained-proof','Synthetic retained proof','application/pdf',${retainedBytes.length},'${retainedSha256}',now());
+    INSERT INTO "DepositEvidence" (id,"leaseId","attachmentId","uploadedById") VALUES ('${id(17)}','${id(5)}','${id(16)}','${id(6)}');
+    INSERT INTO "DepositAccount" ("leaseId",version,"reviewState","reviewedById","reviewedAt","legacyDigest","reviewReason","evidenceId","openingAmount") VALUES ('${id(5)}',2,'REVIEWED','${id(6)}',now(),repeat('e',64),'Synthetic inventory-only review','${id(17)}',0);
+    INSERT INTO "DepositEntry" (id,"leaseId",sequence,kind,amount,"occurredAt","postedById",reason,"evidenceId",method,"documentNumber","documentSnapshot","snapshotSha256") VALUES ('${id(18)}','${id(5)}',1,'RECEIPT',0.01,now(),'${id(6)}','Synthetic inventory-only deposit','${id(17)}','CASH','DEP-202610-000001','{"synthetic":true}',repeat('f',64));
+    INSERT INTO "DepositCommand" (id,"actorId","commandKey",operation,"requestFingerprint",result) VALUES ('${id(19)}','${id(6)}','synthetic-deposit-inventory','deposit.receipt',repeat('a',64),'{"synthetic":true}');
+    INSERT INTO "DepositDocumentCounter" (month,"nextValue") VALUES ('202610',2);
+    COMMIT;`);
+  await assertTriggers(true);
+  const latest = await inventory();
+  assert.equal(latest.version, 5);
+  assert.equal(Object.keys(latest.tables).length, 44);
+  await assertInventory(latest);
+  await roundTrip(5, "deposit44", directory);
+  console.info(
+    "PASS all17 actual migrations; default v5 captures44 tables including inventory-only deposit representation",
+  );
+  await verifyPublicationProtocol({
+    database: "inventory_migrated",
+    directory,
+  });
 }
 async function assertTriggers(expenses = false) {
   const disabled = await sql(
@@ -325,13 +373,16 @@ async function assertTriggers(expenses = false) {
 }
 async function roundTrip(version, label, directory) {
   const originalDatabase = process.env.PGDATABASE;
+  const originalGuards = version === 5 ? await guardFingerprint() : undefined;
   const registry =
     version === 2
       ? INVENTORY_TABLES
       : version === 3
         ? INVENTORY_TABLES_V3
-        : INVENTORY_TABLES_V4;
-  const snapshot = await (version === 4
+        : version === 4
+          ? INVENTORY_TABLES_V4
+          : INVENTORY_TABLES_V5;
+  const snapshot = await (version === 5
     ? exportSnapshot()
     : exportSnapshot(version));
   assert.equal(snapshot.inventory.version, version);
@@ -364,7 +415,7 @@ async function roundTrip(version, label, directory) {
       dump,
     ]);
   } finally {
-    snapshot.close();
+    await snapshot.close();
   }
   await verifyDatabase(dump, snapshot.inventory);
   const restored = `inventory_${label}_restore`;
@@ -379,9 +430,19 @@ async function roundTrip(version, label, directory) {
       dump,
     ]);
     await assertInventory(snapshot.inventory);
+    if (version === 5) {
+      assert.equal(
+        await guardFingerprint(),
+        originalGuards,
+        "Restored constraints, indexes, trigger states and functions must match",
+      );
+      console.info(
+        "PASS v5 restore preserves normalized public constraints, indexes, trigger definitions/states and function definitions",
+      );
+    }
     if (version >= 3) {
       let expected = snapshot.inventory;
-      await assertTriggers(version === 4);
+      await assertTriggers(version >= 4);
       for (const [table, column, expression] of [
         ["PaymentReversal", "reason", "reason || ' mutated'"],
         ["Receipt", "snapshot", `snapshot || '{"mutation":true}'::jsonb`],
@@ -407,7 +468,7 @@ async function roundTrip(version, label, directory) {
         console.info(`PASS v${version} restored equal-count mutation ${table}`);
         expected = after;
       }
-      if (version === 4) {
+      if (version >= 4) {
         for (const [table, column, expression, predicate] of [
           [
             "ExpenseCommand",
@@ -438,8 +499,40 @@ async function roundTrip(version, label, directory) {
           );
         }
       }
+      if (version === 5) {
+        let expected = await inventory(process.env, 5);
+        for (const [table, column, expression] of [
+          ["DepositAccount", "reviewReason", `"reviewReason" || ' mutated'`],
+          ["DepositEntry", "reason", "reason || ' mutated'"],
+          ["DepositCommand", "result", `result || '{"mutation":true}'::jsonb`],
+          [
+            "DepositEvidence",
+            "acceptedAt",
+            `"acceptedAt" + interval '1 millisecond'`,
+          ],
+          ["DepositDocumentCounter", "nextValue", '"nextValue"+1'],
+        ]) {
+          assert.equal(expected.tables[table].count, "1");
+          await sql(
+            `BEGIN; SET LOCAL session_replication_role=replica; UPDATE "${table}" SET "${column}"=${expression}; COMMIT;`,
+          );
+          await assert.rejects(assertInventory(expected), /inventory differs/);
+          const after = await inventory(process.env, 5);
+          assert.equal(after.tables[table].count, "1");
+          assert.notEqual(
+            after.tables[table].sha256,
+            expected.tables[table].sha256,
+          );
+          for (const other of registry.filter((name) => name !== table))
+            assert.deepEqual(after.tables[other], expected.tables[other]);
+          expected = after;
+          console.info(
+            `PASS v5 restored equal-count mutation ${table}.${column}`,
+          );
+        }
+      }
       assert.equal(await sql("SHOW session_replication_role"), "origin");
-      await assertTriggers(version === 4);
+      await assertTriggers(version >= 4);
     }
     console.info(
       `PASS actual ${label} v${version} ${registry.length}-table exported snapshot pg_dump/pg_restore (database=${restored})`,
@@ -447,4 +540,13 @@ async function roundTrip(version, label, directory) {
   } finally {
     process.env.PGDATABASE = originalDatabase;
   }
+}
+
+async function guardFingerprint() {
+  return sql(`SELECT encode(sha256(convert_to(jsonb_build_object(
+    'constraints',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',x.conname,'definition',pg_get_constraintdef(x.oid),'validated',x.convalidated) ORDER BY c.relname,x.conname),'[]') FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'),
+    'indexes',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',i.relname,'definition',pg_get_indexdef(x.indexrelid)) ORDER BY c.relname,i.relname),'[]') FROM pg_index x JOIN pg_class c ON c.oid=x.indrelid JOIN pg_class i ON i.oid=x.indexrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'),
+    'triggers',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',t.tgname,'definition',pg_get_triggerdef(t.oid),'enabled',t.tgenabled) ORDER BY c.relname,t.tgname),'[]') FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND NOT t.tgisinternal),
+    'functions',(SELECT coalesce(jsonb_agg(jsonb_build_object('identity',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid)) ORDER BY p.oid::regprocedure::text),'[]') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind='f')
+  )::text,'UTF8')),'hex')`);
 }

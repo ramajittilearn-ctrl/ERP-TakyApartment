@@ -29,9 +29,11 @@ export async function run(command, args, options = {}) {
     );
   }
 }
-export async function sha256(file) {
+export async function sha256(file, { signal } = {}) {
+  signal?.throwIfAborted();
   const hash = createHash("sha256");
-  for await (const chunk of createReadStream(file)) hash.update(chunk);
+  for await (const chunk of createReadStream(file, { signal }))
+    hash.update(chunk);
   return hash.digest("hex");
 }
 export async function readKey(file) {
@@ -113,20 +115,23 @@ export function safeRelative(name) {
     !name.split("/").some((p) => p === ".." || p === "." || p === "")
   );
 }
-export async function filesUnder(root, prefix = "") {
+export async function filesUnder(root, prefix = "", { signal } = {}) {
+  signal?.throwIfAborted();
   const result = [];
   for (const entry of (
     await fs.readdir(path.join(root, prefix), { withFileTypes: true })
   ).sort((a, b) => a.name.localeCompare(b.name))) {
+    signal?.throwIfAborted();
     const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
     if (!safeRelative(relative)) throw new Error("Unsafe attachment filename");
-    if (entry.isDirectory()) result.push(...(await filesUnder(root, relative)));
+    if (entry.isDirectory())
+      result.push(...(await filesUnder(root, relative, { signal })));
     else if (entry.isFile()) {
       const file = path.join(root, relative);
       result.push({
         path: relative,
         bytes: (await fs.stat(file)).size,
-        sha256: await sha256(file),
+        sha256: await sha256(file, { signal }),
       });
     } else
       throw new Error(
@@ -135,17 +140,28 @@ export async function filesUnder(root, prefix = "") {
   }
   return result;
 }
-export async function copyFiles(source, destination, entries) {
+export async function copyFiles(source, destination, entries, { signal } = {}) {
+  signal?.throwIfAborted();
   await fs.mkdir(destination, { recursive: true, mode: 0o700 });
   for (const entry of entries) {
+    signal?.throwIfAborted();
     if (!safeRelative(entry.path)) throw new Error("Unsafe attachment path");
     const target = path.join(destination, entry.path);
     await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
-    await fs.copyFile(
-      path.join(source, entry.path),
-      target,
-      fs.constants.COPYFILE_EXCL,
-    );
+    if (signal) {
+      await pipeline(
+        createReadStream(path.join(source, entry.path), { signal }),
+        createWriteStream(target, { flags: "wx", mode: 0o600, signal }),
+        { signal },
+      );
+    } else {
+      await fs.copyFile(
+        path.join(source, entry.path),
+        target,
+        fs.constants.COPYFILE_EXCL,
+      );
+    }
+    signal?.throwIfAborted();
     await fs.chmod(target, 0o600);
   }
 }
