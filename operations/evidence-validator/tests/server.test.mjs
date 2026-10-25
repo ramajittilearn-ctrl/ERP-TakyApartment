@@ -78,6 +78,8 @@ test("authentication, duplicate credentials and route rejection do no parser or 
         {
           method: "POST",
           headers: [
+            "Host",
+            new URL(app.origin).host,
             "x-taky-validator-token",
             TOKEN,
             "X-Taky-Validator-Token",
@@ -150,10 +152,34 @@ test("declared and streamed size limits reject without acceptance and remove inp
     return result;
   });
   try {
-    assert.equal(
-      (await post(app.origin, Buffer.alloc(MAX_BYTES + 1))).status,
-      413,
-    );
+    const declared = await new Promise((resolve, reject) => {
+      const req = request(
+        app.origin + "/validate",
+        {
+          method: "POST",
+          headers: {
+            "x-taky-validator-token": TOKEN,
+            "content-length": String(MAX_BYTES + 1),
+          },
+        },
+        (res) => {
+          res.resume();
+          res.once("end", () => {
+            resolve(res.statusCode);
+            req.destroy();
+          });
+          res.once("error", reject);
+        },
+      );
+      req.once("error", reject);
+      req.setTimeout(8000, () =>
+        req.destroy(new Error("Declared-size response timed out")),
+      );
+      req.flushHeaders();
+    });
+    assert.equal(declared, 413);
+    assert.equal(calls, 0);
+    assert.deepEqual(await readdir(app.temporaryRoot), []);
     assert.equal(
       (await post(app.origin, bytes, { "content-encoding": "gzip" })).status,
       415,
