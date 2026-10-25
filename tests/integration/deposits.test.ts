@@ -401,4 +401,88 @@ describe("managed deposit PostgreSQL core", () => {
       }),
     ).rejects.toMatchObject({ code: "LEGACY_CHANGED" });
   });
+  it("shows original non-finite legacy values without inferring liability or repairing data", async () => {
+    const f = await fixture();
+    const legacyId = key();
+    await db.$executeRaw`INSERT INTO "SecurityDeposit" (id,"leaseId",kind,amount,"occurredAt","isDemo","updatedAt") VALUES (${legacyId}::uuid,${f.lease.id}::uuid,'RECEIVED'::"DepositKind",'NaN'::numeric,CURRENT_TIMESTAMP,false,CURRENT_TIMESTAMP)`;
+    const finite = await db.securityDeposit.create({
+      data: {
+        leaseId: f.lease.id,
+        kind: "REFUNDED",
+        amount: "1.25",
+        occurredAt: new Date(),
+      },
+    });
+    await db.$executeRaw`UPDATE "Lease" SET deposit='NaN'::numeric WHERE id=${f.lease.id}::uuid`;
+    const beforeLegacy = await db.$queryRaw<
+      { value: string }[]
+    >`SELECT to_jsonb(d)::text AS value FROM "SecurityDeposit" d WHERE "leaseId"=${f.lease.id}::uuid ORDER BY id`;
+    const beforeLease = await db.$queryRaw<
+      { value: string }[]
+    >`SELECT to_jsonb(l)::text AS value FROM "Lease" l WHERE id=${f.lease.id}::uuid`;
+    const ledger = await service.getLeaseDepositLedger(staff, {
+      leaseId: f.lease.id,
+    });
+    expect(ledger.contractualRequirement).toBeNull();
+    expect(ledger.unverifiedLegacy).toMatchObject({
+      count: 2,
+      grossReceived: null,
+      grossRefunded: "1.25",
+      grossDeducted: "0.00",
+    });
+    expect(
+      ledger.unverifiedLegacy.rows.find((row) => row.id === legacyId),
+    ).toMatchObject({
+      id: legacyId,
+      leaseId: f.lease.id,
+      kind: "RECEIVED",
+      amount: "NaN",
+      isDemo: false,
+    });
+    expect(
+      ledger.unverifiedLegacy.rows.find((row) => row.id === finite.id),
+    ).toEqual({
+      id: finite.id,
+      leaseId: f.lease.id,
+      kind: "REFUNDED",
+      amount: "1.25",
+      isDemo: finite.isDemo,
+      occurredAt: finite.occurredAt.toISOString(),
+      createdAt: finite.createdAt.toISOString(),
+      updatedAt: finite.updatedAt.toISOString(),
+    });
+    expect(ledger.dataQualityIssues).toEqual([
+      { code: "NON_FINITE_CONTRACTUAL_REQUIREMENT", rawAmount: "NaN" },
+      {
+        code: "NON_FINITE_LEGACY_AMOUNT",
+        legacyDepositId: legacyId,
+        rawAmount: "NaN",
+      },
+    ]);
+    expect(ledger.totals.heldLiability).toBe("0.00");
+    const command = { ...f.base, openingAmount: "0.00", verified: true };
+    const reviewed = await service.reviewDepositAccount(admin, command);
+    expect(reviewed.account).toMatchObject({
+      reviewState: "REVIEWED",
+      openingAmount: "0.00",
+      version: 1,
+    });
+    expect(reviewed.total).toBe(0);
+    expect(reviewed.totals.heldLiability).toBe("0.00");
+    expect(reviewed.unverifiedLegacy).toEqual(ledger.unverifiedLegacy);
+    expect(reviewed.dataQualityIssues).toEqual(ledger.dataQualityIssues);
+    expect(await service.reviewDepositAccount(admin, command)).toEqual(
+      reviewed,
+    );
+    expect(
+      await db.$queryRaw<
+        { value: string }[]
+      >`SELECT to_jsonb(d)::text AS value FROM "SecurityDeposit" d WHERE "leaseId"=${f.lease.id}::uuid ORDER BY id`,
+    ).toEqual(beforeLegacy);
+    expect(
+      await db.$queryRaw<
+        { value: string }[]
+      >`SELECT to_jsonb(l)::text AS value FROM "Lease" l WHERE id=${f.lease.id}::uuid`,
+    ).toEqual(beforeLease);
+  });
 });

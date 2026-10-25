@@ -18,6 +18,7 @@ import {
   reversalDepositInput,
   type DepositLedgerDto,
   type DepositEntryDto,
+  type DepositDataQualityIssue,
 } from "./contracts";
 import { depositFingerprint, depositTotals } from "./domain";
 export type DepositEvidenceVerifier = (
@@ -91,15 +92,39 @@ async function ledger(
     include,
     orderBy: { sequence: "asc" },
   });
-  const legacy = await tx.securityDeposit.findMany({ where: { leaseId } });
-  const legacySum = (kind: "RECEIVED" | "REFUNDED" | "DEDUCTED") =>
-    legacy
-      .filter((row) => row.kind === kind)
+  const legacy = await tx.securityDeposit.findMany({
+    where: { leaseId },
+    orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
+  });
+  const dataQualityIssues: DepositDataQualityIssue[] = [];
+  if (!lease.deposit.isFinite()) {
+    dataQualityIssues.push({
+      code: "NON_FINITE_CONTRACTUAL_REQUIREMENT",
+      rawAmount: lease.deposit.toString(),
+    });
+  }
+  for (const row of legacy) {
+    if (!row.amount.isFinite()) {
+      dataQualityIssues.push({
+        code: "NON_FINITE_LEGACY_AMOUNT",
+        legacyDepositId: row.id,
+        rawAmount: row.amount.toString(),
+      });
+    }
+  }
+  const legacySum = (kind: "RECEIVED" | "REFUNDED" | "DEDUCTED") => {
+    const rows = legacy.filter((row) => row.kind === kind);
+    if (rows.some((row) => !row.amount.isFinite())) return null;
+    return rows
       .reduce((sum, row) => sum.add(row.amount), new Prisma.Decimal(0))
       .toFixed(2);
+  };
   return depositLedgerDtoSchema.parse({
     leaseId,
-    contractualRequirement: lease.deposit.toFixed(2),
+    contractualRequirement: lease.deposit.isFinite()
+      ? lease.deposit.toFixed(2)
+      : null,
+    dataQualityIssues,
     account: account
       ? {
           version: account.version,
@@ -122,6 +147,16 @@ async function ledger(
           openingAmount: null,
         },
     unverifiedLegacy: {
+      rows: legacy.map((row) => ({
+        id: row.id,
+        leaseId: row.leaseId,
+        kind: row.kind,
+        amount: row.amount.toFixed(2),
+        occurredAt: row.occurredAt.toISOString(),
+        isDemo: row.isDemo,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      })),
       count: legacy.length,
       grossReceived: legacySum("RECEIVED"),
       grossRefunded: legacySum("REFUNDED"),

@@ -159,9 +159,35 @@ export type DepositTotals = {
   netOpening: string;
   heldLiability: string;
 };
+export const legacyDepositDtoSchema = z.strictObject({
+  id: depositId,
+  leaseId: depositId,
+  kind: z.enum(["RECEIVED", "REFUNDED", "DEDUCTED"]),
+  amount: z.string(),
+  occurredAt: z.iso.datetime(),
+  isDemo: z.boolean(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+});
+export type LegacyDepositDto = z.infer<typeof legacyDepositDtoSchema>;
+export const depositDataQualityIssueSchema = z.discriminatedUnion("code", [
+  z.strictObject({
+    code: z.literal("NON_FINITE_CONTRACTUAL_REQUIREMENT"),
+    rawAmount: z.string(),
+  }),
+  z.strictObject({
+    code: z.literal("NON_FINITE_LEGACY_AMOUNT"),
+    legacyDepositId: depositId,
+    rawAmount: z.string(),
+  }),
+]);
+export type DepositDataQualityIssue = z.infer<
+  typeof depositDataQualityIssueSchema
+>;
 export type DepositLedgerDto = {
   leaseId: string;
-  contractualRequirement: string;
+  contractualRequirement: string | null;
+  dataQualityIssues: DepositDataQualityIssue[];
   account: {
     version: number;
     reviewState: "UNREVIEWED" | "REVIEWED";
@@ -173,10 +199,11 @@ export type DepositLedgerDto = {
     openingAmount: string | null;
   };
   unverifiedLegacy: {
+    rows: LegacyDepositDto[];
     count: number;
-    grossReceived: string;
-    grossRefunded: string;
-    grossDeducted: string;
+    grossReceived: string | null;
+    grossRefunded: string | null;
+    grossDeducted: string | null;
   };
   items: DepositEntryDto[];
   total: number;
@@ -217,7 +244,8 @@ export const depositEntryDtoSchema = z.strictObject({
 const totalMoney = z.string().regex(/^-?(?:0|[1-9]\d*)\.\d{2}$/);
 export const depositLedgerDtoSchema = z.strictObject({
   leaseId: depositId,
-  contractualRequirement: depositMoney,
+  contractualRequirement: depositMoney.nullable(),
+  dataQualityIssues: z.array(depositDataQualityIssueSchema),
   account: z.strictObject({
     version: z.number().int().nonnegative(),
     reviewState: z.enum(["UNREVIEWED", "REVIEWED"]),
@@ -229,10 +257,11 @@ export const depositLedgerDtoSchema = z.strictObject({
     openingAmount: depositMoney.nullable(),
   }),
   unverifiedLegacy: z.strictObject({
+    rows: z.array(legacyDepositDtoSchema),
     count: z.number().int().nonnegative(),
-    grossReceived: totalMoney,
-    grossRefunded: totalMoney,
-    grossDeducted: totalMoney,
+    grossReceived: totalMoney.nullable(),
+    grossRefunded: totalMoney.nullable(),
+    grossDeducted: totalMoney.nullable(),
   }),
   items: z.array(depositEntryDtoSchema),
   total: z.number().int().nonnegative(),
