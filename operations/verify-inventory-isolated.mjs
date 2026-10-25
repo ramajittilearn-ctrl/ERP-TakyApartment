@@ -311,6 +311,7 @@ async function migratedCompatibility(directory) {
   console.info(
     "PASS all16 actual migrations; finite payment checks preserve v4 compatibility",
   );
+  await assertLateDepositRollback(names[16], directory);
   await migrate(names[16]);
   assert.equal(
     await sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'"),
@@ -370,6 +371,58 @@ async function assertTriggers(expenses = false) {
       "3",
       "All expense integrity triggers remain installed",
     );
+}
+async function assertLateDepositRollback(name, directory) {
+  assert.equal(name, "202610240003_phase3e_deposits");
+  const before = await inventory(process.env, 4);
+  const guardsBefore = await guardDocument();
+  const source = await fs.readFile(
+    new URL(`../prisma/migrations/${name}/migration.sql`, import.meta.url),
+    "utf8",
+  );
+  assert.equal((source.match(/\$deposit_migration\$/g) ?? []).length, 2);
+  const closing = /END\s+\$deposit_migration\$;\s*$/;
+  assert(closing.test(source));
+  const injected = source.replace(
+    closing,
+    "RAISE EXCEPTION 'TAKY_SYNTHETIC_DEPOSIT_LATE_FAILURE' USING ERRCODE='P0001';\nEND\n$deposit_migration$;\n",
+  );
+  const file = path.join(directory, "deposit-late-failure.sql");
+  await fs.writeFile(file, injected, { flag: "wx", mode: 0o600 });
+  await assert.rejects(
+    run("psql", [
+      "-X",
+      "-v",
+      "ON_ERROR_STOP=1",
+      "--set=VERBOSITY=verbose",
+      "-f",
+      file,
+    ]),
+    (error) => {
+      const output = String(error.cause?.stderr ?? "");
+      return (
+        output.includes("P0001") &&
+        output.includes("TAKY_SYNTHETIC_DEPOSIT_LATE_FAILURE")
+      );
+    },
+  );
+  await assertInventory(before);
+  assert.deepEqual(await guardDocument(), guardsBefore);
+  assert.equal(
+    await sql(
+      `SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('DepositAccount','DepositEntry','DepositCommand','DepositEvidence','DepositDocumentCounter')`,
+    ),
+    "0",
+  );
+  assert.equal(
+    await sql(
+      "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname LIKE 'deposit_%'",
+    ),
+    "0",
+  );
+  console.info(
+    "PASS forced P0001 at final deposit003 DDL rolls back all new tables, functions, guards and old-data changes before unchanged migration is applied",
+  );
 }
 async function roundTrip(version, label, directory) {
   const originalDatabase = process.env.PGDATABASE;
