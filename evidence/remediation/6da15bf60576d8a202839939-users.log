@@ -1,0 +1,4 @@
+{"started":"2026-10-25T04:35:22.091Z","command":"npx tsx scripts/test-users.ts","runId":"6da15bf60576d8a202839939","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_6da15bf60576d8a202839939"}}
+Isolated test accounts ready; no production records changed.
+
+{"finished":"2026-10-25T04:35:23.190Z","exitCode":0}

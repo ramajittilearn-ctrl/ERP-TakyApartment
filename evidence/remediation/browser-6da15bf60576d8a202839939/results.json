@@ -1,0 +1,424 @@
+{
+  "config": {
+    "argv": [
+      "/Users/ramajittipasutanavin/.hermes/node/bin/node",
+      "/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/development-recovered-20261025/node_modules/.bin/playwright",
+      "test",
+      "--output",
+      "evidence/remediation/browser-6da15bf60576d8a202839939/test-results",
+      "--grep",
+      "expense persisted"
+    ],
+    "configFile": "/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/development-recovered-20261025/playwright.config.ts",
+    "rootDir": "/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/development-recovered-20261025/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/development-recovered-20261025/evidence/remediation/browser-6da15bf60576d8a202839939/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/development-recovered-20261025/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "phase2/**/*.spec.ts"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/development-recovered-20261025/evidence/remediation/browser-6da15bf60576d8a202839939/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/development-recovered-20261025/tests",
+        "snapshotDir": "/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/development-recovered-20261025/tests",
+        "testIgnore": [],
+        "testMatch": "phase2/**/*.spec.ts",
+        "timeout": 45000,
+        "use": {
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "screen": {
+            "width": 1920,
+            "height": 1080
+          },
+          "deviceScaleFactor": 1,
+          "isMobile": false,
+          "hasTouch": false,
+          "defaultBrowserType": "chromium",
+          "channel": "chrome",
+          "baseURL": "http://127.0.0.1:3820",
+          "serviceWorkers": "block",
+          "proxy": {
+            "server": "http://127.0.0.1:3822"
+          },
+          "launchOptions": {
+            "args": [
+              "--proxy-bypass-list=<-loopback>"
+            ]
+          },
+          "locale": "th-TH",
+          "timezoneId": "Asia/Bangkok",
+          "colorScheme": "light",
+          "reducedMotion": "reduce",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "phase2/expense-persisted.spec.ts",
+      "file": "phase2/expense-persisted.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "expense persisted STAFF capture retains satang/date/history and server denies approval",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4257,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"verifiedBrowserTarget\":\"http://127.0.0.1:3820\",\"runId\":\"6da15bf60576d8a202839939\",\"database\":\"taky_phase2_test\",\"role\":\"e2e_6da15bf60576d8a202839939\",\"proxy\":\"http://127.0.0.1:3822\"}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-25T04:35:26.272Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2f18ea238a8d34a50589-25dcf818a45130928cc9",
+          "file": "phase2/expense-persisted.spec.ts",
+          "line": 187,
+          "column": 5
+        },
+        {
+          "title": "expense persisted ADMIN category, post, cancel, reversal and correction preserve original history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3068,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-25T04:35:38.833Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2f18ea238a8d34a50589-cd857f29d1ef08c26b07",
+          "file": "phase2/expense-persisted.spec.ts",
+          "line": 228,
+          "column": 5
+        },
+        {
+          "title": "expense persisted response loss survives navigation and exact replay without duplicate capture",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1506,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-25T04:35:41.913Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2f18ea238a8d34a50589-89697daac2a8ca8d543f",
+          "file": "phase2/expense-persisted.spec.ts",
+          "line": 353,
+          "column": 5
+        },
+        {
+          "title": "expense persisted uncertain category replay remains protected after real ADMIN demotion and logout",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2395,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-25T04:35:43.431Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2f18ea238a8d34a50589-a8572ab3347e39db951a",
+          "file": "phase2/expense-persisted.spec.ts",
+          "line": 406,
+          "column": 5
+        },
+        {
+          "title": "expense persisted full paging and CSV cover 105 filtered records in a populated database",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3600,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-25T04:35:45.851Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2f18ea238a8d34a50589-73c536420234d2531a96",
+          "file": "phase2/expense-persisted.spec.ts",
+          "line": 470,
+          "column": 5
+        },
+        {
+          "title": "expense persisted mobile keyboard, validation retention, max precision and explicit demo separation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2614,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-25T04:35:49.477Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2f18ea238a8d34a50589-993787149b46b8a79fb7",
+          "file": "phase2/expense-persisted.spec.ts",
+          "line": 518,
+          "column": 5
+        },
+        {
+          "title": "expense persisted uncertain command stays keyboard reachable in selected detail",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2378,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-25T04:35:52.103Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2f18ea238a8d34a50589-62b673aa67ad2f54ca19",
+          "file": "phase2/expense-persisted.spec.ts",
+          "line": 569,
+          "column": 5
+        },
+        {
+          "title": "expense persisted delayed filter and detail reads never overwrite a newer selection",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1196,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-25T04:35:54.493Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2f18ea238a8d34a50589-082ddd9c55adb97da341",
+          "file": "phase2/expense-persisted.spec.ts",
+          "line": 652,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-25T04:35:24.974Z",
+    "duration": 30981.019,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

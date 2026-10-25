@@ -1,0 +1,17 @@
+{"started":"2026-10-25T04:35:23.978Z","command":"npx playwright test --output evidence/remediation/browser-6da15bf60576d8a202839939/test-results --grep expense persisted","runId":"6da15bf60576d8a202839939","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_6da15bf60576d8a202839939"}}
+
+Running 8 tests using 1 worker
+
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"6da15bf60576d8a202839939","database":"taky_phase2_test","role":"e2e_6da15bf60576d8a202839939","proxy":"http://127.0.0.1:3822"}
+  ✓  1 tests/phase2/expense-persisted.spec.ts:187:5 › expense persisted STAFF capture retains satang/date/history and server denies approval (4.3s)
+  ✓  2 tests/phase2/expense-persisted.spec.ts:228:5 › expense persisted ADMIN category, post, cancel, reversal and correction preserve original history (3.1s)
+  ✓  3 tests/phase2/expense-persisted.spec.ts:353:5 › expense persisted response loss survives navigation and exact replay without duplicate capture (1.5s)
+  ✓  4 tests/phase2/expense-persisted.spec.ts:406:5 › expense persisted uncertain category replay remains protected after real ADMIN demotion and logout (2.4s)
+  ✓  5 tests/phase2/expense-persisted.spec.ts:470:5 › expense persisted full paging and CSV cover 105 filtered records in a populated database (3.6s)
+  ✓  6 tests/phase2/expense-persisted.spec.ts:518:5 › expense persisted mobile keyboard, validation retention, max precision and explicit demo separation (2.6s)
+  ✓  7 tests/phase2/expense-persisted.spec.ts:569:5 › expense persisted uncertain command stays keyboard reachable in selected detail (2.4s)
+  ✓  8 tests/phase2/expense-persisted.spec.ts:652:5 › expense persisted delayed filter and detail reads never overwrite a newer selection (1.2s)
+
+  8 passed (31.0s)
+
+{"finished":"2026-10-25T04:35:56.046Z","exitCode":0}

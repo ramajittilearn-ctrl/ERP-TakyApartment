@@ -1,0 +1,32 @@
+{
+  "runId": "6da15bf60576d8a202839939",
+  "timedOut": false,
+  "events": [
+    {
+      "event": "browser-started",
+      "at": "2026-10-25T04:35:18.675Z",
+      "pid": 37355
+    },
+    {
+      "event": "observer-started-after-readiness",
+      "at": "2026-10-25T04:35:23.946Z",
+      "pid": 37463
+    },
+    {
+      "event": "observer-stderr",
+      "at": "2026-10-25T04:35:56.427Z"
+    },
+    {
+      "event": "browser-finished",
+      "at": "2026-10-25T04:35:57.101Z",
+      "code": 0,
+      "signal": null
+    },
+    {
+      "event": "observer-finished",
+      "at": "2026-10-25T04:35:57.101Z",
+      "code": 1,
+      "signal": null
+    }
+  ]
+}

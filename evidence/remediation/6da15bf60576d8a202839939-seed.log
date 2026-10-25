@@ -1,0 +1,8 @@
+{"started":"2026-10-25T04:35:21.227Z","command":"npm run db:seed","runId":"6da15bf60576d8a202839939","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_6da15bf60576d8a202839939"}}
+
+> taky-apartment-erp@0.1.0 db:seed
+> tsx prisma/seed.ts
+
+Seed complete: 3 floors / 15 room identities; existing values preserved.
+
+{"finished":"2026-10-25T04:35:22.059Z","exitCode":0}

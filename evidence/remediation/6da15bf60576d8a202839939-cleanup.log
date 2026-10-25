@@ -1,0 +1,9 @@
+{"started":"2026-10-25T04:35:56.242Z","command":"docker compose -f .local/remediation-6da15bf60576d8a202839939-compose.json down","runId":"6da15bf60576d8a202839939","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_6da15bf60576d8a202839939"}}
+ Container taky-remediation-browser-6da15bf60576d8a202839939-db-1 Stopping 
+ Container taky-remediation-browser-6da15bf60576d8a202839939-db-1 Stopped 
+ Container taky-remediation-browser-6da15bf60576d8a202839939-db-1 Removing 
+ Container taky-remediation-browser-6da15bf60576d8a202839939-db-1 Removed 
+ Network taky-remediation-browser-6da15bf60576d8a202839939_default Removing 
+ Network taky-remediation-browser-6da15bf60576d8a202839939_default Removed 
+
+{"finished":"2026-10-25T04:35:57.087Z","exitCode":0}
