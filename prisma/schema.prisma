@@ -177,6 +177,8 @@ model Lease {
   isDemo                      Boolean                      @default(false)
   createdAt                   DateTime                     @default(now()) @db.Timestamptz(3)
   updatedAt                   DateTime                     @updatedAt @db.Timestamptz(3)
+  managedDepositAccount       DepositAccount?
+  depositEvidence             DepositEvidence[]
   deposits                    SecurityDeposit[]
   invoices                    Invoice[]
   payments                    Payment[]
@@ -575,6 +577,10 @@ model MaintenanceRequest {
 }
 
 model User {
+  depositReviews              DepositAccount[]             @relation("DepositReviewer")
+  depositEntries              DepositEntry[]               @relation("DepositPoster")
+  depositCommands             DepositCommand[]             @relation("DepositCommandActor")
+  depositEvidence             DepositEvidence[]            @relation("DepositUploader")
   id                          String                       @id @default(uuid()) @db.Uuid
   username                    String                       @unique @db.VarChar(80)
   email                       String                       @unique @db.VarChar(254)
@@ -645,24 +651,25 @@ model LoginThrottle {
 }
 
 model Attachment {
-  id           String   @id @default(uuid()) @db.Uuid
-  storageKey   String   @unique @db.VarChar(200)
-  originalName String   @db.VarChar(200)
-  mimeType     String   @db.VarChar(100)
-  bytes        BigInt
-  sha256       String   @db.Char(64)
-  uploadedById String   @db.Uuid
-  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
-  tenantId     String?  @db.Uuid
-  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  leaseId      String?  @db.Uuid
-  lease        Lease?   @relation(fields: [leaseId], references: [id], onDelete: Restrict)
-  paymentId    String?  @db.Uuid
-  payment      Payment? @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-  expenseId    String?  @db.Uuid
-  expense      Expense? @relation(fields: [expenseId], references: [id], onDelete: Restrict)
-  createdAt    DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+  depositEvidence DepositEvidence?
+  id              String           @id @default(uuid()) @db.Uuid
+  storageKey      String           @unique @db.VarChar(200)
+  originalName    String           @db.VarChar(200)
+  mimeType        String           @db.VarChar(100)
+  bytes           BigInt
+  sha256          String           @db.Char(64)
+  uploadedById    String           @db.Uuid
+  uploadedBy      User             @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  tenantId        String?          @db.Uuid
+  tenant          Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  leaseId         String?          @db.Uuid
+  lease           Lease?           @relation(fields: [leaseId], references: [id], onDelete: Restrict)
+  paymentId       String?          @db.Uuid
+  payment         Payment?         @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  expenseId       String?          @db.Uuid
+  expense         Expense?         @relation(fields: [expenseId], references: [id], onDelete: Restrict)
+  createdAt       DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(3)
 
   @@index([uploadedById])
   @@index([tenantId])
@@ -838,4 +845,84 @@ model PaymentCommand {
 model ReceiptMonthCounter {
   month String @id @db.Char(6)
   value Int
+}
+
+model DepositAccount {
+  leaseId       String           @id @db.Uuid
+  lease         Lease            @relation(fields: [leaseId], references: [id], onDelete: Restrict)
+  version       Int              @default(0)
+  reviewState   String           @default("UNREVIEWED") @db.VarChar(12)
+  reviewedById  String?          @db.Uuid
+  reviewedBy    User?            @relation("DepositReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
+  reviewedAt    DateTime?        @db.Timestamptz(3)
+  legacyDigest  String?          @db.Char(64)
+  reviewReason  String?          @db.VarChar(1000)
+  evidenceId    String?          @db.Uuid
+  evidence      DepositEvidence? @relation("DepositReviewEvidence", fields: [evidenceId, leaseId], references: [id, leaseId], onDelete: Restrict)
+  openingAmount Decimal?         @db.Decimal(14, 2)
+  entries       DepositEntry[]
+}
+
+model DepositEntry {
+  id                  String          @id @default(uuid()) @db.Uuid
+  leaseId             String          @db.Uuid
+  account             DepositAccount  @relation(fields: [leaseId], references: [leaseId], onDelete: Restrict)
+  sequence            Int
+  kind                String          @db.VarChar(12)
+  amount              Decimal         @db.Decimal(14, 2)
+  occurredAt          DateTime        @db.Timestamptz(3)
+  postedAt            DateTime        @default(now()) @db.Timestamptz(3)
+  postedById          String          @db.Uuid
+  postedBy            User            @relation("DepositPoster", fields: [postedById], references: [id], onDelete: Restrict)
+  reason              String          @db.VarChar(1000)
+  evidenceId          String          @db.Uuid
+  evidence            DepositEvidence @relation("DepositEntryEvidence", fields: [evidenceId, leaseId], references: [id, leaseId], onDelete: Restrict)
+  method              String?         @db.VarChar(20)
+  receivingAccountKey String?         @db.VarChar(120)
+  externalReference   String?         @db.VarChar(120)
+  payeeName           String?         @db.VarChar(200)
+  destination         String?         @db.VarChar(200)
+  reverseOfId         String?         @unique @db.Uuid
+  reverseOf           DepositEntry?   @relation("DepositReversal", fields: [reverseOfId, leaseId], references: [id, leaseId], onDelete: Restrict)
+  reversal            DepositEntry[]  @relation("DepositReversal")
+  documentNumber      String          @unique @db.VarChar(40)
+  documentSnapshot    Json
+  snapshotSha256      String          @db.Char(64)
+
+  @@unique([leaseId, sequence])
+  @@unique([id, leaseId])
+  @@index([leaseId, postedAt])
+}
+
+model DepositCommand {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  actor              User     @relation("DepositCommandActor", fields: [actorId], references: [id], onDelete: Restrict)
+  commandKey         String   @db.VarChar(100)
+  operation          String   @db.VarChar(80)
+  requestFingerprint String   @db.Char(64)
+  result             Json
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([actorId, commandKey])
+}
+
+model DepositEvidence {
+  id             String           @id @default(uuid()) @db.Uuid
+  leaseId        String           @db.Uuid
+  lease          Lease            @relation(fields: [leaseId], references: [id], onDelete: Restrict)
+  attachmentId   String           @unique @db.Uuid
+  attachment     Attachment       @relation(fields: [attachmentId], references: [id], onDelete: Restrict)
+  uploadedById   String           @db.Uuid
+  uploadedBy     User             @relation("DepositUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  acceptedAt     DateTime         @default(now()) @db.Timestamptz(3)
+  accountReviews DepositAccount[] @relation("DepositReviewEvidence")
+  entries        DepositEntry[]   @relation("DepositEntryEvidence")
+
+  @@unique([id, leaseId])
+}
+
+model DepositDocumentCounter {
+  month     String @id @db.Char(6)
+  nextValue Int
 }

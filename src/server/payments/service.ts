@@ -109,6 +109,7 @@ async function command(
           await acquireSourceGate(tx);
           await authorize(tx, actor, admin);
           await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${"payment:" + actor.id + ":" + data.commandKey}, 0))`;
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(73422194)`;
           const prior = await tx.paymentCommand.findUnique({
             where: {
               actorId_commandKey: {
