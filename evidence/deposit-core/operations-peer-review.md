@@ -7,6 +7,7 @@ Reviewer: recover_deposit_core. Implementation owner: recover_finite. Reviewed i
 - fa7f068: publication session, backup coordination, abortable copy/hash/inventory, inventory v5, isolated acceptance harness, fresh attachment-directory permissions.
 - d0dcd42: diagnostic guard differences; assertions remain unchanged.
 - 1c87185: late migration003 atomicity proof.
+- f865de4: native typed CHECK canonicalization and semantic controls.
 
 The dedicated publication session acquires73422195 before file inventory and snapshot creation without holding source admission73422193. Same-backend acknowledgments, heartbeat, server lock timeout, client acquisition/check deadlines and maximum hold time bound session ownership. Session loss propagates cancellation through dump, inventory, hash and file-copy work. Snapshot close is awaited before the outer session unlock. Encryption and restore verification use the completed independent set afterward.
 
@@ -20,6 +21,8 @@ Fresh independent command `node --test tests/ops/inventory.test.mjs tests/ops/pu
 
 ## Remaining acceptance
 
-The actual v5 restore comparison reported five CHECK deparser differences. Indexes, triggers and functions were identical according to Main's observed diagnostics. A native typed CHECK canonicalization candidate and semantic negative controls are still being implemented and have not yet been approved by this reviewer. No text-based removal of casts, parentheses or grouping has been accepted.
+The actual v5 restore comparison reported five CHECK deparser differences. Indexes, triggers and functions were identical according to Main's observed diagnostics. Frozen correction f865de4 is accepted at source level: CHECK expressions are reparsed by PostgreSQL on empty temporary LIKE tables preserving source column types and collations. At most four parse/deparse passes must converge; otherwise the comparison fails. Fresh temporary relation lookup avoids retaining a dropped relation OID. Constraint identities, types, validation and NO INHERIT metadata remain in the fingerprint; other constraint types, indexes, triggers and functions remain exact. Raw guard documents and difference diagnostics are retained. No text-based removal of casts, parentheses or grouping is used.
+
+The authored native controls must distinguish greater-than from greater-or-equal, removed NaN protection, changed AND/OR grouping, NO INHERIT and a changed array member. Associative AND formatting and the observed array-cast versus element-cast pair must converge equally. These controls and the complete v5 restore comparison still require Main's actual PostgreSQL execution.
 
 Real nonsuperuser session-lock exclusion, backend-loss cancellation, encrypted backup/restore, retained-orphan/partial preservation, late003 atomicity and corrected v5 guard comparison require Main's successful isolated runtime log. No overall operations or milestone completion is claimed here.
