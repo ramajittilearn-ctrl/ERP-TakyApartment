@@ -144,8 +144,28 @@ beforeAll(async () => {
       'SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL ORDER BY migration_name',
     )
   ).rows.map((row) => row.migration_name);
-  expect(migrations).toHaveLength(16);
-  expect(migrations.at(-1)).toBe("202610240002_payment_finite_amounts");
+  const finiteBaseline = [
+    "202610160001_foundation",
+    "202610160002_constraints",
+    "202610170001_backup_operations",
+    "202610170002_room_reserved",
+    "202610170003_occupancy_integrity",
+    "202610180001_phase3a_financial_foundation",
+    "202610180002_phase3b_meter_reading",
+    "202610190001_phase3c2_billing_inputs",
+    "202610200001_phase3c2_approval_sources",
+    "202610200002_phase3c2_lease_allocations",
+    "202610210001_phase3c3_invoice_lifecycle",
+    "202610210002_phase3c3_reference_capacity",
+    "202610210003_phase3c3_legacy_month_barrier",
+    "202610230001_phase3d_payments",
+    "202610240001_phase4_expenses",
+    "202610240002_payment_finite_amounts",
+  ];
+  expect([16, 17]).toContain(migrations.length);
+  expect(migrations.slice(0, 16)).toEqual(finiteBaseline);
+  if (migrations.length === 17)
+    expect(migrations[16]).toBe("202610240003_phase3e_deposits");
   fixture = await createFixture();
 });
 afterAll(async () => {
