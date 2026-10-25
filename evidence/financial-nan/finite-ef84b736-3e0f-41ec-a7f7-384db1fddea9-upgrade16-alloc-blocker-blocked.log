@@ -1,0 +1,22 @@
+Datasource "db": PostgreSQL database "taky_payment_test_2b5214bd52_finite_alloc_blocker2", schema "public" at "127.0.0.1:55489"
+
+16 migrations found in prisma/migrations
+
+Applying migration `202610240002_payment_finite_amounts`
+Loaded Prisma config from ../../../../../../../../private/tmp/taky-finite-rehearsal-6HHHJK/prisma.config.ts.
+
+Prisma schema loaded from ../../../../../../../../private/tmp/taky-finite-rehearsal-6HHHJK/schema.prisma.
+Error: P3018
+
+A migration failed to apply. New migrations cannot be applied before the error is recovered from. Read more about how to resolve migration issues in a production database: https://pris.ly/d/migrate-resolve
+
+Migration name: 202610240002_payment_finite_amounts
+
+Database error code: 23514
+
+Database error:
+ERROR: PaymentAllocation contains non-finite amounts; audited reconciliation required before migration
+
+DbError { severity: "ERROR", parsed_severity: Some(Error), code: SqlState(E23514), message: "PaymentAllocation contains non-finite amounts; audited reconciliation required before migration", detail: None, hint: None, position: None, where_: Some("PL/pgSQL function inline_code_block line 8 at RAISE"), schema: None, table: None, column: None, datatype: None, constraint: None, file: Some("pl_exec.c"), line: Some(3897), routine: Some("exec_stmt_raise") }
+
+

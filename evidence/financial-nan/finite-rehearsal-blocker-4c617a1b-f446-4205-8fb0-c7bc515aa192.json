@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "candidateVersion": "single-do-v2",
+  "scenario": "blocker",
+  "database": "taky_payment_test_2b5214bd52_finite_blocker2",
+  "attempt": "4c617a1b-f446-4205-8fb0-c7bc515aa192",
+  "preservedPayments": 3,
+  "preservedAllocations": 1,
+  "triggersUnchanged": 389,
+  "historicalPaymentNaN": "preserved unchanged and legacy-only",
+  "constraints": [],
+  "managedNaNBlocks": true,
+  "legacyAllocationNaNBlocks": false
+}

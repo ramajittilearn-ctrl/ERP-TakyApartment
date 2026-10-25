@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "candidateVersion": "single-do-v2",
+  "scenario": "alloc-blocker",
+  "database": "taky_payment_test_2b5214bd52_finite_alloc_blocker2",
+  "attempt": "ef84b736-3e0f-41ec-a7f7-384db1fddea9",
+  "preservedPayments": 2,
+  "preservedAllocations": 1,
+  "triggersUnchanged": 389,
+  "historicalPaymentNaN": "preserved unchanged and legacy-only",
+  "constraints": [],
+  "managedNaNBlocks": false,
+  "legacyAllocationNaNBlocks": true
+}

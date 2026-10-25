@@ -1,0 +1,13 @@
+{
+  "database": "taky_payment_test_2b5214bd52_routes1",
+  "role": "taky_qa_2b5214bd52",
+  "project": "taky-phase4-recovery-20261025",
+  "host": "127.0.0.1",
+  "port": 55489,
+  "sourceVersion": "539cc0e recovered as e423b33",
+  "newVolume": "taky-phase4-recovery-20261025_database",
+  "priorTmpQaState": "not reused",
+  "existingSyntheticNames": "retained for strict recovered test guards, new credentials and new project/volume",
+  "subnet": "10.254.250.0/28",
+  "networkNote": "Explicit unused subnet selected after read-only inventory; automatic Docker pools exhausted; no existing networks removed"
+}
