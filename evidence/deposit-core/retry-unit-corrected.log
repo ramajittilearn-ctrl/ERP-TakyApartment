@@ -1,0 +1,9 @@
+
+ RUN  v4.1.12 /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/recovered-deposit-core
+
+
+ Test Files  2 passed (2)
+      Tests  6 passed (6)
+   Start at  19:16:40
+   Duration  310ms (transform 76ms, setup 0ms, import 275ms, tests 30ms, environment 0ms)
+

@@ -16,13 +16,14 @@ function safeErrorShape(value: unknown, depth = 0): unknown {
     "name",
   ] as const) {
     if (key in value) {
-      const item: unknown = value[key];
+      const item: unknown = Reflect.get(value, key);
       if (typeof item === "string" && /^[A-Za-z0-9_]{1,80}$/.test(item))
         output[key] = item;
     }
   }
   for (const key of ["meta", "cause", "driverAdapterError"] as const) {
-    if (key in value) output[key] = safeErrorShape(value[key], depth + 1);
+    if (key in value)
+      output[key] = safeErrorShape(Reflect.get(value, key), depth + 1);
   }
   return output;
 }

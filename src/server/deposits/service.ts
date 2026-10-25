@@ -21,6 +21,7 @@ import {
   type DepositDataQualityIssue,
 } from "./contracts";
 import { depositFingerprint, depositTotals } from "./domain";
+import { isRetryableDepositTransaction } from "./retry";
 export type DepositEvidenceVerifier = (
   tx: Prisma.TransactionClient,
   input: { leaseId: string; evidenceId: string },
@@ -298,14 +299,7 @@ export function createDepositService(verifyEvidence: DepositEvidenceVerifier) {
           },
         );
       } catch (error) {
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          attempt < 2 &&
-          (error.code === "P2034" ||
-            (error.code === "P2010" &&
-              (error.meta?.code === "40001" || error.meta?.code === "40P01")))
-        )
-          continue;
+        if (attempt < 2 && isRetryableDepositTransaction(error)) continue;
         throw error;
       }
   }

@@ -37,7 +37,7 @@ async function waitFor(check: () => Promise<boolean>, state: string) {
     `Required synthetic database state was not observed: ${state}`,
   );
 }
-function tracked<T>(promise: Promise<T>) {
+function tracked(promise: Promise<unknown>) {
   return promise.then(
     (value) => ({ status: "fulfilled" as const, value }),
     (reason: unknown) => ({ status: "rejected" as const, reason }),
