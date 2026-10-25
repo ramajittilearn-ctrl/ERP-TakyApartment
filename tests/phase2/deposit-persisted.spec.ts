@@ -190,16 +190,26 @@ async function tabTo(page: Page, target: Locator) {
 
 test.afterAll(() => db.$disconnect());
 
-test("deposit persisted valid missing UUID pages return not-found instead of the generic server error", async ({
+test("deposit persisted valid missing UUID pages render noindex not-found while APIs keep strict 404", async ({
   page,
 }) => {
   await signInDepositBrowser(page.request);
-  for (const path of [
-    `/deposits/${randomUUID()}/`,
-    `/deposit-entries/${randomUUID()}/`,
+  const missing = randomUUID();
+  for (const item of [
+    {
+      page: `/deposits/${missing}/`,
+      api: `/api/v1/leases/${missing}/deposits/`,
+      code: "LEASE_NOT_FOUND",
+    },
+    {
+      page: `/deposit-entries/${missing}/`,
+      api: `/api/v1/deposit-entries/${missing}/`,
+      code: "DEPOSIT_ENTRY_NOT_FOUND",
+    },
   ]) {
-    const response = await page.goto(path);
-    expect(response?.status()).toBe(404);
+    const response = await page.goto(item.page);
+    // Next preserves 200 once the loading boundary has started streaming.
+    expect([200, 404]).toContain(response?.status());
     await expect(
       page.getByRole("heading", { name: "ไม่พบหน้าที่ต้องการ", exact: true }),
     ).toBeVisible();
@@ -209,6 +219,13 @@ test("deposit persisted valid missing UUID pages return not-found instead of the
         exact: true,
       }),
     ).toHaveCount(0);
+    await expect(
+      page.locator('meta[name="robots"][content*="noindex"]').first(),
+    ).toBeAttached();
+    const api = await page.request.get(item.api);
+    expect(api.status()).toBe(404);
+    expect(api.headers()["cache-control"]).toBe("no-store");
+    expect(await api.json()).toMatchObject({ error: { code: item.code } });
   }
 });
 
@@ -605,8 +622,13 @@ test("deposit persisted mobile keyboard focus and Axe keep genuine evidence form
     evidence.locator(`option[value="${f.evidence.id}"]`),
   ).toHaveCount(1);
   await tabTo(page, evidence);
+  await expect(evidence).toBeFocused();
+  await expect(evidence.locator("option")).toHaveCount(2);
+  await expect(evidence).toHaveValue("");
+  await page.keyboard.press("Space");
   await page.keyboard.press("Home");
   await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
   await expect(evidence).toHaveValue(f.evidence.id);
   const checkbox = dialog.getByRole("checkbox");
   await tabTo(page, checkbox);
