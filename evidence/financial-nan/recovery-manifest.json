@@ -84,7 +84,10 @@
     "Originalcandidate-v1 SQL SHA256 matched9cf72f8a4fbf372b2e6e692d12553e4d3a7092248ba1bd14f69b50bd11b798e3",
     "RecoveredTypeScript formatted with installedPrettier",
     "Recoveredhelper node --check passed",
-    "git diff --check passed"
+    "git diff --check passed",
+    "Both recovered TypeScript files transpile with zero diagnostics using installed TypeScript; not a full semantic typecheck",
+    "Every preexisting migration source file plus lock file verified byte-identical against dd7d2dc (16 files:15SQL+lock)",
+    "Scoped prisma/schema/src diff contains only added candidate002 migration"
   ],
   "freshDatabaseTestsExecuted": false,
   "qaTemplateStatus": "Fail-closed historical template only; old/private/tmpidentity files absent. Main must re-pin durable source and fresh isolated plan before any actual call."
