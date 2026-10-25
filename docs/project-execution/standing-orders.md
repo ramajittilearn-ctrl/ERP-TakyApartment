@@ -10,3 +10,5 @@
 8. Main coordinates, writes execution records and integrates reviewed files; implementation agents own code changes.
 
 9. Main serializes heavy builds and browser execution on this 8 GiB host. Specialists freeze source and report local checks; coordinate before another full build while a browser suite runs. Keep observed infrastructure failures distinct from application defects and preserve failed evidence.
+
+Owner stop boundary: complete pending Stage3E deposits and Phase4 with independent review, actual verification, integration, local commits and reviewed GitHub publication, then stop. No subsequent Dashboard/Reporting or Go-Live. Canonical source and evidence now stay under persistent project.local after temporary-workspace loss.
