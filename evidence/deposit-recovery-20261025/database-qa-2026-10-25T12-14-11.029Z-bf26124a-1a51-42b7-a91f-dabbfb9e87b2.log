@@ -1,0 +1,18 @@
+{"mode":"probe","source":{"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","project":"taky-phase4-recovery-20261025","host":"127.0.0.1","port":55489},"targets":{"integration":"taky_deposit_test_20261025_core2","rehearsal":"taky_payment_test_2b5214bd52_finite_rehearsal2","blocker":"taky_payment_test_2b5214bd52_finite_blocker2","allocBlocker":"taky_payment_test_2b5214bd52_finite_alloc_blocker2"},"planValidated":true}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+{"attested":true,"database":"taky_deposit_test_20261025_core2","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.12 [39m[90m/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate[39m
+
+[90mstdout[2m | tests/integration/deposit-retry-probe.test.ts[2m > [22m[2mcaptures only allowlisted serialization error shape from the actual Prisma adapter
+[22m[39m{"event":"deposit_serialization_error_shape","ok":false,"knownInstance":true,"shape":{"code":"P2010","name":"PrismaClientKnownRequestError","meta":{"driverAdapterError":{"name":"DriverAdapterError","cause":{"kind":"TransactionWriteConflict","originalCode":"40001"}}}}}
+
+ [32m✓[39m tests/integration/deposit-retry-probe.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 190[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m   Start at [22m 19:14:11
+[2m   Duration [22m 502ms[2m (transform 75ms, setup 0ms, import 210ms, tests 190ms, environment 0ms)[22m
+
+Child exit: 0; signal: none; timeout: false; outputLimit: false
+QA outcome: 0
