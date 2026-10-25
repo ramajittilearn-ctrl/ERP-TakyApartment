@@ -471,9 +471,10 @@ test("expense persisted full paging and CSV cover 105 filtered records in a popu
   page,
 }) => {
   const f = await fixture();
-  const created = await Promise.all(
-    Array.from({ length: 105 }, (_, i) =>
-      createExpense(f.admin, {
+  const created: Awaited<ReturnType<typeof createExpense>>[] = [];
+  for (let i = 0; i < 105; i++) {
+    created.push(
+      await createExpense(f.admin, {
         propertyId: f.property.id,
         categoryId: f.category.id,
         description: `Synthetic volume ${String(i).padStart(3, "0")}`,
@@ -483,8 +484,8 @@ test("expense persisted full paging and CSV cover 105 filtered records in a popu
         method: "CASH",
         commandKey: key(),
       }),
-    ),
-  );
+    );
+  }
   await postExpense(f.admin, {
     expenseId: created[0].id,
     expectedVersion: 1,
