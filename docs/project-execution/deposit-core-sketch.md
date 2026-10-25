@@ -16,7 +16,7 @@ Enum-like strings have database CHECK constraints and strict Zod enums. User/Lea
 
 ## Service interfaces
 
-All public raw inputs are unknown and parse with strict Zod schemas. Current actor authorization is reloaded before idempotent replay. All writes acquire source shared gate 73422193, authorization, actor-command identity, bank gate 73422194, then lease/account/original/evidence/counter locks in that order. SQL BEFORE STATEMENT admission takes source then bank. SERIALIZABLE transactions use bounded retries under the same command key for stale cross-stream snapshots.
+All public raw inputs are unknown and parse with strict Zod schemas. Current actor authorization is reloaded before idempotent replay. All writes acquire source shared gate 73422193, authorization, actor-command identity, bank gate 73422194, then lease/account/original/evidence/counter locks in that order. SQL BEFORE STATEMENT admission takes source then bank. READ COMMITTED command transactions use fresh post-admission snapshots while the shared bank gate serializes both financial streams; bounded retries retain the same command key. This corrects the stale cross-stream snapshot discovered by the actual Core3 race matrix. Read-only ledger/document queries remain REPEATABLE READ.
 
 reviewDepositAccount(actor, { leaseId, expectedVersion, openingAmount, evidenceId, reason, verified: true, commandKey })
 recordDepositReceipt(actor, { leaseId, expectedVersion, amount, occurredAt, evidenceId, reason, verified: true, method, receivingAccountKey?, externalReference?, commandKey })

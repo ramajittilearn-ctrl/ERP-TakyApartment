@@ -95,10 +95,17 @@ async function activeClaims(identity: { account: string; reference: string }) {
   };
 }
 
-it.each(["PAYMENT_FIRST", "DEPOSIT_FIRST"] as const)(
-  "permits exactly one active service bank claim in %s arrival order",
-  async (order) => {
+it.each([
+  ["PAYMENT_FIRST", "SAME_LEASE"],
+  ["DEPOSIT_FIRST", "SAME_LEASE"],
+  ["PAYMENT_FIRST", "CROSS_LEASE"],
+  ["DEPOSIT_FIRST", "CROSS_LEASE"],
+] as const)(
+  "permits exactly one active service bank claim in %s arrival order for %s",
+  async (order, scope) => {
     const f = await createDepositTestFixture("0.00");
+    const paymentFixture =
+      scope === "CROSS_LEASE" ? await createDepositTestFixture("0.00") : f;
     const identity = { account: "synthetic-bank", reference: depositTestKey() };
     const holder = await depositTestConnection();
     const observer = await depositTestConnection();
@@ -110,7 +117,7 @@ it.each(["PAYMENT_FIRST", "DEPOSIT_FIRST"] as const)(
       await holder.client.query("SELECT pg_advisory_xact_lock($1)", [bankGate]);
       const first = tracked(
         order === "PAYMENT_FIRST"
-          ? pendingPayment(f, identity)
+          ? pendingPayment(paymentFixture, identity)
           : bankReceipt(f, identity),
       );
       await waitFor(
@@ -123,7 +130,7 @@ it.each(["PAYMENT_FIRST", "DEPOSIT_FIRST"] as const)(
       const second = tracked(
         order === "PAYMENT_FIRST"
           ? bankReceipt(f, identity)
-          : pendingPayment(f, identity),
+          : pendingPayment(paymentFixture, identity),
       );
       await waitFor(
         async () =>
@@ -166,10 +173,17 @@ it.each(["PAYMENT_FIRST", "DEPOSIT_FIRST"] as const)(
   },
 );
 
-it.each(["DIRECT_FIRST", "SERVICE_FIRST"] as const)(
-  "serializes a READ COMMITTED direct Payment claim versus deposit service in %s order",
-  async (order) => {
+it.each([
+  ["DIRECT_FIRST", "SAME_LEASE"],
+  ["SERVICE_FIRST", "SAME_LEASE"],
+  ["DIRECT_FIRST", "CROSS_LEASE"],
+  ["SERVICE_FIRST", "CROSS_LEASE"],
+] as const)(
+  "serializes a READ COMMITTED direct Payment claim versus deposit service in %s order for %s",
+  async (order, scope) => {
     const f = await createDepositTestFixture("0.00");
+    const paymentFixture =
+      scope === "CROSS_LEASE" ? await createDepositTestFixture("0.00") : f;
     const identity = { account: "synthetic-bank", reference: depositTestKey() };
     const holder = await depositTestConnection(),
       direct = await depositTestConnection(),
@@ -177,7 +191,11 @@ it.each(["DIRECT_FIRST", "SERVICE_FIRST"] as const)(
     const raw = async () => {
       await direct.client.query("BEGIN ISOLATION LEVEL READ COMMITTED");
       try {
-        const id = await rawPendingPayment(direct.client, f, identity);
+        const id = await rawPendingPayment(
+          direct.client,
+          paymentFixture,
+          identity,
+        );
         await direct.client.query("COMMIT");
         return id;
       } catch (error) {

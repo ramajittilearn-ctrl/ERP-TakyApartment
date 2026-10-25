@@ -294,7 +294,7 @@ export function createDepositService(verifyEvidence: DepositEvidenceVerifier) {
             return result;
           },
           {
-            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+            isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
             timeout: 20000,
           },
         );
