@@ -1,0 +1,7 @@
+# Diagnose the actual v5 restore guard mismatch
+
+Main’s actual network-disabled harness passed the earlier migration13/14/15/16 restore cases and then failed the v5 normalized guard hash assertion. The original expected hash was84ed3ec5fb2383b7ff099020236c7c50bc955738d8257ad93dd1fc012a421d0c and restored hash99d2c44d850f5bf9abfea71638c7f49cfa6741505f7804f215d0dfb8719ffd6a. Publication proof had not run. The failed container/log remain Main-owned evidence.
+
+This diagnostic adds before/after schema-definition documents and emits TAKY_GUARD_DIFF only when the existing hash assertion disagrees. It reports missing, extra and changed constraints, indexes, noninternal trigger definitions/states and functions by normalized table/name or function identity. It includes only schema definitions, never table rows, file bodies, keys or credentials. Duplicate identities also fail. Main can preserve that JSON line as the detailed mismatch artifact before deciding whether any normalization is justified.
+
+No category, predicate or assertion is relaxed. The same original fingerprint expression remains authoritative, and historical SQL inventory bytes are unchanged. No guessed OID/database-name correction is applied without the actual difference. Syntax, formatting and source whitespace checks passed; Main must rebuild the same isolated image and run a distinct diagnostic container to collect the actual output.

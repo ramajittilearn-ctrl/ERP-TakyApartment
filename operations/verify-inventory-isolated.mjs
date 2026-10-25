@@ -374,6 +374,8 @@ async function assertTriggers(expenses = false) {
 async function roundTrip(version, label, directory) {
   const originalDatabase = process.env.PGDATABASE;
   const originalGuards = version === 5 ? await guardFingerprint() : undefined;
+  const originalGuardDocument =
+    version === 5 ? await guardDocument() : undefined;
   const registry =
     version === 2
       ? INVENTORY_TABLES
@@ -431,8 +433,17 @@ async function roundTrip(version, label, directory) {
     ]);
     await assertInventory(snapshot.inventory);
     if (version === 5) {
+      const restoredGuards = await guardFingerprint();
+      if (restoredGuards !== originalGuards) {
+        console.info(
+          "TAKY_GUARD_DIFF " +
+            JSON.stringify(
+              guardDifference(originalGuardDocument, await guardDocument()),
+            ),
+        );
+      }
       assert.equal(
-        await guardFingerprint(),
+        restoredGuards,
         originalGuards,
         "Restored constraints, indexes, trigger states and functions must match",
       );
@@ -542,11 +553,50 @@ async function roundTrip(version, label, directory) {
   }
 }
 
-async function guardFingerprint() {
-  return sql(`SELECT encode(sha256(convert_to(jsonb_build_object(
+function guardDocumentExpression() {
+  return `jsonb_build_object(
     'constraints',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',x.conname,'definition',pg_get_constraintdef(x.oid),'validated',x.convalidated) ORDER BY c.relname,x.conname),'[]') FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'),
     'indexes',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',i.relname,'definition',pg_get_indexdef(x.indexrelid)) ORDER BY c.relname,i.relname),'[]') FROM pg_index x JOIN pg_class c ON c.oid=x.indrelid JOIN pg_class i ON i.oid=x.indexrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'),
     'triggers',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',t.tgname,'definition',pg_get_triggerdef(t.oid),'enabled',t.tgenabled) ORDER BY c.relname,t.tgname),'[]') FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND NOT t.tgisinternal),
     'functions',(SELECT coalesce(jsonb_agg(jsonb_build_object('identity',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid)) ORDER BY p.oid::regprocedure::text),'[]') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind='f')
-  )::text,'UTF8')),'hex')`);
+  )`;
+}
+async function guardFingerprint() {
+  return sql(
+    `SELECT encode(sha256(convert_to(${guardDocumentExpression()}::text,'UTF8')),'hex')`,
+  );
+}
+async function guardDocument() {
+  return JSON.parse(await sql(`SELECT ${guardDocumentExpression()}`));
+}
+function guardDifference(before, after) {
+  const result = {};
+  for (const category of ["constraints", "indexes", "triggers", "functions"]) {
+    const key = (entry) =>
+      `${entry.table ?? ""}:${entry.name ?? entry.identity}`;
+    const old = new Map(before[category].map((entry) => [key(entry), entry]));
+    const latest = new Map(after[category].map((entry) => [key(entry), entry]));
+    assert.equal(old.size, before[category].length);
+    assert.equal(latest.size, after[category].length);
+    result[category] = {
+      missing: [...old]
+        .filter(([id]) => !latest.has(id))
+        .map(([, entry]) => entry),
+      added: [...latest]
+        .filter(([id]) => !old.has(id))
+        .map(([, entry]) => entry),
+      changed: [...old]
+        .filter(
+          ([id, entry]) =>
+            latest.has(id) &&
+            JSON.stringify(entry) !== JSON.stringify(latest.get(id)),
+        )
+        .map(([id, entry]) => ({
+          identity: id,
+          before: entry,
+          after: latest.get(id),
+        })),
+    };
+  }
+  return result;
 }
