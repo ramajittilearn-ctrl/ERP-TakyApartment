@@ -1,3 +1,6 @@
+-- Install all managed deposit objects atomically; preserve existing data on any failure.
+DO $deposit_migration$
+BEGIN
 -- CreateTable
 CREATE TABLE "DepositAccount" (
     "leaseId" UUID NOT NULL,
@@ -186,7 +189,7 @@ CREATE TRIGGER deposit_account_integrity BEFORE INSERT OR UPDATE OR DELETE ON "D
 CREATE FUNCTION deposit_version_check() RETURNS trigger LANGUAGE plpgsql AS $$ DECLARE a "DepositAccount"%ROWTYPE; n bigint; BEGIN
  SELECT * INTO a FROM "DepositAccount" WHERE "leaseId"=NEW."leaseId";
  SELECT count(*) INTO n FROM "DepositEntry" WHERE "leaseId"=a."leaseId";
- IF a."reviewState"='REVIEWED' AND a.version<>n+CASE WHEN a."openingAmount"=0 THEN 1 ELSE 0 END THEN RAISE EXCEPTION 'Deposit account version does not match committed ledger'; END IF;
+ IF a."reviewState"='REVIEWED' AND a.version<>(n+(CASE WHEN a."openingAmount"=0 THEN 1 ELSE 0 END)) THEN RAISE EXCEPTION 'Deposit account version does not match committed ledger'; END IF;
  RETURN NULL;
 END $$;
 CREATE CONSTRAINT TRIGGER deposit_version_integrity AFTER INSERT OR UPDATE ON "DepositAccount" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION deposit_version_check();
@@ -249,3 +252,6 @@ END $$;
 CREATE TRIGGER deposit_number_integrity BEFORE INSERT ON "DepositEntry" FOR EACH ROW EXECUTE FUNCTION deposit_number_guard();
 ALTER TABLE "DepositAccount" ADD CONSTRAINT deposit_review_nonnull CHECK ("reviewState"<>'REVIEWED' OR ("legacyDigest" IS NOT NULL AND "reviewReason" IS NOT NULL AND "openingAmount" IS NOT NULL));
 ALTER TABLE "DepositEntry" ADD CONSTRAINT deposit_refund_payee CHECK (kind<>'REFUND' OR "payeeName" IS NOT NULL);
+
+END
+$deposit_migration$;

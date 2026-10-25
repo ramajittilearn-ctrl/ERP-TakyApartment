@@ -1,0 +1,8 @@
+{
+  "priorCandidateSha256": "3457fc5e74ca5048b9449ba09f69f13c5adde1692bceaefeb667474f43a3e074",
+  "correctedCandidateSha256": "46aa486444ca50dad2edb976676a53a6e4deedaed99f20ad6052d9a9e45c39f8",
+  "outerDoTagOccurrences": 2,
+  "parenthesizedConditional": true,
+  "concurrentIndexes": false,
+  "databaseExecutionByImplementer": false
+}
