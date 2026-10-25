@@ -1,0 +1,91 @@
+{
+  "recoveredAt": "2026-10-25",
+  "baseline": "dd7d2dcb58ef6ef2bef8caf59167c034ddd89bc0",
+  "historicalCandidate": "539cc0e",
+  "sourceSession": "rollout-2026-10-23T23-28-17-01a16997-7923-7621-8e53-1576adc2cd62.jsonl",
+  "sourceSessionSha256": "0bcd58874c19552b1d8ba32da81b9927bd1766b7d31a51048a04a505ba9cd35b",
+  "sourceCalls": [
+    {
+      "lineZeroBased": 489,
+      "callId": "call_8620f86018bd492894bcf5b8088f5389"
+    },
+    {
+      "lineZeroBased": 497,
+      "callId": "call_e9a07925b9724da79c04604789e7498b"
+    },
+    {
+      "lineZeroBased": 538,
+      "callId": "call_4c5c924558f84d598166fe25b780b578"
+    },
+    {
+      "lineZeroBased": 547,
+      "callId": "call_26abc7b789d34801a20859a430dd4309"
+    },
+    {
+      "lineZeroBased": 586,
+      "callId": "call_cb56345ffd7f42c7886b9aafe373d344"
+    },
+    {
+      "lineZeroBased": 601,
+      "callId": "call_4a3b5057b3cd470781509368a2f38969"
+    },
+    {
+      "lineZeroBased": 608,
+      "callId": "call_aa653aa4295443bfa82f36a91b775810"
+    },
+    {
+      "lineZeroBased": 623,
+      "callId": "call_380effbd6be04c00a64b925b1ed5bd00"
+    },
+    {
+      "lineZeroBased": 664,
+      "callId": "call_bf8f9020af58434aba08f22bf4343263"
+    },
+    {
+      "lineZeroBased": 693,
+      "callId": "call_d66e89aa522a4cae86f978a3fd4a51ec"
+    },
+    {
+      "lineZeroBased": 713,
+      "callId": "call_e852b8d00757417ea2b72cad0366bdb3"
+    },
+    {
+      "lineZeroBased": 721,
+      "callId": "call_76c440eed8394db0bf327d728de9a96d"
+    },
+    {
+      "lineZeroBased": 852,
+      "callId": "call_95131c4f18074edaa72bf8fcbc99a4fc"
+    },
+    {
+      "lineZeroBased": 861,
+      "callId": "call_ad5b9260397a4905a729baf5e4eecc2c"
+    }
+  ],
+  "recoveredFiles": {
+    "prisma/migrations/202610240002_payment_finite_amounts/migration.sql": "5973fb81fbaad65ac6bf74c88f6e67ae369d283672297f26629f469518b4debc",
+    "tests/integration/payment-finite.test.ts": "b97e8c1202cd0ad62c1c54f14d489dce8cbe936a065748c8fdb0d09c0d0aa6a3",
+    "tests/integration/payment-finite-migration-rehearsal.ts": "70dc569f9b2d4151e4de9680457fb20e08cf6c5e7e61a4bf269016af0c9a3105",
+    "docs/project-execution/payment-finite-contract.md": "b7d63d16639f75ba682dd77d303d25f0a07e2a5b714dcbfb5bc8a816f63cdef9",
+    "evidence/financial-nan/qa-helper-v3/runner.cjs": "a10a8fc9ec0d86d1b5d273d70c6d1b14a3cf6158c6f6e187ebb498a838eda9a9",
+    "evidence/financial-nan/qa-helper-v3/README.md": "a742a9d23cb6ac61af56613f6c5add33b303532eb6599ce30d7e1c713836ed80",
+    "evidence/financial-nan/candidate-v1/migration.sql": "9cf72f8a4fbf372b2e6e692d12553e4d3a7092248ba1bd14f69b50bd11b798e3",
+    "evidence/financial-nan/implementation.md": "8789152b5d784c674f2fd7c58a1771c99a62a9ca70b4397547f667a32673b978",
+    "evidence/financial-nan/fnr-01-correction.md": "40ce6ded9293d03dc15d294b66a01b016cad18f8a25e5ee68ff644b283f88626",
+    "evidence/financial-nan/candidate-v2-correction.md": "ce6a0d64bd13aacae7489f4906a49c1a7d7eef010df77fd20a40d991cc5109bc"
+  },
+  "unavailable": [
+    "Original Git commit objects for539cc0e",
+    "Original raw PostgreSQL logs/QA identity files",
+    "Historical helperv1/v2 full archives",
+    "Historical19-artifact hash record"
+  ],
+  "checksExecuted": [
+    "Originalcandidate-v1 SQL SHA256 matched9cf72f8a4fbf372b2e6e692d12553e4d3a7092248ba1bd14f69b50bd11b798e3",
+    "RecoveredTypeScript formatted with installedPrettier",
+    "Recoveredhelper node --check passed",
+    "git diff --check passed"
+  ],
+  "freshDatabaseTestsExecuted": false,
+  "qaTemplateStatus": "Fail-closed historical template only; old/private/tmpidentity files absent. Main must re-pin durable source and fresh isolated plan before any actual call."
+}

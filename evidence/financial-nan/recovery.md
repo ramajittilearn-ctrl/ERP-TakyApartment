@@ -1,0 +1,9 @@
+# Finite payment source recovery
+
+Recovered the accepted single-DO candidate from this task’s own historical subagent tool-write records after temporary worktrees were cleared. Source tools were parsed as data and only scoped SQL, TypeScript, helper and document writes were reconstructed. Historical commands were not blindly executed. The failed historical patch at line701 was excluded; its successful corrected patch at713 was used. No credentials, private environment files or raw transcripts were copied into the repository.
+
+The recovered SQL preserves the managed Payment legacy exemption and rejects every Allocation NaN. Both preflight checks and validated ALTER statements are in one unhandled DO statement, with no outer BEGIN/COMMIT. Existing fifteen migration files, model schema and application code remain unchanged. The archived earlier SQL matches its independently recorded SHA256 exactly. The original candidate’s Git object is unavailable, so this recovery does not claim identical commit metadata. File hashes and source call IDs appear in recovery-manifest.json.
+
+Historical handoff and correction documents describe what happened in the prior environment. Statements that old helper archives, database targets or raw logs existed are historical, not claims that those artifacts remain in this recovered worktree. Historical runtime results reported nine passing cases and three successful migration scenarios. Their raw logs are unavailable, and fresh actual PostgreSQL acceptance is required. No database or Docker action was executed during recovery.
+
+The helper is preserved as a fail-closed template with its historical missing private paths and identities. It is not authorization to reuse those targets. Main must review a fresh durable-path QA adaptation and exact isolated identity before execution.
