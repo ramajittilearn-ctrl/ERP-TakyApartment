@@ -426,6 +426,7 @@ async function assertLateDepositRollback(name, directory) {
 }
 async function roundTrip(version, label, directory) {
   const originalDatabase = process.env.PGDATABASE;
+  if (version === 5) await assertCheckCanonicalization();
   const originalGuards = version === 5 ? await guardFingerprint() : undefined;
   const originalGuardDocument =
     version === 5 ? await guardDocument() : undefined;
@@ -606,21 +607,104 @@ async function roundTrip(version, label, directory) {
   }
 }
 
-function guardDocumentExpression() {
+function guardDocumentExpression(canonicalChecks = false) {
+  const check = canonicalChecks
+    ? "CASE WHEN x.contype='c' THEN pg_temp._taky_canonical_check(x.conrelid::regclass,pg_get_constraintdef(x.oid)) ELSE pg_get_constraintdef(x.oid) END"
+    : "pg_get_constraintdef(x.oid)";
   return `jsonb_build_object(
-    'constraints',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',x.conname,'definition',pg_get_constraintdef(x.oid),'validated',x.convalidated) ORDER BY c.relname,x.conname),'[]') FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'),
+    'constraints',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',x.conname,'definition',${check},'type',x.contype,'validated',x.convalidated,'noInherit',x.connoinherit) ORDER BY c.relname,x.conname),'[]') FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'),
     'indexes',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',i.relname,'definition',pg_get_indexdef(x.indexrelid)) ORDER BY c.relname,i.relname),'[]') FROM pg_index x JOIN pg_class c ON c.oid=x.indrelid JOIN pg_class i ON i.oid=x.indexrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'),
     'triggers',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',t.tgname,'definition',pg_get_triggerdef(t.oid),'enabled',t.tgenabled) ORDER BY c.relname,t.tgname),'[]') FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND NOT t.tgisinternal),
     'functions',(SELECT coalesce(jsonb_agg(jsonb_build_object('identity',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid)) ORDER BY p.oid::regprocedure::text),'[]') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind='f')
   )`;
 }
 async function guardFingerprint() {
-  return sql(
-    `SELECT encode(sha256(convert_to(${guardDocumentExpression()}::text,'UTF8')),'hex')`,
+  return canonicalCheckQuery(
+    `SELECT encode(sha256(convert_to(${guardDocumentExpression(true)}::text,'UTF8')),'hex')`,
   );
 }
 async function guardDocument() {
   return JSON.parse(await sql(`SELECT ${guardDocumentExpression()}`));
+}
+
+async function canonicalCheckQuery(query) {
+  const setup = `BEGIN;
+    CREATE TEMP TABLE _taky_guard_session (unused boolean) ON COMMIT DROP;
+    CREATE FUNCTION pg_temp._taky_canonical_check(source_relation regclass,input_definition text)
+    RETURNS text LANGUAGE plpgsql VOLATILE AS $canonical$
+    DECLARE current_definition text:=input_definition; normalized text; pass_number integer;
+    BEGIN
+      EXECUTE format('CREATE TEMP TABLE _taky_guard_check_copy (LIKE %s INCLUDING GENERATED) ON COMMIT DROP',source_relation);
+      FOR pass_number IN 1..4 LOOP
+        EXECUTE format('ALTER TABLE pg_temp._taky_guard_check_copy ADD CONSTRAINT _taky_guard_check_constraint %s',current_definition);
+        SELECT pg_get_constraintdef(oid) INTO STRICT normalized FROM pg_constraint WHERE conrelid=to_regclass('pg_temp._taky_guard_check_copy') AND conname='_taky_guard_check_constraint';
+        IF normalized=current_definition THEN
+          DROP TABLE pg_temp._taky_guard_check_copy;
+          RETURN normalized;
+        END IF;
+        current_definition:=normalized;
+        ALTER TABLE pg_temp._taky_guard_check_copy DROP CONSTRAINT _taky_guard_check_constraint;
+      END LOOP;
+      RAISE EXCEPTION 'CHECK canonicalization did not stabilize for %',source_relation;
+    END
+    $canonical$;
+  `;
+  return run(
+    "psql",
+    [
+      "-X",
+      "-q",
+      "-v",
+      "ON_ERROR_STOP=1",
+      "-Atc",
+      `${setup}\n${query};\nROLLBACK;`,
+    ],
+    {
+      env: {
+        ...process.env,
+        PGOPTIONS: "-c timezone=UTC -c datestyle=ISO,YMD",
+      },
+    },
+  );
+}
+async function assertCheckCanonicalization() {
+  const cases = {
+    strict: "CHECK (amount > 0 AND amount <> 'NaN'::numeric)",
+    zeroAllowed: "CHECK (amount >= 0 AND amount <> 'NaN'::numeric)",
+    nanAllowed: "CHECK (amount > 0)",
+    leftGrouped: "CHECK ((amount > 0 AND kind='RECEIPT') OR kind='REFUND')",
+    rightGrouped: "CHECK (amount > 0 AND (kind='RECEIPT' OR kind='REFUND'))",
+    nestedAnd:
+      "CHECK ((amount > 0 AND amount <> 'NaN'::numeric) AND kind='RECEIPT')",
+    flatAnd:
+      "CHECK (amount > 0 AND amount <> 'NaN'::numeric AND kind='RECEIPT')",
+    noInherit: "CHECK (amount > 0) NO INHERIT",
+    arrayCast:
+      "CHECK ((kind)::text = ANY ((ARRAY['RECEIPT'::varchar,'REFUND'::varchar])::text[]))",
+    elementCast:
+      "CHECK ((kind)::text = ANY (ARRAY[('RECEIPT'::varchar)::text,('REFUND'::varchar)::text]))",
+    changedArray:
+      "CHECK ((kind)::text = ANY (ARRAY[('RECEIPT'::varchar)::text,('DEDUCTION'::varchar)::text]))",
+  };
+  const expressions = Object.entries(cases)
+    .map(
+      ([key, value]) =>
+        `${literal(key)},pg_temp._taky_canonical_check('"DepositEntry"'::regclass,${literal(value)})`,
+    )
+    .join(",");
+  const values = JSON.parse(
+    await canonicalCheckQuery(`SELECT jsonb_build_object(${expressions})`),
+  );
+  assert.notEqual(values.strict, values.zeroAllowed);
+  assert.notEqual(values.strict, values.nanAllowed);
+  assert.notEqual(values.leftGrouped, values.rightGrouped);
+  assert.notEqual(values.nanAllowed, values.noInherit);
+  assert.equal(values.nestedAnd, values.flatAnd);
+  assert.equal(values.arrayCast, values.elementCast);
+  assert.notEqual(values.elementCast, values.changedArray);
+  console.info(
+    "PASS native typed CHECK canonicalization preserves zero/NaN limits, AND/OR precedence and NO INHERIT while stabilizing observed array casts and associative AND formatting",
+  );
 }
 function guardDifference(before, after) {
   const result = {};
