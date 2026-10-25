@@ -1,0 +1,8 @@
+
+ RUN  v4.1.12 /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/development-recovered-20261025
+
+
+ Test Files  23 passed (23)
+      Tests  363 passed (363)
+   Start at  11:13:09
+   Duration  2.84s (transform 1.11s, setup 0ms, import 3.48s, tests 2.85s, environment 1ms)

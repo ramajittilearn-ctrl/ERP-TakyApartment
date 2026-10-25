@@ -84,3 +84,11 @@ Fresh isolated baseline d7fd72f9c44a489094ca94e7 applied15 migrations and passed
 Expense UI candidate6cedc18 received independent61 focused tests and two Medium findings: recovery inaccessible inside detail modal, and C1-leading controls missed formula-prefix neutralization. Owner correcting both. First actual export PG attempt failed4/5 at fixture Property.code length before export behavior; one genuine session denial case passed. This is preserved evidence, not an export runtime acceptance. Owner correcting fixture under real32-character schema. New dedicated export helper is /private/tmp/taky-expense-export-qa/runner.cjs.
 
 FIN-NaN-01 rollback reproduction helper is under review; its first oversized synthetic property code was caught before any DB execution. No payment vulnerability claim yet.
+
+##2026-10-25 persistent recovery frontier
+
+Durable integration .local/development-recovered-20261025 recovered baseline dd7d2dc from original bundle, UI2f41+sequential2614 fixture recovered. Fresh467locked dependencies installed offline after own stalledcopyprocesses were stopped and partials preserved; originaldeps/checkout untouched. FreshMain363unit/full lint/supportedWebpack build passed. Freshexpensebrowserrun6da15bf60576d8a202839939 passed8/8,no retries/skips,31sec. Readonlycollector automatically started atstandalonereadiness; saved33snapshots,max8actors,noblocking snapshots, then exited1 duringDBteardown. No full90collectorpass or provenrootcause claimed. TestDBvolume retained,containeronlycleanedbyexistingrunner.
+
+Recoveredfinitebranchcodex/recovered-payment-finite atfacb581: sourcee423b33+checks6ee65d0 independently reviewedbyRoot. FreshQAprojecttaky-phase4-recovery-20261025, newcredentials/newvolume/explicit10.254.250.0/28, port55489. Integration9/9 +historicalpreserve+bothblockers allpassed. Sourcecandidate16isatomicDO; existing15unchanged. Operationsmigrationcountreconciliationstillrequiredbeforeclosure. No productionmutation.
+
+Currentagents recover_deposit_core, recover_evidence and evidence_validator implement/recoverStage3E; sourcepersistentunderproject.local/worktrees. ValidatorprivateboundedLinuxqpdf/sharpservice approveddesign, no productiondeployment. OwnerstopALLthroughStage3EandPhase4thenSTOP; noDashboard/GoLive.

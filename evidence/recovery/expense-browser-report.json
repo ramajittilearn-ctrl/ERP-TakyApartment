@@ -1,0 +1,16 @@
+{
+  "runId": "6da15bf60576d8a202839939",
+  "browser": {
+    "startTime": "2026-10-25T04:35:24.974Z",
+    "duration": 30981.019,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "observerSamples": 33,
+  "maxObservedActors": 8,
+  "observedBlockingSnapshots": 0,
+  "observerLimitation": "Collector process exited1 during database teardown and did not write a final outcome.33 saved snapshots exist; no claim of a complete90-sample run or root cause.",
+  "priorFailureLimitation": "Prior temporary environment500/timeouts were not reproduced. Fresh current baseline8/8 passes, not a claimed performance fix."
+}
