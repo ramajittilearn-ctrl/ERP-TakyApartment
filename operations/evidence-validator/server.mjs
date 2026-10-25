@@ -154,7 +154,7 @@ export function createValidatorServer({
       return;
     }
     active++;
-    const controller = new AbortController();
+    const controller = new globalThis.AbortController();
     const timer = setTimeout(() => controller.abort(), deadlineMs);
     timer.unref();
     const disconnect = () => {

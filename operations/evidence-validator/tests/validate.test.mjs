@@ -29,11 +29,10 @@ for (const [format, mimeType] of [
   ["jpeg", "image/jpeg"],
 ]) {
   test(`fully decodes genuine ${format} and rejects truncation and appended payload`, async () => {
-    const bytes = await sharp({
+    const image = sharp({
       create: { width: 2, height: 3, channels: 3, background: "#123456" },
-    })
-      [format]()
-      .toBuffer();
+    });
+    const bytes = await image[format]().toBuffer();
     assert.equal(evidenceMime(bytes), mimeType);
     await withInput(bytes, async (path) => {
       assert.deepEqual(await validateEvidenceFile(path), {
@@ -177,7 +176,7 @@ test("an aborted parser process is awaited and rejected without diagnostics", as
     .png()
     .toBuffer();
   await withInput(bytes, async (path) => {
-    const controller = new AbortController();
+    const controller = new globalThis.AbortController();
     const result = runValidation(path, controller.signal);
     controller.abort();
     await assert.rejects(
