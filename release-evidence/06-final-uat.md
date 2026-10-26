@@ -3,9 +3,18 @@
 **Result:** PASS for the isolated synthetic browser suite, with the limits below.
 **Owner UAT:** Not performed. The Owner delegated UAT execution and requested a report.
 
-## Run evidence
+## Current PR CI run
 
-- Exact source: commit `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966`, tree `aa5cf57c5d1fb90c5eedbdfc9775d494176123bb`. Tracked application/test source was unchanged during the run.
+- Workflow: [Phase 4 CI run 40317435858](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40317435858), all three jobs passed (`required-quality`, `container-verification`, and `agent-uat`).
+- PR head: `573bbed8e9ba48dcdba115095457d32426f1a124`. Agent UAT checked out merge commit `945a409022f22cf1e94c899e25fe55a60727fa38`; the generated report records both hashes.
+- Mode and scope: source-built app, synthetic browser UAT on an isolated Ubuntu runner; no Owner UAT and no production data. The separate container-verification job covered pinned image builds and its own smoke checks.
+- Result: 89 passed, 0 failed, 0 skipped, 0 flaky; the Playwright result records 89 expected and 0 unexpected. Browser execution run ID: `754a215d39e4cb3f73271418`.
+- Report, `results.json`, and `execution.json`: [Agent UAT artifact 12648590286](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40317435858/artifacts/12648590286).
+- This synthetic source-build run does not verify production data, the deployment host, Owner acceptance, or exact-current-image operations backup/restore.
+
+## Historical local run evidence
+
+- The following records local Agent UAT run `f12e112e99231c0a470e3171` on older source commit `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966`, tree `aa5cf57c5d1fb90c5eedbdfc9775d494176123bb`; it is retained as historical evidence and is not the current PR-head run.
 - Preparation: `npm ci` (467 packages, 0 vulnerabilities), `npx prisma generate`, and `npm run build` all passed on Node `v22.22.3` and Next.js `16.4.1`.
 - Run ID: `f12e112e99231c0a470e3171`.
 - Command: `node scripts/run-remediation-browser.mjs` from the exact-head checkout.

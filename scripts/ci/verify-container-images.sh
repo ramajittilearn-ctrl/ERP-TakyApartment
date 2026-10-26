@@ -29,18 +29,54 @@ if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
   exit 1
 fi
 
+resource_label() {
+  local kind="$1" name="$2" output
+  case "$kind" in
+    container) output="$(docker inspect --format "{{index .Config.Labels \"$ownership_label\"}}" "$name" 2>&1)" ;;
+    volume) output="$(docker volume inspect --format "{{index .Labels \"$ownership_label\"}}" "$name" 2>&1)" ;;
+    network) output="$(docker network inspect --format "{{index .Labels \"$ownership_label\"}}" "$name" 2>&1)" ;;
+    *) echo "Unknown Docker resource kind: $kind" >&2; return 1 ;;
+  esac
+  local status=$?
+  if [[ "$status" != 0 ]]; then
+    if [[ "$output" == *"No such"* || "$output" == *"no such"* ]]; then return 0; fi
+    echo "Could not inspect $kind during cleanup ($name): $output" >&2
+    return 1
+  fi
+  printf '%s' "$output"
+}
+
+remove_owned_resource() {
+  local kind="$1" name="$2" label
+  if ! label="$(resource_label "$kind" "$name")"; then return 1; fi
+  if [[ -z "$label" ]]; then return 0; fi
+  if [[ "$label" != "$project" ]]; then
+    echo "Refusing to remove $kind without this run's ownership label: $name" >&2
+    return 1
+  fi
+  case "$kind" in
+    container) docker rm -f "$name" >/dev/null ;;
+    volume) docker volume rm "$name" >/dev/null ;;
+    network) docker network rm "$name" >/dev/null ;;
+  esac
+}
+
 cleanup() {
+  local exit_status=$? cleanup_failed=0 name
+  trap - EXIT
   set +e
   for name in "$app" "$validator" "$database" "$probe"; do
-    label="$(docker inspect --format "{{index .Config.Labels \"$ownership_label\"}}" "$name" 2>/dev/null || true)"
-    if [[ "$label" == "$project" ]]; then docker rm -f "$name" >/dev/null 2>&1; fi
+    remove_owned_resource container "$name" || cleanup_failed=1
   done
   for name in "$db_volume" "$attachments_volume"; do
-    label="$(docker volume inspect --format "{{index .Labels \"$ownership_label\"}}" "$name" 2>/dev/null || true)"
-    if [[ "$label" == "$project" ]]; then docker volume rm "$name" >/dev/null 2>&1; fi
+    remove_owned_resource volume "$name" || cleanup_failed=1
   done
-  label="$(docker network inspect --format "{{index .Labels \"$ownership_label\"}}" "$network" 2>/dev/null || true)"
-  if [[ "$label" == "$project" ]]; then docker network rm "$network" >/dev/null 2>&1; fi
+  remove_owned_resource network "$network" || cleanup_failed=1
+  if [[ "$cleanup_failed" == 1 ]]; then
+    echo "One or more run-owned container resources could not be cleaned up" >&2
+    if [[ "$exit_status" == 0 ]]; then exit_status=1; fi
+  fi
+  exit "$exit_status"
 }
 trap cleanup EXIT
 
@@ -61,6 +97,7 @@ echo "Building evidence validator image"
 build_image "$validator_image" operations/evidence-validator/Dockerfile operations/evidence-validator
 echo "Building operations image"
 build_image "$operations_image" operations/Dockerfile .
+bash scripts/ci/verify-operations-backup-restore.sh "$operations_image" "$app_image"
 
 docker run --rm --platform linux/amd64 --entrypoint sh "$app_image" -ec '
   ! command -v npm >/dev/null
