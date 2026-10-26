@@ -1,15 +1,20 @@
 # Agent-run Phase 4 UAT
 
-**Result:** PASS on latest fully hosted PR head `69f7ca0a12e6d154d3c6629900ef2790ae39843e` for the isolated synthetic browser suite, with the limits below. The follow-up scanner-provenance commit is not yet pushed and has not received UAT.
+**Latest attempt:** FAIL on PR head `6e2b56ce7506fd38b99e55a46a82285bc72d04a6`: 89 passed and one report-month selection test failed. The three-job run had passing quality and container verification; Agent UAT did not pass. A test-only hydration wait is now in the worktree, independently reviewed with no blocking findings, and awaits hosted rerun.
 **Owner UAT:** Not performed. The Owner delegated UAT execution and requested a report.
 
 ## Latest PR CI run
 
-- Workflow: [Phase 4 CI run 40331167063](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40331167063), all three jobs passed (`required-quality`, `container-verification`, and `agent-uat`).
-- PR head: `69f7ca0a12e6d154d3c6629900ef2790ae39843e`. Agent UAT checked out merge commit `17dbc7323db48be1214521bab8a7d9a67cbaf428`; generated report binds both revisions.
-- Result: 90 passed, 0 failed, 0 skipped, 0 flaky. Browser execution run ID: `92578a7797108baf8d74703e`.
-- Report, `results.json`, and `execution.json`: [Agent UAT artifact 12654694063](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40331167063/artifacts/12654694063).
-- This synthetic run includes tenant contract rent persistence/reload and the same report-export limitations below. It is agent-run UAT, not Owner acceptance or production verification.
+- Workflow: [Phase 4 CI run 40333071309](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40333071309): `required-quality` and `container-verification` passed; `agent-uat` failed.
+- PR head: `6e2b56ce7506fd38b99e55a46a82285bc72d04a6`. Agent UAT checked out merge commit `374fbaca6407c3bc9c492928c9d11c4c0febea86`.
+- Result: 89 passed, 1 failed, 0 skipped, 0 flaky. Failing test: `reports can select and load a month beyond the preset range`; the month input stayed `2026-10` after Playwright filled `2027-03`, so no matching API request occurred. The same case passed in the preceding full-green run. Review found a likely SSR hydration race: the test checked the server-rendered value but did not wait for the client effect. This is not evidence of a confirmed product defect.
+- Report, `results.json`, and `execution.json`: [Agent UAT artifact 12657011314](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40333071309/artifacts/12657011314).
+- A test-only correction now waits for the initial successful monthly-report API response and verifies its month matches the input before changing it; independent review found no blocking issue. Hosted rerun is pending. The other 89 passing cases include tenant rent persistence/reload and the report-export limits below.
+
+### Prior fully green exact-head run
+
+- [Phase 4 CI run 40331167063](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40331167063) passed all three jobs on PR head `69f7ca0a12e6d154d3c6629900ef2790ae39843e`; its UAT artifact [12654694063](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40331167063/artifacts/12654694063) reports 90 passed, zero failed/skipped/flaky. It used merge checkout `17dbc7323db48be1214521bab8a7d9a67cbaf428`.
+- This synthetic run is agent-run UAT, not Owner acceptance or production verification.
 
 ### Prior exact-head run
 

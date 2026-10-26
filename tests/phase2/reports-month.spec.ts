@@ -18,9 +18,20 @@ test("reports can select and load a month beyond the preset range", async ({
   });
   expect(login.status()).toBe(200);
 
+  const initialReport = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      response.status() === 200 && url.pathname === "/api/v1/reports/monthly/"
+    );
+  });
   await page.goto("/reports/");
+  const initialResponse = await initialReport;
   const monthInput = page.getByLabel("เดือน", { exact: true });
   await expect(monthInput).toHaveValue(/^\d{4}-\d{2}$/);
+  const initialMonth = await monthInput.inputValue();
+  expect(new URL(initialResponse.url()).searchParams.get("month")).toBe(
+    initialMonth,
+  );
 
   const reportResponse = page.waitForResponse((response) => {
     const url = new URL(response.url());
