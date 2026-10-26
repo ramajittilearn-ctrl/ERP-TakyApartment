@@ -1169,7 +1169,7 @@ try {
       "-png",
       "-singlefile",
       pdf,
-      join(artifactDir, prefix),
+      join(artifactDir, `${prefix}-page`),
     ]);
     const ocr = runChecked(`${file} Thai OCR glyph verification`, "tesseract", [
       png,
