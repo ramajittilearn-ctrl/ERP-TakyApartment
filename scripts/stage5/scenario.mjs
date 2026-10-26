@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 const runId = process.env.STAGE5_RUN_ID;
 const origin = process.env.APP_ORIGIN;
+const tlsHost = process.env.STAGE5_HOST;
 const adminUsername = process.env.STAGE5_ADMIN_USERNAME;
 const staffUsername = process.env.STAGE5_STAFF_USERNAME;
 const adminPassword = process.env.TEST_ADMIN_PASSWORD;
@@ -14,6 +15,7 @@ const artifactDir = process.env.STAGE5_ARTIFACT_DIR;
 for (const [name, value] of Object.entries({
   STAGE5_RUN_ID: runId,
   APP_ORIGIN: origin,
+  STAGE5_HOST: tlsHost,
   STAGE5_ADMIN_USERNAME: adminUsername,
   STAGE5_STAFF_USERNAME: staffUsername,
   TEST_ADMIN_PASSWORD: adminPassword,
@@ -24,7 +26,8 @@ for (const [name, value] of Object.entries({
 assert.match(runId, /^[a-f0-9]{24}$/);
 const parsedOrigin = new URL(origin);
 assert.equal(parsedOrigin.protocol, "https:");
-assert.equal(parsedOrigin.hostname, "localhost");
+assert.equal(tlsHost, "127.0.0.1");
+assert.equal(parsedOrigin.hostname, tlsHost);
 assert.equal(parsedOrigin.pathname, "/");
 
 const checks = [];

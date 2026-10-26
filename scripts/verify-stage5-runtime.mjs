@@ -11,7 +11,7 @@ import {
   unlink,
   writeFile,
 } from "node:fs/promises";
-import { createServer } from "node:net";
+import { createConnection, createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -416,6 +416,34 @@ async function assertPortFree(candidate) {
     server.close((error) => (error ? reject(error) : resolve())),
   );
 }
+async function waitForPublishedPort(candidate) {
+  const attempts = 20;
+  const retryDelayMs = 500;
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await new Promise((resolve, reject) => {
+        const socket = createConnection({ host: "127.0.0.1", port: candidate });
+        const finish = (error) => {
+          socket.destroy();
+          if (error) reject(error);
+          else resolve();
+        };
+        socket.setTimeout(1000, () => finish(new Error("connect timeout")));
+        socket.once("connect", () => finish());
+        socket.once("error", finish);
+      });
+      return { host: "127.0.0.1", port: candidate, attempts: attempt };
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts)
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+  }
+  throw new Error(
+    `published Caddy port 127.0.0.1:${candidate} did not accept TCP connections after ${attempts} attempts (${lastError?.code ?? lastError?.message ?? "unknown"})`,
+  );
+}
 function inspectLabels(kind, id) {
   return JSON.parse(
     docker([kind, "inspect", id, "--format", "{{json .Config.Labels}}"]),
@@ -612,7 +640,7 @@ try {
     serverVersion: daemonIdentity[1],
     dockerRootDir: daemonIdentity[2],
   };
-  const hostname = "localhost";
+  const hostname = "127.0.0.1";
   const origin = `https://${hostname}:${port}`;
   const dbName = `stage5_${runId.slice(0, 12)}`;
   const dbUser = `stage5_${runId.slice(0, 8)}`;
@@ -848,6 +876,33 @@ try {
     "{{.Image}}",
   ]).trim();
   state.images.caddyImageId = caddyImageId;
+  const publishedPorts = JSON.parse(
+    docker([
+      "inspect",
+      caddyContainer,
+      "--format",
+      "{{json .NetworkSettings.Ports}}",
+    ]),
+  );
+  const actualBinding = publishedPorts?.["443/tcp"];
+  assert.ok(Array.isArray(actualBinding) && actualBinding.length === 1);
+  assert.equal(actualBinding[0].HostIp, "127.0.0.1");
+  assert.equal(actualBinding[0].HostPort, String(port));
+  state.caddyPortBinding = {
+    containerPort: "443/tcp",
+    hostIp: actualBinding[0].HostIp,
+    hostPort: actualBinding[0].HostPort,
+  };
+  state.checks.push({
+    label: "owned Caddy loopback port binding",
+    result: "passed",
+    ...state.caddyPortBinding,
+  });
+  state.checks.push({
+    label: "published Caddy TCP readiness",
+    result: "passed",
+    ...(await waitForPublishedPort(port)),
+  });
   const caPath = join(artifactDir, "caddy-root-ca.crt");
   docker([
     "cp",
@@ -885,6 +940,7 @@ try {
     NODE_TLS_REJECT_UNAUTHORIZED: "1",
     HOME: nssHome,
     APP_ORIGIN: origin,
+    STAGE5_HOST: hostname,
     STAGE5_RUN_ID: runId,
     STAGE5_ARTIFACT_DIR: artifactDir,
     STAGE5_ADMIN_USERNAME: env.STAGE5_ADMIN_USERNAME,
