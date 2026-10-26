@@ -376,8 +376,30 @@ if [[ "$restored_rooms" != 15 ]]; then
   docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -c '\dt' >&2 || true
   exit 1
 fi
-restored_attachment="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc \
-  "SELECT json_build_object('id',a.id,'storageKey',a.\"storageKey\",'bytes',a.bytes,'sha256',a.sha256,'uploadedById',a.\"uploadedById\",'uploaderUsername',u.username,'uploaderRole',u.role,'uploaderDisabled',u.disabled,'tenantId',a.\"tenantId\",'tenantName',t.name,'tenantDemo',t.\"isDemo\",'ownerCount',num_nonnulls(a.\"tenantId\",a.\"leaseId\",a.\"paymentId\",a.\"expenseId\")) FROM \"Attachment\" a JOIN \"User\" u ON u.id=a.\"uploadedById\" JOIN \"Tenant\" t ON t.id=a.\"tenantId\" WHERE a.id='${fixture_attachment_id}'")"
+restored_attachment="$(docker exec "$restore_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_restore_test \
+  -v "storage_key=$fixture_storage_key" -At <<'SQL'
+SELECT json_build_object(
+  'rowCount', count(*),
+  'id', min(a.id::text),
+  'storageKey', min(a."storageKey"),
+  'bytes', min(a.bytes),
+  'sha256', min(a.sha256),
+  'uploadedById', min(a."uploadedById"::text),
+  'uploaderUsername', min(u.username),
+  'uploaderRole', min(u.role::text),
+  'uploaderDisabled', bool_or(u.disabled),
+  'tenantId', min(a."tenantId"::text),
+  'tenantName', min(t.name),
+  'tenantDemo', bool_or(t."isDemo"),
+  'ownerCount', min(num_nonnulls(a."tenantId",a."leaseId",a."paymentId",a."expenseId"))
+)
+FROM "Attachment" a
+JOIN "User" u ON u.id=a."uploadedById"
+JOIN "Tenant" t ON t.id=a."tenantId"
+WHERE a."storageKey"=:'storage_key';
+SQL
+)"
+node -e 'const a=JSON.parse(process.argv[1]);if(a.rowCount!==1)throw new Error("Expected one restored Attachment row, got "+a.rowCount)' "$restored_attachment"
 node -e 'const a=JSON.parse(process.argv[1]);const expected={id:process.argv[2],storageKey:process.argv[3],bytes:Number(process.argv[4]),sha256:process.argv[5],uploadedById:process.argv[6],uploaderUsername:"ci-restore-uploader",uploaderRole:"STAFF",uploaderDisabled:false,tenantId:process.argv[7],tenantName:"Synthetic CI Attachment Owner",tenantDemo:true,ownerCount:1};for(const [key,value] of Object.entries(expected)){if(a[key]!==value)throw new Error(`Restored Attachment ${key} mismatch: expected ${value}, got ${a[key]}`)}' \
   "$restored_attachment" "$fixture_attachment_id" "$fixture_storage_key" "$fixture_bytes" "$fixture_sha" "$fixture_uploaded_by_id" "$fixture_tenant_id"
 restored_fixture="$(docker run --rm --platform linux/amd64 --label "$ownership_label=$project" \
