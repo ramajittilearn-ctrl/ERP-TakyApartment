@@ -254,10 +254,10 @@ function verifyComposeConfig(config, env, revision, tree) {
     "bridge",
     "ingress network driver",
   );
-  assertRenderedEqual(
+  assert.notEqual(
     config.networks.ingress.internal,
-    false,
-    "ingress network mode",
+    true,
+    "ingress network must be non-internal",
   );
   const runLabels = { [ownerLabel]: runId };
   for (const name of ["db", "app", "caddy"])

@@ -1,4 +1,4 @@
-networks:
+networks: !override
   db-private:
     driver: bridge
     internal: true
