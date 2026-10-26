@@ -1,6 +1,6 @@
 # Phase 4 Production Readiness
 
-**Latest continuation (2026-10-26):** A container-security remediation is in progress; source checks pass and an independent reviewer has reviewed the design. Exact-image verification is incomplete because Docker Desktop returned storage I/O errors and the host data volume had 3.2 GB free. The new validator image scan reports one High `zlib` CVE without an available fix; operations scanning ended unexpectedly; app runtime image did not finish building. See `08-container-security-remediation.md`. Keep this candidate NO-GO and do not infer runtime verification from source CI.
+**Latest continuation (2026-10-26):** Container-security source changes are in PR #2 commit `9ab21d2`; `required-quality` passed run `40307813322`. Exact-image verification is incomplete because Docker Desktop returned storage I/O errors and the host data volume had 3.2 GB free. The new validator image scan reports one High `zlib` CVE without an available fix; operations scanning ended unexpectedly; app runtime image did not finish building. A separate GitHub `container-verification` job now builds and smoke-tests pinned images on a fresh runner; its workflow run is pending. See `08-container-security-remediation.md`. Keep this candidate NO-GO and do not infer runtime verification from source CI.
 
 **Status: NO-GO for production cutover.** Candidate engineering checks are strong, but production-target and release-publication gates remain open.
 

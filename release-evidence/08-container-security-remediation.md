@@ -14,7 +14,7 @@ Operator instructions, remediation harness commands, and compose test/restore im
 - `npm run lint`: passed.
 - `npm run build`: passed with Next.js 16.4.1.
 - `git diff --check`: passed.
-- Independent Pstack review by `independent_release_audit` confirmed the base digests, gosu scope, and direct CLI paths. Its initial findings about stale integration-test commands and unpinned rclone were corrected; reviewer recheck is pending.
+- Independent Pstack review by `independent_release_audit` confirmed the base digests, gosu scope, and direct CLI paths. Its findings about stale integration-test commands and unpinned rclone were corrected and independently confirmed.
 
 These checks validate the source tree, not a successful runtime for all new images.
 
@@ -26,3 +26,7 @@ These checks validate the source tree, not a successful runtime for all new imag
 - At the time of failure, the host data volume reported 3.2 GB available (99% used). Docker could not retrieve the image list or `docker system df` because its metadata database returned the same I/O error. No prune, reset, volume deletion, or changes to the running UAT stack were attempted.
 
 The Docker engine/storage condition must be repaired using a verified safe process before further image operations. Preserve existing UAT databases and volumes. After recovery, rebuild all three exact images, scan each image (and separately scan the actual database service image), then run exact-image app, validator, backup/restore, and agent UAT checks. The candidate remains **NO-GO** for production.
+
+## Isolated GitHub verification path
+
+To make progress without changing the Docker Desktop stack, PR #2 now adds a separate `container-verification` job on a fresh `ubuntu-24.04` runner after `required-quality`. `scripts/ci/verify-container-images.sh` builds pinned images locally on that runner without registry login or push, requires a clean checkout, records the checked-out revision/tree in image labels, and checks runtime CLI files. It starts uniquely named synthetic database/app/validator containers on an internal job network, checks app health and 15 seeded rooms, checks validator health and rejects an invalid token, then removes only job resources whose ownership labels match this run. It refuses pre-existing volumes before use. The validator uses its production limits and the app keeps `no-new-privileges`. The labels record the clean checkout used by the job; they are not cryptographic build attestations. The runner tests `linux/amd64`; it does not prove ARM64, production-target safety, backup restore, or CVE disposition. Static shell/YAML checks and independent review pass; workflow run is pending.
