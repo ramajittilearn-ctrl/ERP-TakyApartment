@@ -332,18 +332,6 @@ for (const [kind, unitPrice] of [
     utilityRateId: rate.id,
     reason: "Synthetic Stage 5 approved rate",
   });
-  await post("/api/v1/billing/consumption-approvals/", adminSession.cookie, {
-    billingPeriodId: period.id,
-    leaseId: lease.id,
-    kind,
-    reason: "Synthetic estimate superseded by confirmed meter reading",
-    evidence: [`synthetic:stage5:${runId}`],
-    source: {
-      kind: "ESTIMATE",
-      quantity: "1.000",
-      sourceContext: "Synthetic setup before meter reading confirmation",
-    },
-  });
 }
 
 const actualReadings = {};
@@ -358,20 +346,6 @@ for (const kind of ["WATER", "ELECTRICITY"]) {
     installedAt,
     priorReadingDate,
     currentReadingDate: `${month}-01`,
-  });
-}
-
-for (const kind of ["WATER", "ELECTRICITY"]) {
-  await post("/api/v1/billing/consumption-approvals/", adminSession.cookie, {
-    billingPeriodId: period.id,
-    leaseId: lease.id,
-    kind,
-    reason: "Synthetic Stage 5 confirmed actual consumption",
-    evidence: [`synthetic:stage5:${runId}`],
-    source: {
-      kind: "ACTUAL",
-      currentReadingId: actualReadings[kind].current.id,
-    },
   });
 }
 
