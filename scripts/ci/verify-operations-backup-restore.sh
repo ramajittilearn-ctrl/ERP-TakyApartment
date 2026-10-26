@@ -434,10 +434,10 @@ if [[ "$restored_probe_values" != "$source_probe_values" || -z "$restored_probe_
   echo "Restored collation probe data mismatch: source=$source_probe_values target=$restored_probe_values" >&2
   exit 1
 fi
-indexed_collation_rows="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc \
+indexed_collation_rows="$(docker exec "$restore_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_restore_test -qAtc \
   'BEGIN; SET LOCAL enable_seqscan=off; SELECT value FROM ci_collation_probe ORDER BY value; COMMIT')"
 indexed_collation_count="$(printf '%s\n' "$indexed_collation_rows" | wc -l | tr -d ' ' )"
-sequential_collation_rows="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc \
+sequential_collation_rows="$(docker exec "$restore_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_restore_test -qAtc \
   'BEGIN; SET LOCAL enable_indexscan=off; SET LOCAL enable_indexonlyscan=off; SELECT value FROM ci_collation_probe ORDER BY value; COMMIT')"
 if [[ "$indexed_collation_count" != 5 || "$indexed_collation_rows" != "$sequential_collation_rows" ]]; then
   echo "Restored collation index did not return all values: $indexed_collation_rows" >&2
