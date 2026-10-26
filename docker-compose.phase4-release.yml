@@ -1,0 +1,17 @@
+# Apply LAST after base, operations, HTTPS and evidence-validator overlays.
+name: ${PHASE4_PROJECT:?Select and verify the existing production project explicitly}
+services:
+  app:
+    image: ${PHASE4_APP_IMAGE:?Set a verified app image by sha256 digest}
+    build: !reset null
+    command: ["node", "server.js"]
+  operations:
+    image: ${PHASE4_OPERATIONS_IMAGE:?Set a verified operations image by sha256 digest}
+    build: !reset null
+  evidence-validator:
+    image: ${PHASE4_VALIDATOR_IMAGE:?Set a verified validator image by sha256 digest}
+    build: !reset null
+  db:
+    image: ${PHASE4_DATABASE_IMAGE:?Set the verified PostgreSQL17 image by sha256 digest}
+  caddy:
+    image: ${PHASE4_CADDY_IMAGE:?Set a verified Caddy image by sha256 digest}

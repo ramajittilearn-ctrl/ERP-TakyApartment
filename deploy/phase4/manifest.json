@@ -1,0 +1,46 @@
+{
+  "release": "phase4-2026-10-26-rc1",
+  "featureBaseline": "32355958081088e1c849aff39177c86e718139d6",
+  "status": "release_candidate_not_deployed",
+  "expectedModels": 44,
+  "expectedMigrations": 17,
+  "postgresMajor": 17,
+  "composeFiles": [
+    "docker-compose.yml",
+    "docker-compose.operations.yml",
+    "docker-compose.https.yml",
+    "docker-compose.evidence-validator.yml",
+    "docker-compose.phase4-release.yml"
+  ],
+  "frozenInputs": {
+    "src": "d44ce9c75c145159b1015a188df745d330ecc609",
+    "prisma": "22e347d8a8bc0ce74b99f8c2ba21453bca3f1aed",
+    "operations": "453235eae4ea39799532a9ae71084f0bd0436dc0",
+    "scripts": "9a7cc79b37d2e37d04c83f5860cdc70de49edaee",
+    "tests": "d02be9b5d5e03138c27a8fb53dfba4c7c936c3af",
+    "package.json": "d9c4f50dc11557139dd6cf70a9c08ff40f4f6f44",
+    "package-lock.json": "1411540a714a2593cc1654ccf6950e4fa7ebfb79",
+    "next.config.ts": "590e2df17600259a0028c76eb276cafbe2a574cc",
+    "Dockerfile": "46561e37a5b8c0f42e8a934d1f828b0c5a9c6367",
+    "docker-compose.yml": "9aadbbe1786bf58cd67c186da5561876f9fab921",
+    "docker-compose.operations.yml": "42d05cea64dc22631024cdb97a00dfdceb16a761",
+    "docker-compose.https.yml": "7e8090e2b76ce229e11f316237e1c2ec8fab5d55",
+    "docker-compose.evidence-validator.yml": "3953adabeb32aadd517dafcb92036771127cd68a",
+    "prisma.config.ts": "8938dd2396dd1a731b9ba93d836cbe15feaf74b5",
+    "tsconfig.json": "8c43b0b7b748c67111a8d9fbf6569a9073700360",
+    "postcss.config.mjs": "a9b5c43d12ca5dd106ede4e9cec451f4ede60fef",
+    ".npmrc": "5d5b8413891b094f1e69045a059a604340a582a5",
+    ".dockerignore": "1d70a00fde61368d95e11addcce859ecd40487b3",
+    "next-env.d.ts": "ce4e94a6b10f160ee021fe18939af160d2927dcf",
+    "vitest.integration.config.ts": "1d6f449d40aa7697ff755a0c2f0388ac3310f07b"
+  },
+  "productionGates": [
+    "Exact target database/project/volumes reconciled",
+    "Schema-matched pre-upgrade backup restored and verified",
+    "Actual target clone upgrade from current history to17 migrations rehearsed without automatic seed",
+    "Immutable images built and runtime-verified",
+    "Existing attachment volume owner UID1000 and root mode0700 verified",
+    "Canonical private HTTPS origin and client CA trust verified",
+    "Remaining security and commissioning findings resolved or explicitly accepted"
+  ]
+}

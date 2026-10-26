@@ -1,0 +1,13 @@
+# Non-secret release settings. Copy to a private file outside Git and chmod 600.
+# Supply existing database/session/backup values through the other private env files.
+# Keep existing project and volume identity; never guess it from this example.
+PHASE4_PROJECT=
+PHASE4_APP_IMAGE=
+PHASE4_OPERATIONS_IMAGE=
+PHASE4_VALIDATOR_IMAGE=
+PHASE4_DATABASE_IMAGE=
+PHASE4_CADDY_IMAGE=
+EVIDENCE_VALIDATOR_TOKEN=
+# Every image must be registry/repository@sha256:<64 lowercase hex characters>.
+# Generate a private 64-hex EVIDENCE_VALIDATOR_TOKEN for app and validator.
+# Do not put tokens, database passwords, backup keys or real rendered config in Git.
