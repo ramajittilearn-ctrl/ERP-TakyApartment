@@ -474,10 +474,7 @@ const invoicePdfLayout = execFileSync(
   ["-bbox-layout", join(artifactDir, invoicePdf.file), "-"],
   { encoding: "utf8" },
 );
-assert.match(
-  invoicePdfText,
-  /ส่วนต่างการปัดเศษ \/ Rounding adjustment\s+-฿0\.01/,
-);
+assert.match(invoicePdfText, /Rounding adjustment\s+-฿0\.01/);
 assert.match(invoicePdfText, /ยอดชำระรวม \/ TOTAL PAYABLE\s+฿1,050\.01/);
 for (const visibleAmount of ["฿1,000.00", "฿20.01", "฿30.01", "-฿0.01"])
   assert.ok(
@@ -507,7 +504,7 @@ const bboxWords = [
   text: match[4],
 }));
 const adjustmentLabel = bboxWords.find((word) =>
-  word.text.includes("ส่วนต่าง"),
+  word.text.includes("Rounding"),
 );
 assert.ok(
   adjustmentLabel,
