@@ -461,6 +461,7 @@ const invoicePdf = await downloadPdf(
   `/api/v1/invoices/${invoice.id}/pdf/`,
   staffSession.cookie,
   `Invoice_${invoice.number}.pdf`,
+  "invoice.pdf",
 );
 
 const paymentBody = {
@@ -548,6 +549,7 @@ const receiptPdf = await downloadPdf(
   `/api/v1/receipts/${receipt.id}/pdf/?download=1`,
   staffSession.cookie,
   `Receipt_${receipt.number}.pdf`,
+  "receipt.pdf",
 );
 
 const receiptLabels = globalThis.structuredClone(
