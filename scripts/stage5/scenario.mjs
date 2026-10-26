@@ -314,21 +314,6 @@ const priorPeriod = await post(
   { propertyId: property.id, month: priorMonth },
 );
 
-const actualReadings = {};
-for (const kind of ["WATER", "ELECTRICITY"]) {
-  actualReadings[kind] = await recordActualMeter({
-    adminCookie: adminSession.cookie,
-    staffCookie: staffSession.cookie,
-    roomId: room.id,
-    kind,
-    priorPeriodId: priorPeriod.id,
-    currentPeriodId: period.id,
-    installedAt,
-    priorReadingDate,
-    currentReadingDate: `${month}-01`,
-  });
-}
-
 const rates = [];
 for (const [kind, unitPrice] of [
   ["WATER", "20.0050"],
@@ -347,6 +332,36 @@ for (const [kind, unitPrice] of [
     utilityRateId: rate.id,
     reason: "Synthetic Stage 5 approved rate",
   });
+  await post("/api/v1/billing/consumption-approvals/", adminSession.cookie, {
+    billingPeriodId: period.id,
+    leaseId: lease.id,
+    kind,
+    reason: "Synthetic estimate superseded by confirmed meter reading",
+    evidence: [`synthetic:stage5:${runId}`],
+    source: {
+      kind: "ESTIMATE",
+      quantity: "1.000",
+      sourceContext: "Synthetic setup before meter reading confirmation",
+    },
+  });
+}
+
+const actualReadings = {};
+for (const kind of ["WATER", "ELECTRICITY"]) {
+  actualReadings[kind] = await recordActualMeter({
+    adminCookie: adminSession.cookie,
+    staffCookie: staffSession.cookie,
+    roomId: room.id,
+    kind,
+    priorPeriodId: priorPeriod.id,
+    currentPeriodId: period.id,
+    installedAt,
+    priorReadingDate,
+    currentReadingDate: `${month}-01`,
+  });
+}
+
+for (const kind of ["WATER", "ELECTRICITY"]) {
   await post("/api/v1/billing/consumption-approvals/", adminSession.cookie, {
     billingPeriodId: period.id,
     leaseId: lease.id,
