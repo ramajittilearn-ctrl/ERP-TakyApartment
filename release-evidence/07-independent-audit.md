@@ -1,6 +1,18 @@
 # Stage 7 — Independent Release Audit
 
-**Audit status: HISTORICAL; current-head audit pending.** This audit assessed PR source commit `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966`; it does not review the current PR head `573bbed8e9ba48dcdba115095457d32426f1a124` or the newer CI run `40317435858`. Reconcile the evidence and repeat the independent review before using this report as a current-head audit.
+**Audit status:** The detailed audit body below is historical and assessed PR source commit `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966`. Current evidence addenda for runs `40356454371` and `40360707470` follow and were independently cross-reviewed; they do not replace or extend the old detailed code-level audit findings beyond the evidence listed in those addenda.
+
+## Current evidence addendum — run 40356454371
+
+An independent release audit on 2026-10-26 reviewed the latest successful code-validation run and artifacts. PR #2's tested app/test source head was `8ca7f4fff329fa15bc9095208911120ea2074088`; `required-quality`, `container-verification`, and `agent-uat` all succeeded in run [40356454371](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40356454371). The run's Agent UAT artifact [12667808269](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40356454371/artifacts/12667808269) reports 90 passed, 0 failed, 0 skipped, 0 flaky on merge checkout `a3268cc17ca2f59f641548dec5bdc41998c42662`.
+
+The container-verification log records current-source pinned app/validator/operations images built on isolated `linux/amd64`, fresh DB/app health with 15 seeded rooms, invalid validator token rejected with HTTP 401, and synthetic encrypted remote upload, read-back, and isolated restore. The restore verified 15 rooms, Attachment metadata owner links, and attachment SHA-256 `68e533fab04c85212338f91bd9dc0acf508f772764fea84333f966cd7275ffd4`. This is not an application download authorization test or production/off-device recovery. The Trivy report [artifact 12666751076](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40356454371/artifacts/12666751076) was inspected: App 0 Critical/8 High, validator 0 Critical/8 High, operations 1 Critical/16 High; all three sidecars share DB hash `36cfc99204b7ee124c2e47daf8a83cd0cf98bf4e6b6a67c30687da049d5828f6`. `CVE-2026-6653` and shared util-linux findings remain; no images were published.
+
+**Current verdict: NO-GO for production cutover.** The audited run validates the candidate code and synthetic flows only. The audit reconfirmed unresolved production target/origin/access identity, target backup/clone/migration/rollback, off-device backup/key recovery, registry publication and deployment-host pullability, and security finding disposition. PR #2 is still OPEN/Draft. Follow-up run `40360707470` on documentation head `76860a474faf49fbcc5292284df4c274619ed4e7` passed all three checks; its Agent UAT artifact reports 90/90 on merge checkout `01fa4f15872f33293987c251bb4c5265297894a7`. This passed CI but does not satisfy the separate required PR approval; production remains NO-GO.
+
+### Branch-protection correction
+
+After this review identified that `release/phase4` had no required PR approval and only one required status check, protection was updated on 2026-10-26. It now requires strict `required-quality`, `container-verification`, and `agent-uat` checks plus one approving review; stale approvals are dismissed. Admin enforcement, conversation resolution, and blocks on force-push/deletion remain enabled. This corrects the historical branch-protection finding above. PR #1 and PR #2 remain unmerged; the policy change itself does not establish that either PR is merge-ready.
 
 **Historical verdict: NO-GO for production cutover.** At the time of this audit, production target readiness, target-specific recovery and migration evidence, and publication of a source-matched release remained unverified. The current production readiness status remains NO-GO; see `STATUS.md` for current CI and open gates.
 
@@ -55,7 +67,7 @@ The `3d5db3c` candidate operations image's manual local backup, isolated restore
 
 The first restore attempt exited 73 before import because a copied archive directory mounted read-only could not hold the restore lock file. The single retry changed write permission only on the disposable archive/receipt copy; the encryption key remained read-only, and restore passed. No source or production data was changed. Preserve this correction in the isolated-run procedure and validate read-only key mounting on the actual intended restore command.
 
-### MEDIUM — Release branch protection does not require a human approval
+### MEDIUM — HISTORICAL (CORRECTED 2026-10-26): Release branch protection did not require a human approval
 
 GitHub enforces the required CI check and strict up-to-date branches, and prevents force-push/deletion, but the required approving review count is 0. An independent review was performed for this audit; platform policy does not require an approver before merging. Record an explicit reviewer approval or raise the branch's review requirement before treating the branch rules as a human signoff gate.
 
@@ -89,3 +101,7 @@ The recorded repository-wide `npm run format:check` flags the unchanged `tests/e
 5. Only then stage deployment, perform authorized cutover, and record post-deployment health and recovery checks. Keep the release and production environment unchanged until those target-specific gates are met.
 
 **Final assessment:** Current-source local development verification is strong for the app and synthetic financial flow. Production cutover remains **NO-GO** because the target, release publication, and target-specific operational safety evidence are not established.
+
+## Follow-up run on documentation head `76860a4`
+
+Run [40360707470](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40360707470) passed `required-quality`, `container-verification`, and `agent-uat` on PR head `76860a474faf49fbcc5292284df4c274619ed4e7`. Agent UAT artifact [12667957853](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40360707470/artifacts/12667957853) reports 90 passed, zero failed/skipped/flaky on merge checkout `01fa4f15872f33293987c251bb4c5265297894a7`. Container and scan details are recorded in `05-runtime-verification.md` and `08-container-security-remediation.md`. PR #2 remains OPEN/Draft pending the required approving review; production remains NO-GO.

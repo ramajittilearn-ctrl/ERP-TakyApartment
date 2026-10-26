@@ -1,6 +1,16 @@
 # Phase 4 RC Runtime Verification
 
-**Status:** RC1 runtime PASS for its frozen baseline. It does not verify the current integration source; a new source-matched candidate still needs runtime verification.
+**Status:** RC1 runtime PASS for its frozen baseline. Current source has passed the limited hosted image smoke and backup/restore checks recorded below; the full Stage 5 billing/PDF application runtime flow has not been rerun on this source.
+
+## Prior hosted current-source image check — run 40356454371
+
+Run [40356454371](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40356454371) passed `container-verification` on PR source head `8ca7f4fff329fa15bc9095208911120ea2074088`, merge checkout `a3268cc17ca2f59f641548dec5bdc41998c42662`, tree `1da11b27793408670b879c5c9edb352f15f275cf`. It built pinned app, validator, and operations images on an isolated GitHub `ubuntu-24.04` runner for `linux/amd64` and checked the fresh database/app health with 15 seeded rooms plus validator rejection of an invalid token (HTTP 401). It also completed synthetic encrypted remote upload, read-back, and isolated restore. The restore contained 15 rooms and Attachment owner links; the restored attachment SHA-256 matched `68e533fab04c85212338f91bd9dc0acf508f772764fea84333f966cd7275ffd4`.
+
+This hosted harness is narrower than the full Stage 5 application runtime flow below. It does not verify billing/PDF behavior, production data, off-device storage or key recovery, published image pullability, or an application-level attachment download-authorization endpoint. CI-local image IDs and vulnerability findings are recorded in `08-container-security-remediation.md`.
+
+## Latest hosted current-source image check — run 40360707470
+
+Run [40360707470](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40360707470) passed `container-verification` on PR head `76860a474faf49fbcc5292284df4c274619ed4e7`, merge checkout `01fa4f15872f33293987c251bb4c5265297894a7`, tree `12e0273957b19e08c11e2e534cd0b739b8ab451c`. The CI report confirms pinned app/validator/operations images built on isolated `linux/amd64`, fresh database/app health with 15 seeded rooms, and invalid validator token rejection with HTTP 401. Synthetic encrypted remote upload, read-back, and isolated restore passed; restored Attachment owner links were present and file SHA-256 matched `68e533fab04c85212338f91bd9dc0acf508f772764fea84333f966cd7275ffd4`. Agent UAT also passed 90/90 in this run (artifact `12667957853`). The limitations above continue to apply: no full billing/PDF flow on this source, production recovery, off-device key recovery, published image pull, or application download-authorization test.
 
 ## Runtime and image evidence
 

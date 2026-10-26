@@ -10,7 +10,11 @@
 - The tag manifest's `featureBaseline` is `32355958081088e1c849aff39177c86e718139d6`. The diff from that baseline to the release branch contains only the seven `deploy/phase4/` files and `docker-compose.phase4-release.yml`.
 - All 20 frozen input paths in `deploy/phase4/manifest.json` match their recorded Git object IDs at `origin/release/phase4`.
 - GitHub release is still draft and prerelease. Downloaded `ERP-TakyApartment-phase4-rc1.tar.gz`, `PHASE4-DEPLOYMENT.md`, `phase4-manifest.json`, and `preparation-verification.json` all match the checksums in the downloaded `SHA256SUMS` file. The separately added `phase4-rc1-image-uat.md` asset is not listed in that older checksum file; its downloaded bytes match the GitHub API's asset digest `sha256:078981d0ad7408e3b2092bea7a23ec94d1645c705f292eaa19e4e5f773ad5caf`. The archive was listed, not extracted or executed.
-- PR #1, “docs: record Phase 4 RC image UAT,” is OPEN from `codex/phase4-production-prep` to `release/phase4`; merge state CLEAN; both `required-quality` checks succeeded. No merge was performed.
+- PR #1, “docs: record Phase 4 RC image UAT,” is OPEN from `codex/phase4-production-prep` to `release/phase4`; it is not merge-ready under the current protection policy because its visible checks include only `required-quality`, and it has no recorded approving review. No merge was performed.
+
+## Updated release-branch protection — 2026-10-26
+
+After the independent audit identified that the branch previously required zero PR approvals and only `required-quality`, protection for `release/phase4` was strengthened. It now requires strict/up-to-date `required-quality`, `container-verification`, and `agent-uat` checks plus one approving review; approving reviews are dismissed on new commits. Admin enforcement, conversation resolution, and blocks on force-push and deletion remain enabled. PR #1 and PR #2 were not merged or modified by this settings change. PR #2 documentation-head run `40360707470` passed all three required checks, including Agent UAT 90/90.
 
 ## Limits
 
