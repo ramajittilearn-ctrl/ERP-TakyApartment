@@ -314,10 +314,12 @@ for (const role of ["ADMIN", "STAFF"] as const) {
     await expect(open).toBeFocused();
     await page.keyboard.press("Enter");
     const popup = await popupPromise;
-    pdfHeaders(await inlineResponse, f.receipt.number, false);
-    await expect
-      .poll(() => popup.url())
-      .toBe(`${browserTestTarget().origin}${path}`);
+    const inline = await inlineResponse;
+    pdfHeaders(inline, f.receipt.number, false);
+    expect(inline.url()).toBe(`${browserTestTarget().origin}${path}`);
+    const inlineBytes = await inline.body();
+    expect(inlineBytes.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(inlineBytes.toString("latin1")).toContain("%%EOF");
     await popup.close();
     const attachmentResponse = page.context().waitForEvent("response", {
       predicate: (response) => isPdf(response, path, true),

@@ -70,8 +70,10 @@ test("browser rejects an off-origin redirect without reaching its destination", 
       fetchedStatus = response.status();
       await route.fulfill({ response });
     });
-    await expect(page.goto("/guard-fetch/")).rejects.toThrow(
-      "ERR_HTTP_RESPONSE_CODE_FAILURE",
+    const navigationResponse = await page.goto("/guard-fetch/");
+    expect(navigationResponse?.status()).toBe(403);
+    expect(navigationResponse?.url()).toBe(
+      `${browserTestTarget().origin}/guard-fetch/`,
     );
     expect(fetchedStatus).toBe(403);
     expect(requests).toBe(0);
