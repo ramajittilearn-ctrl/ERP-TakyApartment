@@ -1,16 +1,18 @@
 # Agent-run Phase 4 UAT
 
-**Result:** PASS for the isolated synthetic browser suite, with the limits below.
+**Result:** PASS on current PR head `b91d2036c34b485840d646ff3c6638e790eceb99` for the isolated synthetic browser suite, with the limits below.
 **Owner UAT:** Not performed. The Owner delegated UAT execution and requested a report.
 
 ## Current PR CI run
 
-- Workflow: [Phase 4 CI run 40317435858](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40317435858), all three jobs passed (`required-quality`, `container-verification`, and `agent-uat`).
-- PR head: `573bbed8e9ba48dcdba115095457d32426f1a124`. Agent UAT checked out merge commit `945a409022f22cf1e94c899e25fe55a60727fa38`; the generated report records both hashes.
-- Mode and scope: source-built app, synthetic browser UAT on an isolated Ubuntu runner; no Owner UAT and no production data. The separate container-verification job covered pinned image builds and its own smoke checks.
-- Result: 89 passed, 0 failed, 0 skipped, 0 flaky; the Playwright result records 89 expected and 0 unexpected. Browser execution run ID: `754a215d39e4cb3f73271418`.
-- Report, `results.json`, and `execution.json`: [Agent UAT artifact 12648590286](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40317435858/artifacts/12648590286).
-- This synthetic source-build run does not verify production data, the deployment host, Owner acceptance, or exact-current-image operations backup/restore.
+- Workflow: [Phase 4 CI run 40321746043](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40321746043), all three jobs passed (`required-quality`, `container-verification`, and `agent-uat`).
+- PR head: `b91d2036c34b485840d646ff3c6638e790eceb99`. Agent UAT checked out merge commit `608488fd76be6b78d81fb086a5189e852ec5c59f`; the generated report records both hashes.
+- Mode and scope: source-built app, synthetic browser UAT on an isolated Ubuntu runner; no Owner UAT and no production data. The separate container-verification job built pinned images and passed current-checkout synthetic encrypted backup and isolated restore.
+- Result: 89 passed, 0 failed, 0 skipped, 0 flaky; the Playwright result records 89 expected and 0 unexpected. Browser execution run ID: `004e67cd66d533f7da268c89` (208.3 seconds).
+- Report, `results.json`, and `execution.json`: [Agent UAT artifact 12649174241](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40321746043/artifacts/12649174241).
+- This synthetic source-build run does not verify production data, deployment-host configuration, Owner acceptance, or production recovery.
+
+Earlier run [40317435858](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40317435858), PR head `573bbed`, also passed all three jobs and 89/89 browser tests. It is retained as historical evidence for that earlier head.
 
 ## Historical local run evidence
 
