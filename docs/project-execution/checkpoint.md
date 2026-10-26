@@ -1,14 +1,12 @@
-# Current checkpoint: verified candidate, integration in progress
+# Phase 4 closed at the requested stop boundary
 
-Owner scope is completion through Stage3E and Phase4 Expense Management, then stop. Subsequent Dashboard, Reporting, maintenance-demo replacement and Go-Live are outside this stop boundary. The latest instruction freezes completed features: do not refactor or reopen them because Pstack changed.
+Stage 3E and Phase 4 Expense Management are complete in the reviewed local development integration. Source and test evidence were published to private GitHub branch `codex/project-integration-snapshot` at `ffc1e7030b692dffeff063c536bf135de52e7d1f`. The connected GitHub API independently verified that exact ref. Later closeout-only commits may advance the branch.
 
-The actual installed Pstack is now0.15.32+codex.1. Its Codex adapter and shipping guidance are applied only to remaining integration, verdict-to-code checks, publication and handoff. New formal-verification or redesign workflows are not introduced into accepted modules.
+Read `phase4-closeout.md` for executed checks, reviewers, limits and artifact paths. Main merge `4bd58c7` preserves the accepted candidate source exactly. Main's own 44-model Prisma client generation, 409 unit tests, typecheck, lint, Webpack build and copied PDF-asset checks passed. The final 35 browser cases passed without retries, skips or flaky results.
 
-Main is codex/phase4-recovery-integration in .local/development-recovered-20261025. Verified candidate is codex/deposit-qa-candidate at5177ed1. Final actual browser run8f40b1e18daa4bbab16f1f09 passed35/35 with zero skips, retries, unexpected or flaky results. Core50/50, evidence9/9, payment39/39 with historical rehearsal, expense export5/5, operations68/68, validator28/28 and built-image12/12 passed. V5 actual44-model encrypted backup/restore, lock-owner loss and late003 rollback passed. Full app unit409/409, typecheck, lint and supported Webpack build passed on the candidate.
+The Owner requested work through Phase 4 and then a stop, and prohibited changing completed work. No new feature task is executable until a further Owner resume. Dashboard and Reporting, maintenance-demo replacement, remaining security and commissioning, and Go-Live remain later scope. No human Owner UAT, protected-branch merge or production deployment is claimed.
 
-Independent reports are evidence/deposit-core/operations-peer-review.md, pdf-packaging-peer-review.md and evidence/phase4/closure-audit-20261025.md. Main independently approved the financial and UI changes. Root must finish safe local merge, confirm accepted source trees are identical, generate its own44-model client, verify integration readiness, scan and push the reviewed development branch, then record closure and stop. Never merge protected/main/OwnerUAT branches or mutate production.
-
-Native-popup keyboard navigation is not established by this Chrome runner. Native select interaction, keyboard focus/submission and Axe are verified. Human Owner UAT was delegated to agents; no human UAT or Go-Live pass is claimed. Older failed runs remain preserved alongside successful corrections.
+Pstack `0.15.32+codex.1` is installed. Updated shipping guidance was applied only to source identity, integration, publication and handoff. Accepted modules were not rewritten. Private QA plans, local traces and synthetic volumes remain retained. Run-specific servers and proxies stopped.
 
 ## Historical checkpoints below
 

@@ -1,0 +1,8 @@
+{
+  "repository": "ramajittilearn-ctrl/ERP-TakyApartment",
+  "ref": "refs/heads/codex/project-integration-snapshot",
+  "observedSha": "ffc1e7030b692dffeff063c536bf135de52e7d1f",
+  "verification": "Native git push succeeded; connected GitHub git-ref endpoint independently returned exact SHA",
+  "observedAt": "2026-10-26T00:48:10.813772+00:00",
+  "scope": "Immutable verified source-publication event; later closeout documentation may advance the branch"
+}
