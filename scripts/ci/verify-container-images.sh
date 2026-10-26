@@ -169,15 +169,24 @@ docker run --detach --platform linux/amd64 \
 
 wait_http() {
   local url="$1" service="$2" last_probe_result=""
+  diagnose_app_network() {
+    [[ "$service" == "$app" ]] || return 0
+    docker network inspect --format 'network containers={{json .Containers}}' "$network" >&2 || true
+    docker exec "$probe" node -e \
+      "require('node:dns').lookup('app',{all:true},(error,addresses)=>console.error('app DNS:',error?.code ?? addresses))" >&2 || true
+    docker exec "$app" node -e \
+      "fetch('http://127.0.0.1:3000/api/health/',{signal:AbortSignal.timeout(5000)}).then(r=>console.error('app loopback HTTP:',r.status)).catch(e=>console.error('app loopback fetch:',e.message,e.cause?.code,e.cause?.syscall))" >&2 || true
+  }
   for _ in $(seq 1 90); do
     if last_probe_result="$(docker exec "$probe" node -e \
-      "fetch('$url').then(async r=>{if(!r.ok){console.error('HTTP '+r.status+' '+(await r.text()).slice(0,500));process.exit(1)}}).catch(e=>{console.error(e.message);process.exit(1)})" 2>&1)"; then
+      "fetch('$url').then(async r=>{if(!r.ok){console.error('HTTP '+r.status+' '+(await r.text()).slice(0,500));process.exit(1)}}).catch(e=>{console.error(e.message,e.cause?.code,e.cause?.syscall,e.cause?.hostname);process.exit(1)})" 2>&1)"; then
       return 0
     fi
     if [[ "$(docker inspect --format '{{.State.Running}}' "$service" 2>/dev/null || true)" != true ]]; then
       echo "Container $service stopped while probing $url; last probe: $last_probe_result" >&2
       docker inspect --format 'state={{json .State}}' "$service" >&2 || true
       docker logs --tail 100 "$service" >&2 || true
+      diagnose_app_network
       return 1
     fi
     sleep 2
@@ -185,6 +194,7 @@ wait_http() {
   echo "Timed out probing $url; last probe: $last_probe_result" >&2
   docker inspect --format 'state={{json .State}}' "$service" >&2 || true
   docker logs --tail 100 "$service" >&2 || true
+  diagnose_app_network
   return 1
 }
 
