@@ -37,8 +37,27 @@ The run stopped and removed only its containers and networks, without `-v`. Four
 
 This rehearsal used synthetic data and local images. It does not verify image publication, the designated production host, its certificate trust, existing volume permissions, target database compatibility, production backup recovery, deployment, or Owner UAT acceptance.
 
-## Current integration candidate reconciliation
+## Historical RC1/current-candidate distinction
 
-An independent release audit found that these RC1 images were built from the frozen Phase 4 baseline. They do not contain the separately tested persisted dashboard/report implementation or the AppShell route-label correction in the current integration snapshot. The 89/89 browser UAT ran against that newer source snapshot. Do not treat the RC1 runtime result as runtime verification for the snapshot or use RC1 as the Go-Live candidate for the current project scope.
+An independent release audit found that these RC1 images were built from the frozen Phase 4 baseline. They do not contain the separately tested persisted dashboard/report implementation or the AppShell route-label correction in the current integration snapshot. Do not treat the RC1 runtime result as runtime verification for the current candidate or use RC1 as the Go-Live candidate for the current project scope. This gap prompted the exact-current-source checks below.
 
-Build a new local candidate from the exact reviewed integration commit, run the same isolated runtime checks against it, and verify the candidate source/image identity before any release decision. Registry publication and production-host pullability also remain open.
+Registry publication and production-host pullability remain open.
+
+## Current-source candidate runtime — 2026-10-26
+
+The exact PR #2 head `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966` (tree `aa5cf57c5d1fb90c5eedbdfc9775d494176123bb`) has now passed a separate isolated app/validator runtime. This is the current candidate's local evidence, not production evidence.
+
+| Image | Local immutable digest | Source labels |
+|---|---|---|
+| App | `sha256:b06913e27e4d3565b671d74189ec0c57de6d5e56448f13d90899e5849dba83a7` | commit `3d5db3c…`, tree `aa5cf57…` |
+| Evidence validator | `sha256:b234353c2388124b721af499a5251b90804e8d965f71959e29513ea43404aaa4` | commit `3d5db3c…`, tree `aa5cf57…` |
+
+Run `stage5-evidence-3d5-170742` passed five-overlay `docker compose config --quiet`, explicit application of all 17 migrations, health checks, and synthetic first-admin setup. Only database, app, validator, and Caddy were started; operations was never started. HTTPS used loopback `127.0.0.1:45447`. Invalid login and unauthenticated evidence read returned 401. ADMIN evidence upload returned 201; list/read/download returned 200, and downloaded bytes matched the uploaded SHA-256. STAFF evidence read returned 200 and upload returned 403 `FORBIDDEN`. A DELETE probe returned 422 `VALIDATION`: `deposit-evidence` is excluded from the generic resource API and has no delete route. No direct database or filesystem deletion was used; the synthetic evidence remains in that run's retained volume.
+
+Cleanup removed only this run's four containers and three networks. Port 45447 is free; four fresh run-specific volumes remain. Generated environment files, passwords, and CA material were removed. Private summaries are under `.local/runtime-uat/stage5-evidence-3d5-170742/`; the detailed HTTP probe is mode 0600. These local images have not been published or pulled from the deployment host.
+
+### Exact-head operations backup/restore
+
+Operations image `sha256:9a03cde45ce44892ba9bd96f01e8ef491652ae365907df7e0f59d1447a2679ea` carries OCI labels for the same commit/tree. In `stage5-ops-3d5-093500`, a one-shot manual backup completed as `SUCCEEDED`; the exact candidate operations scheduler was never started. A fresh separate restore project/database/attachment volume received the backup using a one-shot restore command. Restore verified 44 tables and all 17 source migration checksums, including 15 rooms, one synthetic tenant/lease, one deposit-evidence record, and one attachment. The restored file was 32,546 bytes and its SHA-256 matched the uploaded source evidence. The archive was 51,389 bytes and the checksum matched the backup history and restore receipt.
+
+The first restore attempt stopped before import because a required CLI lock file could not be created in the read-only run-owned archive directory. Only that disposable copied archive directory was made writable for one retry; the encryption key remained read-only, and the retry passed. Both isolated projects' containers and networks were removed, port 45448 is free, six fresh volumes remain, and generated secrets/config were removed. This proves a source-matched manual synthetic backup and isolated restore path. It does not test scheduled backup behavior, configured off-device delivery (the Google Drive remote is not configured), recovery of production keys, or any production target. The private summary is `.local/runtime-uat/stage5-ops-3d5-093500/runtime-summary.json`.

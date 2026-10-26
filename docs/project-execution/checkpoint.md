@@ -30,6 +30,14 @@ Pstack `0.15.32+codex.1` was installed. Accepted modules were not rewritten. Pri
 
 Earlier next-step lists are superseded by the current stop boundary and verified frontier above.
 
+## Release-preparation checkpoint — 2026-10-26 (current)
+
+The protected release branch remains untouched. Current candidate PR #2 is `codex/phase4-current-source-20261026` at `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966` (tree `aa5cf57c5d1fb90c5eedbdfc9775d494176123bb`), open, draft, CLEAN, with required CI green. Stage 5 exact-head app and validator images passed isolated synthetic runtime checks. App digest: `sha256:b06913e27e4d3565b671d74189ec0c57de6d5e56448f13d90899e5849dba83a7`; validator digest: `sha256:b234353c2388124b721af499a5251b90804e8d965f71959e29513ea43404aaa4`. Exact runtime details are in `release-evidence/05-runtime-verification.md`. Independent release review is recorded in `release-evidence/07-independent-audit.md`.
+
+Exact-head agent browser UAT `f12e112e99231c0a470e3171` passed 89/89 with zero failures, skips, retries, or flaky tests; its report is `release-evidence/06-final-uat.md`. Exact-head operations manual backup and isolated restore also passed, and an independent auditor reconciled both evidence sets in `release-evidence/07-independent-audit.md`. The operations scheduler was not started; no off-device backup remote is configured. Owner UAT is not claimed. No image has been published, no current candidate release has been published, and no production host/target has been identified or modified. Synthetic restore does not establish target recovery. Production cutover is NO-GO.
+
+Next: update the PR description/evidence, commit and push reviewed documentation/evidence to the candidate branch, and confirm CI. Exact-head app/validator/operations checks and agent browser UAT have independent cross-review. Keep the PR draft and protected release branch unchanged. Production-specific target, scheduled/off-device recovery, migration, rollback, image-publication/pull, and cutover gates remain open.
+
 # Current execution checkpoint
 
 Recorded 2026-10-24, Asia/Bangkok. Main thread 01a164a6-91ca-7913-ad0f-9a5d343652a6. Continue the authorized Pstack project mission without a new routine approval request.

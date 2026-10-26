@@ -5,12 +5,14 @@
 
 ## Run evidence
 
-- Run ID: `2f9b8c0f424d8cb9a8152443`.
-- Command: `node scripts/run-remediation-browser.mjs`.
-- Result: 89 passed, 0 failed, 0 skipped, one Playwright worker, 5m 16s.
-- Target: fresh isolated PostgreSQL database `taky_phase2_test`, unique role and Compose project, 17 release-source migrations, 15 synthetic room identities. No real tenant, financial, or UAT records were used.
-- Cleanup: the runner stopped and removed only this run's containers and networks. It retained its new database and validator volumes for diagnosis.
-- Machine-readable result: ignored local `evidence/remediation/browser-2f9b8c0f424d8cb9a8152443/results.json`; environment identity is in `database-identity.json`. Raw logs and traces are private and are not release assets.
+- Exact source: commit `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966`, tree `aa5cf57c5d1fb90c5eedbdfc9775d494176123bb`. Tracked application/test source was unchanged during the run.
+- Preparation: `npm ci` (467 packages, 0 vulnerabilities), `npx prisma generate`, and `npm run build` all passed on Node `v22.22.3` and Next.js `16.4.1`.
+- Run ID: `f12e112e99231c0a470e3171`.
+- Command: `node scripts/run-remediation-browser.mjs` from the exact-head checkout.
+- Result: 89 passed, 0 failed, 0 skipped, 0 retries/flaky, one Playwright worker, 198.4 seconds.
+- Target: fresh isolated PostgreSQL database `taky_phase2_test`, unique role `e2e_f12e112e99231c0a470e3171`, and Compose project `taky-remediation-browser-f12e112e99231c0a470e3171`; all 17 release-source migrations and 15 synthetic room identities. No real tenant, financial, or UAT records were used.
+- Cleanup: the runner stopped and removed only this run's three containers and three networks. It retained one new run-specific database volume for diagnosis. Post-run checks found no run-owned container/network or listener on ports 3820, 3822, or 55452. The pre-existing `taky-erp-*` stack was not modified.
+- Machine-readable result: ignored local `evidence/remediation/browser-f12e112e99231c0a470e3171/results.json` (`expected=89`, `unexpected=0`, `skipped=0`, `flaky=0`; every test ran once). Raw browser log and cleanup log are under ignored `evidence/remediation/` and are private, not release assets.
 
 ## Workflows covered
 
