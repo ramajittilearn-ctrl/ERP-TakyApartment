@@ -1,16 +1,19 @@
 # Agent-run Phase 4 UAT
 
-**Result:** PASS on current PR head `b91d2036c34b485840d646ff3c6638e790eceb99` for the isolated synthetic browser suite, with the limits below.
+**Result:** PASS on current PR head `6363f2248cd986ebbb980e7b7dddcb28c941b674` for the isolated synthetic browser suite, with the limits below.
 **Owner UAT:** Not performed. The Owner delegated UAT execution and requested a report.
 
-## Current PR CI run
+## Latest PR CI run
 
-- Workflow: [Phase 4 CI run 40321746043](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40321746043), all three jobs passed (`required-quality`, `container-verification`, and `agent-uat`).
-- PR head: `b91d2036c34b485840d646ff3c6638e790eceb99`. Agent UAT checked out merge commit `608488fd76be6b78d81fb086a5189e852ec5c59f`; the generated report records both hashes.
+- Workflow: [Phase 4 CI run 40327186679](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40327186679), all three jobs passed (`required-quality`, `container-verification`, and `agent-uat`).
+- PR head: `6363f2248cd986ebbb980e7b7dddcb28c941b674`. Agent UAT checked out merge commit `c4fa83fa182a4fd60c7d0c140769f9d451be8363`; the generated report records both hashes.
 - Mode and scope: source-built app, synthetic browser UAT on an isolated Ubuntu runner; no Owner UAT and no production data. The separate container-verification job built pinned images and passed current-checkout synthetic encrypted backup and isolated restore.
-- Result: 89 passed, 0 failed, 0 skipped, 0 flaky; the Playwright result records 89 expected and 0 unexpected. Browser execution run ID: `004e67cd66d533f7da268c89` (208.3 seconds).
-- Report, `results.json`, and `execution.json`: [Agent UAT artifact 12649174241](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40321746043/artifacts/12649174241).
+- Result: 90 passed, 0 failed, 0 skipped, 0 flaky; the Playwright result records 90 expected and 0 unexpected. Browser execution run ID: `d3cafc6d6a84495590b01ec7` (155.1 seconds).
+- Report, `results.json`, and `execution.json`: [Agent UAT artifact 12654990734](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40327186679/artifacts/12654990734).
+- This suite includes the monthly report CSV UI download and exact-total assertion against a synthetic monthly report response intercepted by the browser test. The separate month-selection/loading test calls the actual API; the CSV case does not independently prove persisted database aggregation. It also includes tenant contract rent save/reload/reselection cases.
 - This synthetic source-build run does not verify production data, deployment-host configuration, Owner acceptance, or production recovery.
+
+Run [40325482014](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40325482014) on prior head `cc5e1ab` is a failed historical attempt: 89 passed and one monthly report CSV browser assertion failed because the test helper rejected a valid final record without a line terminator. Commit `6363f22` corrected that test helper, added edge-case tests, and the latest 90-case run above passed.
 
 Earlier run [40317435858](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40317435858), PR head `573bbed`, also passed all three jobs and 89/89 browser tests. It is retained as historical evidence for that earlier head.
 
@@ -36,7 +39,7 @@ The separate Stage 3 rehearsal restored a synthetic encrypted backup with the Ph
 ## Limits
 
 - Invoice and receipt browser tests verify successful PDF downloads, filenames, PDF structure, access rules, and frozen receipt facts. This run did not extract Thai text or inspect rendered glyphs from the downloaded files. Historical Phase 4 evidence records 48 invoice glyph extraction checks, visual PDF reviews, copied font hashes, and browser invoice/receipt downloads; that evidence predates this run and is not production-runtime proof.
-- Browser checks cover expense and lease CSV downloads. The monthly report test selects and loads a month but does not assert a report CSV download.
+- The latest browser run asserts monthly report CSV download and exact totals from its intercepted synthetic response. CSV browser checks cover expense, lease, and monthly reports; separate unit/service tests cover report calculations and API behavior. This CSV browser case does not prove database aggregation end to end.
 - Maintenance and Settings remain demo-only pages, outside the accepted Phase 4 feature scope. The application visibly labels them as demos. Settings does not provide an enabled backup UI; operations remain command-line based.
 - The suite used a local source build and synthetic data. It does not verify a production host, target schema, off-device key recovery, HTTPS certificate trust on owner devices, or post-deployment behavior.
 

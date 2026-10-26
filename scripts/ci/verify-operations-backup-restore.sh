@@ -56,6 +56,8 @@ fixture_sha="$(node -e 'process.stdout.write(require("node:crypto").createHash("
 tmp_root="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
 key_dir="${tmp_root%/}/${project}"
 key_file="${key_dir}/backup.key"
+rclone_config_file="${key_dir}/rclone.conf"
+remote_dir="${key_dir}/remote"
 containers=("$source_db" "$restore_db" "$app" "${project}-backup" "${project}-restore" "${project}-source-volume-owner" "${project}-fixture" "${project}-restore-check")
 volumes=("$source_db_volume" "$restore_db_volume" "$source_attachments_volume" "$restore_attachments_volume" "$backup_volume")
 owned_containers=()
@@ -138,6 +140,20 @@ cleanup() {
   if [[ -f "$key_file" ]] && ! rm -f -- "$key_file"; then
     echo "Cleanup failed: could not remove generated key file $key_file" >&2
     cleanup_failed=1
+  fi
+  if [[ -f "$rclone_config_file" ]] && ! rm -f -- "$rclone_config_file"; then
+    echo "Cleanup failed: could not remove generated rclone config $rclone_config_file" >&2
+    cleanup_failed=1
+  fi
+  if [[ -d "$remote_dir" ]]; then
+    if ! find "$remote_dir" -mindepth 1 -maxdepth 1 -type f -delete; then
+      echo "Cleanup failed: could not remove files from the run-owned synthetic remote" >&2
+      cleanup_failed=1
+    fi
+    if ! rmdir -- "$remote_dir"; then
+      echo "Cleanup failed: synthetic remote directory is not empty or could not be removed" >&2
+      cleanup_failed=1
+    fi
   fi
   if [[ -d "$key_dir" ]] && ! rmdir -- "$key_dir"; then
     echo "Cleanup failed: temporary key directory is not empty or could not be removed: $key_dir" >&2
@@ -260,6 +276,13 @@ docker run --rm --platform linux/amd64 --label "$ownership_label=$project" \
   "$fixture_content"
 
 mkdir -m 0700 "$key_dir"
+mkdir -m 0700 "$remote_dir"
+umask 077
+cat > "$rclone_config_file" <<'RCLONE_CONFIG'
+[ci-local]
+type = local
+RCLONE_CONFIG
+chmod 0600 "$rclone_config_file"
 umask 077
 node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("base64"))' > "$key_file"
 chmod 0600 "$key_file"
@@ -278,10 +301,14 @@ run_operations() {
     --mount "type=volume,source=$source_attachments_volume,target=/attachments,readonly"
     --mount "type=volume,source=$restore_attachments_volume,target=/restore-attachments"
     --mount "type=bind,source=$key_file,target=/run/secrets/backup.key,readonly"
+    --mount "type=bind,source=$rclone_config_file,target=/run/rclone/rclone.conf,readonly"
+    --mount "type=bind,source=$remote_dir,target=/ci-remote"
     --env BACKUP_DIR=/backups --env BACKUP_KEY_FILE=/run/secrets/backup.key
     --env ATTACHMENT_DIR=/attachments
     --env PGUSER=taky_ci
     --env "PGPASSWORD=$database_password")
+  if [[ -n "${BACKUP_REMOTE:-}" ]]; then args+=(--env "BACKUP_REMOTE=$BACKUP_REMOTE"); fi
+  if [[ -n "${CI_BACKUP_RECORD:-}" ]]; then args+=(--env "CI_BACKUP_RECORD=$CI_BACKUP_RECORD"); fi
   if [[ -n "$restore_mode" ]]; then
     args+=(--env "RESTORE_MODE=$restore_mode" --env PGHOST=restore-db --env PGDATABASE=taky_restore_test)
   else
@@ -294,7 +321,34 @@ backup_json="$(run_operations "${project}-backup" "" node operations/cli.mjs bac
 backup_file="$(node -e 'const x=JSON.parse(process.argv[1]);if(x.status!=="SUCCEEDED"||!/^taky-\d{8}T\d{6}Z-[a-f0-9-]{36}\.taky\.enc$/.test(x.file)||!/^[a-f0-9]{64}$/.test(x.checksum)||!x.verifiedAt)process.exit(1);process.stdout.write(x.file)' "$backup_json")"
 echo "Exact operations image created and locally verified synthetic backup: $backup_file"
 
-restore_json="$(run_operations "${project}-restore" isolated node operations/cli.mjs restore-isolated "$backup_file")"
+restore_json="$(
+  BACKUP_REMOTE=ci-local:/ci-remote CI_BACKUP_RECORD="$backup_json" \
+    run_operations "${project}-restore" isolated node --input-type=module -e '
+import { uploadRecord } from "./operations/backup.mjs";
+import { readKey, run, sha256 } from "./operations/archive.mjs";
+import { restoreIsolated } from "./operations/database.mjs";
+
+const record = JSON.parse(process.env.CI_BACKUP_RECORD);
+const remote = process.env.BACKUP_REMOTE;
+await uploadRecord(record, remote);
+const remoteFile = `${remote.replace(/\/$/, "")}/${record.file}`;
+const downloaded = `/tmp/${record.file}.download`;
+await run("rclone", ["copyto", remoteFile, downloaded]);
+if ((await sha256(downloaded)) !== record.checksum)
+  throw new Error("Fetched synthetic remote backup checksum mismatch");
+const manifest = await restoreIsolated(
+  downloaded,
+  await readKey(process.env.BACKUP_KEY_FILE),
+  "/restore-attachments",
+);
+process.stdout.write(JSON.stringify({
+  file: record.file,
+  checksum: await sha256(downloaded),
+  verifiedAt: new Date().toISOString(),
+  attachments: manifest.attachments.length,
+}));
+'
+)"
 node -e 'const backup=JSON.parse(process.argv[1]);const restored=JSON.parse(process.argv[2]);if(restored.file!==backup.file||restored.checksum!==backup.checksum||!Number.isSafeInteger(restored.attachments)||restored.attachments!==1)process.exit(1)' "$backup_json" "$restore_json"
 
 restored_rooms="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc 'SELECT count(*) FROM "Room"')"
@@ -312,4 +366,4 @@ if [[ "$restored_fixture" != "$fixture_sha" ]]; then
   exit 1
 fi
 
-echo "Isolated restore passed: 15 rooms and synthetic attachment SHA-256 $restored_fixture."
+echo "Synthetic remote upload, read-back, and isolated restore passed: 15 rooms and attachment SHA-256 $restored_fixture."

@@ -131,6 +131,9 @@ docker run --rm --platform linux/amd64 --read-only \
     command -v flock >/dev/null
     command -v timeout >/dev/null
     ! command -v gosu >/dev/null
+    rclone_version="$(rclone version)"
+    printf "%s\n" "$rclone_version" | grep -F "rclone v1.75.2" >/dev/null
+    printf "%s\n" "$rclone_version" | grep -F "go1.27.3" >/dev/null
     node operations/cli.mjs status
   '
 
