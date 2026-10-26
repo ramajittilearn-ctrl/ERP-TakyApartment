@@ -162,7 +162,7 @@ const compose = {
   name: project,
   services: {
     db: {
-      image: "postgres:17-bookworm",
+      image: "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe",
       environment: {
         POSTGRES_DB: "taky_phase2_test",
         POSTGRES_USER: role,
@@ -193,7 +193,7 @@ const compose = {
             security_opt: ["no-new-privileges:true"],
           },
           "validator-host-bridge": {
-            image: "node:22-bookworm-slim",
+            image: "node:22.23.4-trixie-slim@sha256:8eb619e402eaede1748a3c8173bffab391592812e85136452f781741c7242ddf",
             user: "1000:1000",
             command: [
               "node",

@@ -1,5 +1,13 @@
 # Production Go-Live continuation checkpoint — 2026-10-26
 
+## Latest continuation addendum — container security (2026-10-26)
+
+Working branch `codex/phase4-current-source-20261026` on clean clone `/tmp/erp-phase4-pr-head`, based on PR #2 head `dd8aa731`. Container security remediation updates three Dockerfiles, dev/restore compose, remediation harness, and runtime operator commands. Independent release auditor confirmed the Node/Postgres OCI digests and gosu scope; it found stale integration commands and unpinned rclone, both corrected; a narrow reviewer recheck is pending.
+
+Local typecheck, 422/422 unit tests, lint, Next build, and diff check passed. Validator image built on linux/arm64; Docker Scout reported one High Debian Trixie zlib CVE with no fixed version listed. Operations derivative built, but its scan ended `unexpected EOF`. The app image passed its internal Next production build but failed final assembly with Docker Desktop containerd metadata I/O errors. Host data volume had 3.2 GB free; Docker image listing and `docker system df` also failed on the metadata DB. No Docker prune/reset or volume cleanup was attempted; existing UAT containers and data remain untouched. Exact-image runtime verification is incomplete. Evidence: `release-evidence/08-container-security-remediation.md`.
+
+Next: repair Docker Desktop storage without touching existing UAT volumes; rebuild and scan app, validator, operations and actual database images; run exact-image financial, auth, validator, backup/restore and agent UAT flows; collect cross-review; then publish reviewed candidate evidence and await GitHub CI. Keep PR #2 draft and production NO-GO until all exact-image and production target gates are resolved.
+
 The Owner resumed the project and explicitly directed autonomous continuation through production Go-Live, with agent-run UAT and a report. This supersedes the earlier stop-after-Phase-4 instruction below. Preserve completed modules; only make minimal release-blocking fixes or approved missing modules. Production cutover still requires the exact target and the safety gates in the release runbook.
 
 Current integration snapshot: `.local/development-recovered-20261025`, branch `codex/browser-request-guard`, based on accepted baseline `32355958081088e1c849aff39177c86e718139d6`. Primary checkout and existing UAT ports/databases remain untouched. Current local branch has uncommitted, isolated changes; do not reset, overwrite, or publish until review and quality gates pass.

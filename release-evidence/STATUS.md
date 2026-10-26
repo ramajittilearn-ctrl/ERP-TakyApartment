@@ -1,5 +1,7 @@
 # Phase 4 Production Readiness
 
+**Latest continuation (2026-10-26):** A container-security remediation is in progress; source checks pass and an independent reviewer has reviewed the design. Exact-image verification is incomplete because Docker Desktop returned storage I/O errors and the host data volume had 3.2 GB free. The new validator image scan reports one High `zlib` CVE without an available fix; operations scanning ended unexpectedly; app runtime image did not finish building. See `08-container-security-remediation.md`. Keep this candidate NO-GO and do not infer runtime verification from source CI.
+
 **Status: NO-GO for production cutover.** Candidate engineering checks are strong, but production-target and release-publication gates remain open.
 
 **Current candidate:** PR #2, `codex/phase4-current-source-20261026` → `release/phase4`; tested application/test source is commit `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966`, tree `aa5cf57c5d1fb90c5eedbdfc9775d494176123bb`. Evidence-only documentation is layered above it. The PR remains OPEN, draft, and CLEAN. GitHub Actions `required-quality` passed for the source baseline and the evidence documentation update. The protected `release/phase4` branch and RC1 tag remain unchanged at `89a15a1aa88e8bc1ac42ce38f653448b1a32a645`.

@@ -97,9 +97,9 @@ try {
   if (!reproduce) {
     if (failSetup)
       throw new Error("Injected isolated setup failure before migrations");
-    await logged("migrate", "npx", "prisma", "migrate", "deploy");
-    await logged("seed", "npm", "run", "db:seed");
-    await logged("users", "npx", "tsx", "scripts/test-users.ts");
+    await logged("migrate", "node", "node_modules/prisma/build/index.js", "migrate", "deploy");
+    await logged("seed", "node", "node_modules/tsx/dist/cli.mjs", "prisma/seed.ts");
+    await logged("users", "node", "node_modules/tsx/dist/cli.mjs", "scripts/test-users.ts");
     proxy = browserTargetProxy("http://127.0.0.1:3820");
     await new Promise((resolve, reject) => {
       proxy.once("error", reject);

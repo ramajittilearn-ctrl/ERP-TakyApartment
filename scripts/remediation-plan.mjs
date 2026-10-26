@@ -33,7 +33,7 @@ const composeSchema = z
       .object({
         db: z
           .object({
-            image: z.literal("postgres:17-bookworm"),
+            image: z.literal("postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"),
             environment: z
               .object({
                 POSTGRES_DB: z.literal("taky_phase2_test"),
@@ -78,7 +78,7 @@ const composeSchema = z
           .strict(),
         "validator-host-bridge": z
           .object({
-            image: z.literal("node:22-bookworm-slim"),
+            image: z.literal("node:22.23.4-trixie-slim@sha256:8eb619e402eaede1748a3c8173bffab391592812e85136452f781741c7242ddf"),
             user: z.literal("1000:1000"),
             command: z.tuple([
               z.literal("node"),

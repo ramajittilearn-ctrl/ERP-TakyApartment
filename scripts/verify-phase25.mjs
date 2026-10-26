@@ -126,7 +126,7 @@ try {
     "trusted HTTPS readiness",
     "Certificate chain and 127.0.0.1 name validated using exported public root; validation never disabled",
   );
-  docker(["exec", "-T", "app", "npx", "tsx", "scripts/test-users.ts"]);
+  docker(["exec", "-T", "app", "node", "node_modules/tsx/dist/cli.mjs", "scripts/test-users.ts"]);
   const login = await request("/api/auth/login/", {
     method: "POST",
     data: { identifier: "test-admin", password: base.TEST_ADMIN_PASSWORD },

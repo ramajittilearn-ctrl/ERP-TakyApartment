@@ -69,7 +69,7 @@ test("plan-only creates a fresh scoped private project without Docker or port bi
   });
   assert.equal(compose.networks["evidence-validation"].internal, true);
   const bridge = compose.services["validator-host-bridge"];
-  assert.equal(bridge.image, "node:22-bookworm-slim");
+  assert.equal(bridge.image, "node:22.23.4-trixie-slim@sha256:8eb619e402eaede1748a3c8173bffab391592812e85136452f781741c7242ddf");
   assert.deepEqual(bridge.ports, ["127.0.0.1:3835:3835"]);
   assert.deepEqual(bridge.networks, [
     "evidence-validation",
