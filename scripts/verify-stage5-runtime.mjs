@@ -111,6 +111,7 @@ function runChecked(label, command, args, env = childEnv) {
     env,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    maxBuffer: 256 * 1024,
   });
   const row = {
     label,
@@ -123,12 +124,48 @@ function runChecked(label, command, args, env = childEnv) {
     exitCode: result.status,
     signal: result.signal ?? null,
   };
-  state.checks.push(row);
-  if (result.status !== 0)
+  if (result.status !== 0) {
+    const childOutput = [
+      result.stdout ? `stdout:\n${result.stdout}` : "",
+      result.stderr ? `stderr:\n${result.stderr}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+    row.failureDiagnostic = sanitizeDiagnostic(childOutput);
+    state.checks.push(row);
     throw new Error(
       `${label} failed with exit ${result.status ?? result.signal}`,
     );
+  }
+  state.checks.push(row);
   return result.stdout;
+}
+function sanitizeDiagnostic(input) {
+  let output = String(input);
+  for (const secret of generatedSecrets)
+    if (secret) output = output.replaceAll(secret, "[REDACTED]");
+  output = output
+    .replace(
+      /((?:authorization|cookie|set-cookie)\s*:\s*)[^\r\n]*/gi,
+      "$1[REDACTED]",
+    )
+    .replace(
+      /\b(?:GET|POST)\s+\/api\/auth\/login\/?[^\s]*/gi,
+      "[AUTH LOGIN ROUTE]",
+    )
+    .replace(/\b(?:Bearer|Basic)\s+[^\s,;]+/gi, "[REDACTED]")
+    .replace(/(taky_session=)[^;\s"'&]+/gi, "$1[REDACTED]")
+    .replace(
+      /("(?:password|passwd|secret|client_secret|token|tokenhash|access_token|accesstoken|refresh_token|cookie|set-cookie|session|sessionid|sessiontoken|authorization|api_key|apikey)"\s*:\s*")[^"]*(")/gi,
+      "$1[REDACTED]$2",
+    )
+    .replace(
+      /\b(password|passwd|secret|client_secret|token|tokenhash|access_token|refresh_token|cookie|session|sessionid|sessiontoken|authorization|api_key|apikey)\s*[=:]\s*(?:"[^"]*"|'[^']*'|[^&\s,;}]+)/gi,
+      "$1=[REDACTED]",
+    );
+  return Buffer.from(output.split(/\r?\n/).slice(0, 120).join("\n"), "utf8")
+    .subarray(0, 16 * 1024)
+    .toString("utf8");
 }
 function assertRenderedEqual(actual, expected, label) {
   assert.ok(actual === expected, `Compose rendered unexpected ${label}`);
@@ -548,7 +585,16 @@ try {
   const sessionSecret = randomBytes(32).toString("hex");
   const adminPassword = randomBytes(24).toString("hex");
   const staffPassword = randomBytes(24).toString("hex");
-  generatedSecrets = [password, sessionSecret, adminPassword, staffPassword];
+  const adminUsername = `stage5-admin-${runId.slice(0, 8)}`;
+  const staffUsername = `stage5-staff-${runId.slice(0, 8)}`;
+  generatedSecrets = [
+    password,
+    sessionSecret,
+    adminPassword,
+    staffPassword,
+    adminUsername,
+    staffUsername,
+  ];
   const env = {
     STAGE5_PROJECT: project,
     STAGE5_RUN_ID: runId,
@@ -563,8 +609,8 @@ try {
     POSTGRES_PASSWORD: password,
     DATABASE_URL: `postgresql://${dbUser}:${password}@db:5432/${dbName}?schema=public`,
     SESSION_SECRET: sessionSecret,
-    STAGE5_ADMIN_USERNAME: `stage5-admin-${runId.slice(0, 8)}`,
-    STAGE5_STAFF_USERNAME: `stage5-staff-${runId.slice(0, 8)}`,
+    STAGE5_ADMIN_USERNAME: adminUsername,
+    STAGE5_STAFF_USERNAME: staffUsername,
   };
   await mkdir(artifactDir, { recursive: true, mode: 0o700 });
   envDirectory = await mkdtemp(join(tmpdir(), "taky-stage5-env-"));
