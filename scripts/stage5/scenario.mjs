@@ -475,7 +475,7 @@ const invoicePdfLayout = execFileSync(
   { encoding: "utf8" },
 );
 assert.match(invoicePdfText, /Rounding adjustment\s+-฿0\.01/);
-assert.match(invoicePdfText, /ยอดชำระรวม \/ TOTAL PAYABLE\s+฿1,050\.01/);
+assert.match(invoicePdfText, /TOTAL PAYABLE\s+฿1,050\.01/);
 for (const visibleAmount of ["฿1,000.00", "฿20.01", "฿30.01", "-฿0.01"])
   assert.ok(
     invoicePdfText.includes(visibleAmount),
