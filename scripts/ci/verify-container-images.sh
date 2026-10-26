@@ -97,7 +97,10 @@ echo "Building evidence validator image"
 build_image "$validator_image" operations/evidence-validator/Dockerfile operations/evidence-validator
 echo "Building operations image"
 build_image "$operations_image" operations/Dockerfile .
-bash scripts/ci/verify-operations-backup-restore.sh "$operations_image" "$app_image"
+legacy_trixie_db_image="postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
+legacy_bookworm_db_image="postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27"
+bash scripts/ci/verify-operations-backup-restore.sh "$operations_image" "$app_image" "$legacy_trixie_db_image"
+bash scripts/ci/verify-operations-backup-restore.sh "$operations_image" "$app_image" "$legacy_bookworm_db_image"
 
 docker run --rm --platform linux/amd64 --entrypoint sh "$app_image" -ec '
   ! command -v npm >/dev/null
@@ -129,6 +132,7 @@ docker run --rm --platform linux/amd64 --read-only \
     command -v pg_restore >/dev/null
     command -v rclone >/dev/null
     command -v flock >/dev/null
+    command -v runuser >/dev/null
     command -v timeout >/dev/null
     ! command -v gosu >/dev/null
     rclone_version="$(rclone version)"

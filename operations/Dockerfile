@@ -1,4 +1,4 @@
-FROM node:22.23.4-trixie-slim@sha256:8eb619e402eaede1748a3c8173bffab391592812e85136452f781741c7242ddf AS node
+FROM node:22.23.4-alpine3.24@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS node
 FROM --platform=$BUILDPLATFORM golang:1.27.3-alpine3.24@sha256:b8c9b82affbbb82a020bbcf998dad2ba9516944ac7e883524642a481a9505e9c AS rclone-build
 ARG TARGETOS
 ARG TARGETARCH
@@ -13,8 +13,8 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     -ldflags="-s -w -X github.com/rclone/rclone/fs.Version=v1.75.2" \
     -o /out/rclone .
 
-FROM postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe
-RUN apt-get update && apt-get install -y --no-install-recommends util-linux libstdc++6 ca-certificates && rm -rf /var/lib/apt/lists/*
+FROM postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+RUN apk add --no-cache ca-certificates flock libatomic libstdc++ util-linux-misc
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=rclone-build /out/rclone /usr/local/bin/rclone
 RUN rm -f /usr/local/bin/gosu

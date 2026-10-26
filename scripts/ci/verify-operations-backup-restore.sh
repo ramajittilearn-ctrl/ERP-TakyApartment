@@ -2,18 +2,23 @@
 set -Eeuo pipefail
 
 usage() {
-  echo "Usage: $0 <operations-image> <app-image>" >&2
+  echo "Usage: $0 <operations-image> <app-image> [source-database-image]" >&2
   exit 2
 }
-[[ $# == 2 ]] || usage
+[[ $# == 2 || $# == 3 ]] || usage
 
 operations_image="$1"
 app_image="$2"
 revision="$(git rev-parse HEAD)"
 tree="$(git rev-parse 'HEAD^{tree}')"
 db_image="$(awk '$1 == "db:" { in_db = 1; next } in_db && $1 == "app:" { exit } in_db && $1 == "image:" { print $2; exit }' docker-compose.yml)"
+source_db_image="${3:-$db_image}"
 if [[ ! "$db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
   echo "The development database image must be pinned by digest" >&2
+  exit 1
+fi
+if [[ ! "$source_db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
+  echo "The source database image must be pinned by digest" >&2
   exit 1
 fi
 if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
@@ -203,7 +208,7 @@ docker run --detach --platform linux/amd64 \
   --env "POSTGRES_PASSWORD=$database_password" \
   --health-cmd "pg_isready -U taky_ci -d taky_ci" \
   --health-interval 2s --health-timeout 3s --health-retries 30 \
-  "$db_image" >/dev/null
+  "$source_db_image" >/dev/null
 
 owned_containers+=("$restore_db")
 docker run --detach --platform linux/amd64 \
@@ -234,6 +239,17 @@ wait_healthy() {
 }
 wait_healthy "$source_db"
 wait_healthy "$restore_db"
+collation_query="SELECT datlocprovider::text || '|' || datcollate || '|' || datctype || '|' || COALESCE(datcollversion, '') || '|' || COALESCE(pg_database_collation_actual_version(oid), '') FROM pg_database WHERE datname=current_database()"
+source_collation="$(docker exec "$source_db" psql -U taky_ci -d taky_ci -Atc "$collation_query")"
+target_collation="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc "$collation_query")"
+for collation_record in "$source_collation" "$target_collation"; do
+  IFS='|' read -r provider locale ctype recorded_version actual_version <<< "$collation_record"
+  if [[ ( "$provider" != b && "$provider" != c && "$provider" != i ) || -z "$locale" || -z "$ctype" ]]; then
+    echo "Database locale/provider record is incomplete or unsupported: $collation_record" >&2
+    exit 1
+  fi
+done
+echo "Source/restore database locales: $source_collation -> $target_collation"
 
 # The app image performs the same migrations and seed used by the runtime image.
 owned_containers+=("$app")
@@ -267,6 +283,16 @@ if [[ "$rooms_ready" != true ]]; then
   docker exec "$source_db" psql -U taky_ci -d taky_ci -c '\dt' >&2 || true
   exit 1
 fi
+
+# Keep a text index in the dump so restore rebuilds it using the target
+# database's collation instead of reusing source index pages.
+docker exec -i "$source_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_ci <<'SQL'
+CREATE TABLE ci_collation_probe (value text NOT NULL);
+INSERT INTO ci_collation_probe(value) VALUES ('A'), ('a'), ('b'), ('é'), ('ภาษาไทย');
+CREATE INDEX ci_collation_probe_value_idx ON ci_collation_probe(value);
+SQL
+source_probe_values="$(docker exec "$source_db" psql -U taky_ci -d taky_ci -Atc \
+  "SELECT string_agg(value, '|' ORDER BY value COLLATE \"C\") FROM ci_collation_probe")"
 
 # Seed one synthetic Attachment owner graph in the isolated source database so
 # restore verification covers both database metadata and the matching file.
@@ -376,6 +402,30 @@ if [[ "$restored_rooms" != 15 ]]; then
   docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -c '\dt' >&2 || true
   exit 1
 fi
+invalid_indexes="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc 'SELECT count(*) FROM pg_index WHERE NOT indisvalid OR NOT indisready')"
+if [[ "$invalid_indexes" != 0 ]]; then
+  echo "Restored database has invalid or not-ready indexes: $invalid_indexes" >&2
+  exit 1
+fi
+docker exec "$restore_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_restore_test \
+  -c 'BEGIN; SET LOCAL enable_seqscan=off; EXPLAIN (ANALYZE, COSTS OFF, SUMMARY OFF, TIMING OFF) SELECT value FROM ci_collation_probe ORDER BY value; COMMIT' \
+  | grep -E 'Index( Only)? Scan using ci_collation_probe_value_idx' >/dev/null
+restored_probe_values="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc \
+  "SELECT string_agg(value, '|' ORDER BY value COLLATE \"C\") FROM ci_collation_probe")"
+if [[ "$restored_probe_values" != "$source_probe_values" || -z "$restored_probe_values" ]]; then
+  echo "Restored collation probe data mismatch: source=$source_probe_values target=$restored_probe_values" >&2
+  exit 1
+fi
+indexed_collation_rows="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc \
+  'BEGIN; SET LOCAL enable_seqscan=off; SELECT value FROM ci_collation_probe ORDER BY value; COMMIT')"
+indexed_collation_count="$(printf '%s\n' "$indexed_collation_rows" | wc -l | tr -d ' ' )"
+sequential_collation_rows="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc \
+  'BEGIN; SET LOCAL enable_indexscan=off; SET LOCAL enable_indexonlyscan=off; SELECT value FROM ci_collation_probe ORDER BY value; COMMIT')"
+if [[ "$indexed_collation_count" != 5 || "$indexed_collation_rows" != "$sequential_collation_rows" ]]; then
+  echo "Restored collation index did not return all values: $indexed_collation_rows" >&2
+  echo "Sequentially sorted target values were: $sequential_collation_rows" >&2
+  exit 1
+fi
 restored_attachment="$(docker exec -i "$restore_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_restore_test \
   -v "storage_key=$fixture_storage_key" -At <<'SQL'
 SELECT json_build_object(
@@ -409,4 +459,4 @@ restored_fixture="$(docker run --rm --platform linux/amd64 --label "$ownership_l
 node -e 'const f=JSON.parse(process.argv[1]);if(f.bytes!==Number(process.argv[2])||f.sha256!==process.argv[3])throw new Error(`Restored attachment bytes mismatch: ${JSON.stringify(f)}`)' \
   "$restored_fixture" "$fixture_bytes" "$fixture_sha"
 
-echo "Synthetic remote upload, read-back, and isolated restore passed: 15 rooms, Attachment metadata owner links, and attachment SHA-256 $fixture_sha."
+echo "Synthetic remote upload, read-back, and isolated cross-image restore passed: source=$source_db_image target=$db_image; locales (provider|locale|ctype|recorded-version|actual-version)=$source_collation->$target_collation; 15 rooms, valid rebuilt indexes, and executed collation index returned 5 rows; Attachment metadata owner links and attachment SHA-256 $fixture_sha."

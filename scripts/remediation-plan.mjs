@@ -33,7 +33,7 @@ const composeSchema = z
       .object({
         db: z
           .object({
-            image: z.literal("postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"),
+            image: z.literal("postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b"),
             environment: z
               .object({
                 POSTGRES_DB: z.literal("taky_phase2_test"),

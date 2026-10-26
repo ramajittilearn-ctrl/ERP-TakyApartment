@@ -290,7 +290,7 @@ function verifyComposeConfig(config, env, revision, tree) {
   const db = config.services.db;
   assertRenderedEqual(
     db.image,
-    "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe",
+    "postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b",
     "pinned database image",
   );
   assert.deepEqual(db.ports ?? [], [], "database must not publish a host port");
