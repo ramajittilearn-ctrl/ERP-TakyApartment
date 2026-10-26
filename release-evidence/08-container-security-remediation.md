@@ -52,3 +52,15 @@ Counts are unique Trivy vulnerability/advisory IDs; they are not necessarily dis
 Operations Critical is `CVE-2026-6653` in Debian `libxml2` `2.12.7+dfsg+really2.9.14-2.1+deb13u3`, inherited from the pinned PostgreSQL Trixie base; Trivy reports no fixed version. Operations also reports High `CVE-2026-111943` in rclone's Go standard library `v1.27.2`, for which Trivy lists Go `1.27.3` as fixed. The shared High findings include util-linux CVEs `CVE-2026-76642`, `CVE-2026-78408`, `CVE-2026-78409`, and `CVE-2026-78410` across Debian Trixie packages.
 
 The scan is evidence that the scanner ran, not that images are clean. No remediation or risk acceptance is recorded here. Keep production **NO-GO** until affected images have a verified fix or the Owner explicitly accepts the residual risk. See the attached raw Trivy JSON reports for package-level details.
+
+## Latest hosted scan and bounded remediation result
+
+Run [40331167063](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40331167063) passed all three jobs on PR head `69f7ca0a12e6d154d3c6629900ef2790ae39843e`; the image scan artifact is [12653274711](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40331167063/artifacts/12653274711). Trivy 0.76.1 scanned `linux/amd64` images from merge checkout `17dbc7323db48be1214521bab8a7d9a67cbaf428`, tree `af16d6737c7855e6c0ab670c8722961a07ceca25`. This run preceded the scanner database-provenance change, so its metadata sidecars do not contain the DB snapshot hash.
+
+| Image | Critical | High | Medium | Low | Unknown |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| App | 0 | 8 unique IDs (43 package occurrences) | 29 (58) | 33 (60) | 1 (1) |
+| Validator | 0 | 8 unique IDs (43 package occurrences) | 31 (60) | 40 (67) | 1 (1) |
+| Operations | 1 unique ID (1 occurrence) | 16 (61) | 39 (110) | 61 (138) | 2 (5) |
+
+The rclone rebuild now embeds Go 1.27.3, and the current operations report no longer contains `CVE-2026-111943`. The inherited PostgreSQL Trixie `libxml2` Critical (`CVE-2026-6653`, no fixed version reported) and shared Debian High findings remain. Unique counts are Trivy IDs, not necessarily CVEs, and include non-CVE identifiers. The separate scanner-provenance commit `23125d8` records the Trivy DB file hash/metadata in a fresh hosted scan; that verification is pending. The reports remain non-blocking, production remains **NO-GO**, and no image was published.

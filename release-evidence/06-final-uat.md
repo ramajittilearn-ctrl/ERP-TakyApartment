@@ -1,9 +1,17 @@
 # Agent-run Phase 4 UAT
 
-**Result:** PASS on current PR head `6363f2248cd986ebbb980e7b7dddcb28c941b674` for the isolated synthetic browser suite, with the limits below.
+**Result:** PASS on latest fully hosted PR head `69f7ca0a12e6d154d3c6629900ef2790ae39843e` for the isolated synthetic browser suite, with the limits below. The follow-up scanner-provenance commit is not yet pushed and has not received UAT.
 **Owner UAT:** Not performed. The Owner delegated UAT execution and requested a report.
 
 ## Latest PR CI run
+
+- Workflow: [Phase 4 CI run 40331167063](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40331167063), all three jobs passed (`required-quality`, `container-verification`, and `agent-uat`).
+- PR head: `69f7ca0a12e6d154d3c6629900ef2790ae39843e`. Agent UAT checked out merge commit `17dbc7323db48be1214521bab8a7d9a67cbaf428`; generated report binds both revisions.
+- Result: 90 passed, 0 failed, 0 skipped, 0 flaky. Browser execution run ID: `92578a7797108baf8d74703e`.
+- Report, `results.json`, and `execution.json`: [Agent UAT artifact 12654694063](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40331167063/artifacts/12654694063).
+- This synthetic run includes tenant contract rent persistence/reload and the same report-export limitations below. It is agent-run UAT, not Owner acceptance or production verification.
+
+### Prior exact-head run
 
 - Workflow: [Phase 4 CI run 40327186679](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40327186679), all three jobs passed (`required-quality`, `container-verification`, and `agent-uat`).
 - PR head: `6363f2248cd986ebbb980e7b7dddcb28c941b674`. Agent UAT checked out merge commit `c4fa83fa182a4fd60c7d0c140769f9d451be8363`; the generated report records both hashes.
