@@ -1,6 +1,14 @@
 # Stage 7 — Independent Release Audit
 
-**Audit status:** The detailed audit body below is historical and assessed PR source commit `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966`. Current evidence addenda for runs `40356454371`, `40360707470`, `40362968827`, and `40365071119` follow and were independently cross-reviewed; they do not replace or extend the old detailed code-level audit findings beyond the evidence listed in those addenda.
+**Audit status:** The detailed audit body below is historical and assessed PR source commit `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966`. Current evidence addenda for runs `40356454371`, `40360707470`, `40362968827`, `40365071119`, and `40398283420` follow and were independently cross-reviewed for evidence/source accuracy; they do not replace or extend the old detailed code-level audit findings beyond the evidence listed in those addenda.
+
+## Current evidence addendum — run 40398283420
+
+Run [40398283420](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420) passed all four required checks on PR head `cec582fa73f3e57f92eca422cb9c2bb7ee6940b4`. The merge checkout was `e9e8864e6f7a289eae8224790e2390ded453cf70`, tree `faf5e5cdf2515dac44cd8b10bef0d685b32533e2`. The Stage 5 artifact [12689470944](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420/artifacts/12689470944) records 51 passed checks across 17 fresh-database migrations, including synthetic billing/payment/receipt PDF reconciliation. Agent UAT artifact [12687878698](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420/artifacts/12687878698) reports 90 passed, zero failed/skipped/flaky, including the rent-after-room-selection save/reload regression. These are isolated synthetic tests, not production recovery or Owner acceptance.
+
+The four-image Trivy scan is [artifact 12688330999](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420/artifacts/12688330999). It covers app, validator, operations, and the pinned PostgreSQL image on `linux/amd64`. App and validator each report 8 High unique IDs; operations reports one Critical and 16 High; PostgreSQL reports two Critical and 40 High. The database image's gosu Go-stdlib `CVE-2025-68121` is supported as a scanner false positive by upstream gosu evidence. Debian Trixie libxml2 `CVE-2026-6653` remains unresolved in operations and PostgreSQL; no risk acceptance is recorded. No image was published.
+
+This is an evidence freshness update, not a new full code-level audit. `release/phase4` requires these four strict checks and one approving review; PR #2 remains OPEN/Draft with no approval recorded. Target-specific recovery, migration/rollback, off-device key recovery, registry publication/pull, and production target identification remain open. **Verdict remains NO-GO for production.**
 
 ## Current evidence addendum — run 40356454371
 
@@ -10,9 +18,9 @@ The container-verification log records current-source pinned app/validator/opera
 
 **Current verdict: NO-GO for production cutover.** The audited run validates the candidate code and synthetic flows only. The audit reconfirmed unresolved production target/origin/access identity, target backup/clone/migration/rollback, off-device backup/key recovery, registry publication and deployment-host pullability, and security finding disposition. PR #2 is still OPEN/Draft. Follow-up run `40360707470` on documentation head `76860a474faf49fbcc5292284df4c274619ed4e7` passed all three checks; its Agent UAT artifact reports 90/90 on merge checkout `01fa4f15872f33293987c251bb4c5265297894a7`. This passed CI but does not satisfy the separate required PR approval; production remains NO-GO.
 
-### Branch-protection correction
+### Historical branch-protection correction
 
-After this review identified that `release/phase4` had no required PR approval and only one required status check, protection was updated on 2026-10-26. It now requires strict `required-quality`, `container-verification`, and `agent-uat` checks plus one approving review; stale approvals are dismissed. Admin enforcement, conversation resolution, and blocks on force-push/deletion remain enabled. This corrects the historical branch-protection finding above. PR #1 and PR #2 remain unmerged; the policy change itself does not establish that either PR is merge-ready.
+After this review identified that `release/phase4` had no required PR approval and only one required status check, protection was updated on 2026-10-26. At that point it required strict `required-quality`, `container-verification`, and `agent-uat` checks plus one approving review; stale approvals were dismissed. Stage 5 was subsequently added as a fourth required context. Admin enforcement, conversation resolution, and blocks on force-push/deletion remain enabled. This corrects the historical branch-protection finding above. PR #1 and PR #2 remain unmerged; the policy change itself does not establish that either PR is merge-ready.
 
 **Historical verdict: NO-GO for production cutover.** At the time of this audit, production target readiness, target-specific recovery and migration evidence, and publication of a source-matched release remained unverified. The current production readiness status remains NO-GO; see `STATUS.md` for current CI and open gates.
 

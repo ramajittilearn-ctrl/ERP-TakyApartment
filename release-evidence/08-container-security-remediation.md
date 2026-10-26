@@ -1,5 +1,20 @@
 # Container security remediation — 2026-10-26
 
+## Latest four-image hosted scan — run 40398283420
+
+The [scan artifact 12688330999](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420/artifacts/12688330999) was inspected from the current PR run. It scanned the local app, validator, and operations images plus the exact pinned PostgreSQL image declared by the checkout, on `linux/amd64`; no registry image was published. PR head: `cec582fa73f3e57f92eca422cb9c2bb7ee6940b4`. The scan source checkout is merge commit `e9e8864e6f7a289eae8224790e2390ded453cf70`, tree `faf5e5cdf2515dac44cd8b10bef0d685b32533e2`. Trivy version `0.76.1`; DB schema `2`, updated `2026-10-26T19:14:50.196574068Z`, downloaded `2026-10-26T20:50:00.833627481Z`, file-content SHA-256 `f6435dc19b17290dc50e74823f4da086ee99662076febdd134aede5779b0f6fe`. Each image sidecar records the corresponding local image ID and the same DB hash.
+
+| Image | Critical unique IDs | High unique IDs |
+| --- | ---: | ---: |
+| App | 0 | 8 |
+| Validator | 0 | 8 |
+| Operations | 1 | 16 |
+| PostgreSQL database | 2 | 40 |
+
+These are unique Trivy vulnerability/advisory IDs by reported severity, not package-occurrence counts. The operations and database images report Debian Trixie `libxml2` `CVE-2026-6653`; the Debian tracker still lists no fixed Trixie version, and no risk acceptance is recorded. The database image also reports `CVE-2025-68121` against gosu's bundled Go standard library. Upstream gosu's [issue #176](https://github.com/tianon/gosu/issues/176) explains that its binary does not link the affected `crypto/tls`, `crypto/x509`, or `net` packages; this is assessed as a scanner false positive, while the raw report remains preserved. See the [gosu security policy](https://github.com/tianon/gosu/blob/master/SECURITY.md). This assessment does not close the separate libxml2 finding.
+
+The scan is report-only and does not establish exploitability or risk acceptance. Production remains **NO-GO** until unresolved findings receive verified remediation or an explicit risk disposition. The exact production target, target-specific restore/migration/rollback rehearsal, off-device recovery, and registry publication/pull remain open.
+
 ## Scope
 
 This candidate refreshes the Node runtime and PostgreSQL bases to pinned Node 22.23.4 Trixie and PostgreSQL 17.11 Trixie OCI index digests. The operations image also pins rclone 1.75.2 by its OCI index digest. The app runtime invokes the bundled Prisma and tsx CLIs directly, allowing global npm/npx to be removed from app and validator images. The operations derivative removes its inherited `gosu`; it uses `ENTRYPOINT []` and runs Node/PostgreSQL client commands directly. The actual PostgreSQL service image retains `gosu` because the official entrypoint requires it.
@@ -107,7 +122,7 @@ All three sidecars again match vulnerability DB content SHA-256 `36cfc99204b7ee1
 
 PR #2 head `aa171b8e0273e86e77212bf56972d0a2bab89b6e` passed all three CI jobs in run `40362968827`; Agent UAT artifact [12668289110](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40362968827/artifacts/12668289110) reports 90/90. Scan artifact [12669796308](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40362968827/artifacts/12669796308) has GitHub digest `sha256:871dac2ebc5aefd38d93d22accf460e485b1ef19615e0d5867b371bf9bc69612`. Trivy 0.76.1 scanned isolated `linux/amd64` app, validator and operations images from merge checkout `08eaa89ed5258b1c1c22a80f649db882afe574aa`, tree `1beb81abad4ad5643f800451e6d72b5f7e2eb009`; counts match the prior scan: app 0C/8H/29M/33L/1U, validator 0C/8H/31M/40L/1U, operations 1C/16H/39M/61L/2U. All sidecars share DB content SHA-256 `36cfc99204b7ee124c2e47daf8a83cd0cf98bf4e6b6a67c30687da049d5828f6`, schema v2, UpdatedAt `2026-10-26T14:38:04.845305817Z`, DownloadedAt `2026-10-26T16:55:41.048078253Z`, and NextUpdate `2026-10-27T14:38:04.845305326Z`. Operations Critical `CVE-2026-6653` and shared util-linux High findings remain; `CVE-2026-111943` remains absent. Findings are report-only, and images remain unpublished.
 
-## Latest inspected hosted scan — run 40365071119
+## Prior inspected hosted scan — run 40365071119
 
 PR #2 head `54ecf19a89f03b403c46466e2f3247c14d2cf22c` passed all three checks in run `40365071119`; Agent UAT artifact [12671305690](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40365071119/artifacts/12671305690) reports 90/90. Scan artifact [12670017880](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40365071119/artifacts/12670017880) has GitHub digest `sha256:aa371b2ff98fc253ee94d288953b1be02c73ed2111876b19793be9b3180604a7`. Trivy 0.76.1 scanned isolated `linux/amd64` app, validator and operations images from merge checkout `b4a9edc18aac982bf5d01f800236dc90b9e1f871`, tree `ba053d47edfc175b7157c154b533267d4686aa9b`. Counts remain app 0C/8H/29M/33L/1U, validator 0C/8H/31M/40L/1U, operations 1C/16H/39M/61L/2U. All sidecars share DB content SHA-256 `36cfc99204b7ee124c2e47daf8a83cd0cf98bf4e6b6a67c30687da049d5828f6`, schema v2, UpdatedAt `2026-10-26T14:38:04.845305817Z`, DownloadedAt `2026-10-26T17:08:58.935849635Z`, and NextUpdate `2026-10-27T14:38:04.845305326Z`. Operations Critical `CVE-2026-6653` and shared util-linux High findings remain; `CVE-2026-111943` remains absent. Findings are report-only and images remain unpublished.
 

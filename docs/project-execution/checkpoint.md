@@ -2,7 +2,34 @@
 
 > **Current-state pointer:** authoritative current state is in the latest dated checkpoint immediately below. Older checkpoints are historical snapshots; their pending/complete statements are superseded by that checkpoint.
 
-## Latest continuation checkpoint — 2026-10-27 (Bangkok)
+
+# Current continuation checkpoint — 2026-10-27
+
+## Integration baseline and verified status
+
+- Candidate branch: `codex/phase4-current-source-20261026`, PR #2 to protected `release/phase4`; application/test source head `cec582fa73f3e57f92eca422cb9c2bb7ee6940b4`. PR remains OPEN/Draft. This checkpoint and linked status/evidence refresh are documentation-only follow-up changes. No merge, registry publication, deployment, Owner UAT acceptance, or production mutation occurred.
+- Run `40398283420` passed all four required GitHub checks: `required-quality`, `container-verification`, `stage5-runtime-verification`, and `agent-uat`. Exact artifacts: Stage 5 `12689470944`, Agent UAT `12687878698`, four-image Trivy `12688330999`.
+- Stage 5: 51 checks passed on fresh isolated PostgreSQL with all 17 migration checksums; synthetic billing, immutable invoice/receipt, exact payment allocation, access denial, TLS and Thai PDF checks passed. Invoice line display reconciles to the frozen `฿1,050.01` total through a visible `-฿0.01` row.
+- Agent UAT: 90 passed, zero failed/skipped/flaky. It includes `tenant rent entered after room selection survives immediate save and reload`. This is synthetic agent-run UAT, not Owner acceptance.
+- Container scan: app, validator, operations and pinned PostgreSQL images were scanned. It found report-only Critical/High items; the gosu Go-stdlib alert is supported as a scanner false positive by upstream evidence, while libxml2 `CVE-2026-6653` remains unresolved.
+- `release/phase4` requires those four strict status contexts and one approving review. No approval is recorded.
+
+## Open gates and next executable work
+
+1. Reconcile any existing GitHub review threads and obtain the required independent PR approval; keep the protected branch and PR unmerged until that gate is met.
+2. Establish the actual production host, origin, access and service ownership from an authoritative project source. Current inspected environment is not verified as the target.
+3. For the designated target, complete a safe clone/backup, restore, migration and rollback rehearsal; verify existing data/volume compatibility, certificate trust, and off-device backup/key recovery without modifying existing UAT or production.
+4. Resolve or explicitly disposition the remaining libxml2 security finding; publish and pull source-matched images only after the appropriate release decision.
+5. After any documentation commit, wait for all four required checks on the new exact PR head and update this checkpoint with the new SHA/run/artifacts.
+
+## Agents used in this continuation
+
+- Main orchestrator inspected the exact GitHub run and artifacts.
+- `release_docs_audit` performed an independent read-only audit of stale status, backlog, and evidence references, then verified the corrections.
+- Earlier code work in this release continuation used `invoice_pdf_rounding_display_fix`, `invoice_pdf_reconciliation_design_review`, and `database_image_scan_design`; independent cross-review used `stage5_arch_crossjudge`, `release_evidence_review_54ecf19`, `operations_cve_remediation_audit`, `postgres_security_finding_review`, and `production_target_readiness_audit`. The PDF change and CI assertion corrections were reviewed before publication.
+
+
+## Prior continuation checkpoint — 2026-10-27 (superseded by run 40398283420)
 
 PR #2 remains OPEN/Draft from `codex/phase4-current-source-20261026` into protected `release/phase4`. Pushed evidence commit `54ecf19a89f03b403c46466e2f3247c14d2cf22c` passed all three CI jobs in run `40365071119`: quality, hosted container verification, and Agent UAT. UAT artifact `12671305690` reports 90 passed, 0 failed/skipped/flaky on merge checkout `b4a9edc18aac982bf5d01f800236dc90b9e1f871`. No Owner UAT acceptance is claimed; the Owner requested agent-run UAT instead.
 
@@ -212,7 +239,7 @@ Current Git branch `codex/phase4-current-source-20261026` is clean at `d607b6cf7
 Current local/remote PR branch head is `9831c0783865008303f253a26b75f7866a2a96d3`; it contains documentation-only changes after code head `d607b6cf720931d684aed2c9ebabef4a19364b36`. Run `40335249346` completed Success for quality, container verification, and Agent UAT on `d607b6c`. The artifact reports are listed, but GitHub API rate limiting prevents download; exact UAT count and newest scan JSON are therefore not yet verified. The Agent UAT workflow itself only succeeds with at least 89 expected tests and zero failures/skips/flakes. Independent audit `current_release_audit` reconfirmed NO-GO and identified stale current-head wording; STATUS, UAT, and security report now distinguish current docs head, latest tested code head, historical 90/90 evidence, and uninspected newest scan artifact. Latest inspected Trivy findings remain one Operations Critical and 16 High IDs, 8 High IDs in each app/validator image; the rclone Go CVE remains absent. Next: retrieve and inspect artifacts when GitHub access recovers; refresh independent audit after the artifact evidence; pursue policy-independent security and recovery improvements without changing approved business rules. Production host/target, target backup+restore, migration/rollback, off-device recovery, registry publication/pull remain open. PR stays Draft/Open; do not merge or deploy.
 
 
-## Latest continuation addendum — F09 and current-head CI (2026-10-27)
+## Prior continuation addendum — F09 and run 40365071119 (2026-10-27)
 
 Independent audit found the F09 backlog evidence pointer was stale. The new `docs/project-execution/F09_SECURITY_REMEDIATION_REPORT.md` reconciles implemented identifier throttling, deposit-evidence upload bounds, and unresolved general login admission/production ingress. It keeps F09 open and introduces no new security policy. A separate evidence review accepted the technical boundaries and source references.
 
