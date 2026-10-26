@@ -3,7 +3,8 @@ export function parseCsv(csv: string) {
   const rows: string[][] = [];
   let row: string[] = [],
     cell = "",
-    quoted = false;
+    quoted = false,
+    fieldStarted = false;
   const input = csv.replace(/^\uFEFF/, "");
   for (let i = 0; i < input.length; i++) {
     const c = input[i];
@@ -12,16 +13,26 @@ export function parseCsv(csv: string) {
         cell += '"';
         i++;
       } else quoted = !quoted;
+      fieldStarted = true;
     } else if (c === "," && !quoted) {
       row.push(cell);
       cell = "";
+      fieldStarted = false;
     } else if (c === "\n" && !quoted) {
       row.push(cell.replace(/\r$/, ""));
       rows.push(row);
       row = [];
       cell = "";
-    } else cell += c;
+      fieldStarted = false;
+    } else {
+      cell += c;
+      fieldStarted = true;
+    }
   }
-  if (quoted || row.length || cell) throw new Error("Incomplete CSV record");
+  if (quoted) throw new Error("Incomplete CSV record");
+  if (row.length || fieldStarted) {
+    row.push(cell);
+    rows.push(row);
+  }
   return rows;
 }
