@@ -1,0 +1,66 @@
+{
+  "candidate": "5177ed182b9ae56cbd90a3526f03c3e8dd19ebc7",
+  "integrated": "4bd58c7ece965bc7200659cb208bfa1c470d50f2",
+  "objects": [
+    {
+      "path": "src",
+      "candidateObject": "d44ce9c75c145159b1015a188df745d330ecc609",
+      "integratedObject": "d44ce9c75c145159b1015a188df745d330ecc609",
+      "identical": true
+    },
+    {
+      "path": "prisma",
+      "candidateObject": "22e347d8a8bc0ce74b99f8c2ba21453bca3f1aed",
+      "integratedObject": "22e347d8a8bc0ce74b99f8c2ba21453bca3f1aed",
+      "identical": true
+    },
+    {
+      "path": "operations",
+      "candidateObject": "453235eae4ea39799532a9ae71084f0bd0436dc0",
+      "integratedObject": "453235eae4ea39799532a9ae71084f0bd0436dc0",
+      "identical": true
+    },
+    {
+      "path": "scripts",
+      "candidateObject": "9a7cc79b37d2e37d04c83f5860cdc70de49edaee",
+      "integratedObject": "9a7cc79b37d2e37d04c83f5860cdc70de49edaee",
+      "identical": true
+    },
+    {
+      "path": "tests",
+      "candidateObject": "d02be9b5d5e03138c27a8fb53dfba4c7c936c3af",
+      "integratedObject": "d02be9b5d5e03138c27a8fb53dfba4c7c936c3af",
+      "identical": true
+    },
+    {
+      "path": "package.json",
+      "candidateObject": "d9c4f50dc11557139dd6cf70a9c08ff40f4f6f44",
+      "integratedObject": "d9c4f50dc11557139dd6cf70a9c08ff40f4f6f44",
+      "identical": true
+    },
+    {
+      "path": "package-lock.json",
+      "candidateObject": "1411540a714a2593cc1654ccf6950e4fa7ebfb79",
+      "integratedObject": "1411540a714a2593cc1654ccf6950e4fa7ebfb79",
+      "identical": true
+    },
+    {
+      "path": "next.config.ts",
+      "candidateObject": "590e2df17600259a0028c76eb276cafbe2a574cc",
+      "integratedObject": "590e2df17600259a0028c76eb276cafbe2a574cc",
+      "identical": true
+    },
+    {
+      "path": "Dockerfile",
+      "candidateObject": "46561e37a5b8c0f42e8a934d1f828b0c5a9c6367",
+      "integratedObject": "46561e37a5b8c0f42e8a934d1f828b0c5a9c6367",
+      "identical": true
+    },
+    {
+      "path": "docker-compose.evidence-validator.yml",
+      "candidateObject": "3953adabeb32aadd517dafcb92036771127cd68a",
+      "integratedObject": "3953adabeb32aadd517dafcb92036771127cd68a",
+      "identical": true
+    }
+  ]
+}

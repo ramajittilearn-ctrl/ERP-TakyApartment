@@ -1,0 +1,13 @@
+
+> taky-apartment-erp@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.12 /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/development-recovered-20261025
+
+
+ Test Files  32 passed (32)
+      Tests  409 passed (409)
+   Start at  07:39:15
+   Duration  12.11s (transform 4.47s, setup 0ms, import 23.39s, tests 16.44s, environment 4ms)
+
