@@ -97,7 +97,6 @@ jobs:
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      STAGE5_ARTIFACT_ROOT: ${{ runner.temp }}/stage5-runtime
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -119,6 +118,8 @@ jobs:
           sudo apt-get install --yes --no-install-recommends libnss3-tools qpdf poppler-utils tesseract-ocr tesseract-ocr-tha
 
       - name: Run exact-source billing, payment, receipt, and Thai PDF verification
+        env:
+          STAGE5_ARTIFACT_ROOT: ${{ runner.temp }}/stage5-runtime
         run: node scripts/verify-stage5-runtime.mjs
 
       - name: Upload source-bound Stage 5 runtime evidence
