@@ -111,6 +111,8 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install locked dependencies and Chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/stage5-playwright-browsers
         run: |
           npm ci
           npx playwright install --with-deps chromium
@@ -120,6 +122,7 @@ jobs:
       - name: Run exact-source billing, payment, receipt, and Thai PDF verification
         env:
           STAGE5_ARTIFACT_ROOT: ${{ runner.temp }}/stage5-runtime
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/stage5-playwright-browsers
         run: node scripts/verify-stage5-runtime.mjs
 
       - name: Upload source-bound Stage 5 runtime evidence
