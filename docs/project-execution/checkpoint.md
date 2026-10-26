@@ -1,12 +1,30 @@
-# Phase 4 closed at the requested stop boundary
+# Production Go-Live continuation checkpoint — 2026-10-26
 
-Stage 3E and Phase 4 Expense Management are complete in the reviewed local development integration. Source and test evidence were published to private GitHub branch `codex/project-integration-snapshot` at `ffc1e7030b692dffeff063c536bf135de52e7d1f`. The connected GitHub API independently verified that exact ref. Later closeout-only commits may advance the branch.
+The Owner resumed the project and explicitly directed autonomous continuation through production Go-Live, with agent-run UAT and a report. This supersedes the earlier stop-after-Phase-4 instruction below. Preserve completed modules; only make minimal release-blocking fixes or approved missing modules. Production cutover still requires the exact target and the safety gates in the release runbook.
+
+Current integration snapshot: `.local/development-recovered-20261025`, branch `codex/browser-request-guard`, based on accepted baseline `32355958081088e1c849aff39177c86e718139d6`. Primary checkout and existing UAT ports/databases remain untouched. Current local branch has uncommitted, isolated changes; do not reset, overwrite, or publish until review and quality gates pass.
+
+Pstack `0.15.32+codex.1` is installed. Actual agents in this continuation: Main/root orchestrator; `dashboard_backend`; `dashboard_frontend`; `deposit_e2e_failure_triage`; and finance/report review agent `reports_finance_review` in the prior report milestone. Dashboard backend and frontend exchanged DTO decisions; frontend independently reviewed backend and found/followed a frozen invoice-room identity correction. The deposit agent independently reproduced the harness failure and is implementing a scoped runner fix. Agent work is integrated in the shared isolated snapshot, not in production or the protected release branch.
+
+Release source/tag identity and published asset checksums passed; see `release-evidence/01-release-integrity.md`. A synthetic Stage 3 restore passed, and Stage 6 agent UAT passed 89/89 on fresh synthetic data; see `release-evidence/03-backup-restore.md` and `release-evidence/06-final-uat.md`. Dashboard/report endpoints and UI passed independent finance/backend review and full browser verification. AppShell labels now distinguish read-only, persisted, and demo pages; independent review and a focused browser run passed. The RC1 image runtime also passed, but an independent audit found that RC1 does not contain the current dashboard/report and AppShell changes. A source-matched image runtime check is pending. The validator bridge test-network limitation remains documented.
+
+The current Mac is not established as the production target; see `release-evidence/02-environment-readiness.md`. Production target backup, restore, migration rehearsal, and rollback are unverified. The release remains NO-GO for cutover. No production mutation, deployment, merge to `release/phase4`, or Owner UAT acceptance is claimed.
+
+Actual agents used in this continuation include `dashboard_backend`, `dashboard_frontend`, `deposit_e2e_failure_triage`, `reports_finance_review`, `dashboard_independent_review`, `release_readiness_audit`, `ui_persistence_audit`, `app_shell_cross_review`, `backup_restore_audit`, `uat_scope_audit`, `release_runtime_verification`, and `independent_release_audit`, plus the Main orchestrator. Dashboard frontend and backend exchanged contract decisions. Reviewers sent findings to implementers, who corrected and reran focused checks. The independent release audit is now reviewing the evidence.
+
+Next: build and verify the source-matched image candidate; ask the independent auditor to recheck that candidate; then publish reviewed changes on a dedicated GitHub branch/PR. Continue safe preparation. Production cutover still requires the exact Owner-designated target and its target-specific gates.
+
+## Prior Phase 4 closeout checkpoint (historical)
+
+The following closeout and older checkpoints record verified history. Their stop boundary and “deferred until resume” statements are superseded by this production continuation; their evidence of completed work remains valid.
+
+Stage 3E and Phase 4 Expense Management were complete in the reviewed local development integration. Source and test evidence were published to private GitHub branch `codex/project-integration-snapshot` at `ffc1e7030b692dffeff063c536bf135de52e7d1f`. The connected GitHub API independently verified that exact ref. Later closeout-only commits may advance the branch.
 
 Read `phase4-closeout.md` for executed checks, reviewers, limits and artifact paths. Main merge `4bd58c7` preserves the accepted candidate source exactly. Main's own 44-model Prisma client generation, 409 unit tests, typecheck, lint, Webpack build and copied PDF-asset checks passed. The final 35 browser cases passed without retries, skips or flaky results.
 
-The Owner requested work through Phase 4 and then a stop, and prohibited changing completed work. No new feature task is executable until a further Owner resume. Dashboard and Reporting, maintenance-demo replacement, remaining security and commissioning, and Go-Live remain later scope. No human Owner UAT, protected-branch merge or production deployment is claimed.
+The prior Owner stop boundary was honored at the time. Dashboard and Reporting, maintenance-demo replacement, remaining security and commissioning, and Go-Live were later scope then. No human Owner UAT, protected-branch merge or production deployment was claimed at that checkpoint.
 
-Pstack `0.15.32+codex.1` is installed. Updated shipping guidance was applied only to source identity, integration, publication and handoff. Accepted modules were not rewritten. Private QA plans, local traces and synthetic volumes remain retained. Run-specific servers and proxies stopped.
+Pstack `0.15.32+codex.1` was installed. Accepted modules were not rewritten. Private QA plans, local traces and synthetic volumes remained retained. Run-specific servers and proxies stopped.
 
 ## Historical checkpoints below
 
@@ -107,7 +125,6 @@ Recoveredfinitebranchcodex/recovered-payment-finite atfacb581: sourcee423b33+che
 
 Currentagents recover_deposit_core, recover_evidence and evidence_validator implement/recoverStage3E; sourcepersistentunderproject.local/worktrees. ValidatorprivateboundedLinuxqpdf/sharpservice approveddesign, no productiondeployment. OwnerstopALLthroughStage3EandPhase4thenSTOP; noDashboard/GoLive.
 
-
 ## Authoritative continuation at 2026-10-25 19:22 Bangkok
 
 Stop boundary remains completion through Stage3E and Phase4, then stop. Main integration remains45bc4b6; no failing deposit candidate merged. Actual source worktrees now persist inside project.local. Main resumed all three available specialists after old usage errors; fresh usage permitted execution. Core owner recover_deposit_core, ops/validator owner recover_finite, UI/API owner evidence_review. The latter completed independent evidence source review before taking disjoint UI responsibility; final UI still requires another reviewer.
@@ -123,7 +140,6 @@ Ops candidate frozenfa7f068 oncodex/deposit-operations: publication sessionlock7
 UIcandidate branchcodex/deposit-ui-candidate througha396d76 prerequisites, own467lockeddeps and44Prismaclient generated. evidence_review implementing approved SSRlease list/detail, strictcurrentrole/Origin/pathownedfinancialroutes, explicitactorheader and currentidentityreplay, evidenceupload, fullauthoritativetotals/pagination, immutable document views. No UI/browser acceptance yet.
 
 Next: resolve bankidentityrace without weakeningassertions, independentlyreviewfix, newtargetif003changes; finishopsactualharness+crossreview; settlevalidatortransporttest; independentUIreview plus realbrowseragentUAT; finalintegratedregressions, reviewedlocalcommits+GitHubpublication; closePhase4thenstop. No Dashboard or GoLive work authorized beyond this stop boundary.
-
 
 ## Verified correction after the previous frontier
 

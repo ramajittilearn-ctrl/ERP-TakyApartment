@@ -12,7 +12,9 @@ if (!label || !/^[a-z0-9-]+$/.test(label) || !command)
 const directory = resolve("evidence/remediation");
 await mkdir(directory, { recursive: true });
 const secrets = Object.entries(process.env)
-  .filter(([key, value]) => /PASSWORD|SECRET|DATABASE_URL/.test(key) && value)
+  .filter(
+    ([key, value]) => /PASSWORD|SECRET|TOKEN|DATABASE_URL/.test(key) && value,
+  )
   .map(([, value]) => value);
 const redact = (value) => {
   let result = value;
