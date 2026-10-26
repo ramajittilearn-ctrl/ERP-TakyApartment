@@ -152,7 +152,7 @@ docker run --detach --platform linux/amd64 \
   "$validator_image" >/dev/null
 
 docker run --detach --platform linux/amd64 \
-  --name "$app" --label "$ownership_label=$project" --network "$network" \
+  --name "$app" --label "$ownership_label=$project" --network "$network" --network-alias app \
   --mount "type=volume,source=$attachments_volume,target=/app/storage/attachments" \
   --env DATABASE_URL="postgresql://taky_ci:${database_password}@db:5432/taky_ci?schema=public" \
   --env SESSION_SECRET=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
