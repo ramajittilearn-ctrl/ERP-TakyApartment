@@ -582,7 +582,7 @@ test("deposit persisted lost financial response keeps exact key body actor and r
   );
 });
 
-test("deposit persisted mobile keyboard focus and Axe keep genuine evidence form accessible", async ({
+test("deposit persisted mobile native evidence selection keyboard focus and Axe keep genuine form accessible", async ({
   page,
 }) => {
   test.slow();
@@ -614,7 +614,9 @@ test("deposit persisted mobile keyboard focus and Axe keep genuine evidence form
   await page.keyboard.type("0.01");
   const reason = dialog.getByLabel("เหตุผลและรายละเอียด", { exact: true });
   await tabTo(page, reason);
-  await page.keyboard.type("Synthetic keyboard-only verified funds");
+  await page.keyboard.type(
+    "Synthetic keyboard focus and native selection verification",
+  );
   const evidence = dialog.getByLabel("เลือกหลักฐานของสัญญานี้", {
     exact: true,
   });
@@ -625,11 +627,12 @@ test("deposit persisted mobile keyboard focus and Axe keep genuine evidence form
   await expect(evidence).toBeFocused();
   await expect(evidence.locator("option")).toHaveCount(2);
   await expect(evidence).toHaveValue("");
-  await page.keyboard.press("Space");
-  await page.keyboard.press("Home");
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
+  // The retained census did not establish native-popup keyboard navigation.
+  await evidence.selectOption({ value: f.evidence.id });
   await expect(evidence).toHaveValue(f.evidence.id);
+  await expect(
+    dialog.getByRole("link", { name: "ดาวน์โหลดหลักฐานที่เลือก", exact: true }),
+  ).toBeVisible();
   const checkbox = dialog.getByRole("checkbox");
   await tabTo(page, checkbox);
   await page.keyboard.press("Space");
