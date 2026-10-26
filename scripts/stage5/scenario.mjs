@@ -35,6 +35,12 @@ function check(name, predicate, evidence) {
   assert.ok(predicate, name);
   checks.push({ name, evidence: String(evidence) });
 }
+function moneyCents(value) {
+  assert.equal(typeof value, "string");
+  assert.match(value, /^(0|[1-9]\d{0,11})(?:\.\d{1,2})?$/);
+  const [whole, fraction = ""] = value.split(".");
+  return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
+}
 function key(prefix) {
   return `stage5:${runId}:${prefix}:${randomUUID()}`;
 }
@@ -261,10 +267,15 @@ const leases = leasesResponse.payload?.data;
 assert.ok(Array.isArray(leases));
 const lease = leases.find((entry) => entry.roomId === room.id);
 assert.ok(lease, "synthetic active lease was not returned by API");
+const rentMatches = moneyCents(lease.rent) === moneyCents("1000.00");
+if (!rentMatches)
+  throw new Error(
+    `tenant assignment rent mismatch (expected 1000.00; observed lease.rent=${lease.rent})`,
+  );
 check(
   "tenant assignment retains the entered 1000.00 rent",
-  lease.rent === "1000.00",
-  lease.rent,
+  rentMatches,
+  `observed API rent ${lease.rent}`,
 );
 
 const now = new Date();
