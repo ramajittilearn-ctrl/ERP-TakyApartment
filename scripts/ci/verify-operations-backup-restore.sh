@@ -279,7 +279,7 @@ docker run --rm --platform linux/amd64 --label "$ownership_label=$project" \
   --entrypoint node "$app_image" -e \
   'const fs=require("node:fs");const path=require("node:path");const file=path.join("/app/storage/attachments","ci-fixtures","retained.txt");fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});fs.writeFileSync(file,process.argv[1],{flag:"wx",mode:0o600});' \
   "$fixture_content"
-docker exec "$source_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_ci \
+docker exec -i "$source_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_ci \
   -v "user_id=$fixture_uploaded_by_id" \
   -v "tenant_id=$fixture_tenant_id" \
   -v "attachment_id=$fixture_attachment_id" \
@@ -376,7 +376,7 @@ if [[ "$restored_rooms" != 15 ]]; then
   docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -c '\dt' >&2 || true
   exit 1
 fi
-restored_attachment="$(docker exec "$restore_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_restore_test \
+restored_attachment="$(docker exec -i "$restore_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_restore_test \
   -v "storage_key=$fixture_storage_key" -At <<'SQL'
 SELECT json_build_object(
   'rowCount', count(*),
