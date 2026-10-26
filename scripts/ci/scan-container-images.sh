@@ -88,6 +88,7 @@ scan_image() {
     --image-src docker \
     --platform "$platform" \
     --scanners vuln \
+    --list-all-pkgs \
     --format json \
     --output "$report" \
     --exit-code 0 \
@@ -147,9 +148,14 @@ done
 {
   for image_name in operations database; do
     if [[ "$image_name" == operations ]]; then image="$operations_image"; else image="$database_image"; fi
-    image_id="$(docker image inspect --format '{{.Id}}' "$image")"
-    printf '%s image=%s image_id=%s package=' "$image_name" "$image" "$image_id"
-    docker run --rm --platform "$platform" --entrypoint sh "$image" -ec 'apk info -v libxml2'
+    image_id="$(jq -r '.imageId' "${output_dir}/${image_name}.metadata.json")"
+    libxml2_version="$(jq -er '
+      [ .Results[]? | select(.Class == "os-pkgs" and .Type == "alpine")
+        | .Packages[]? | select(.Name == "libxml2") | .Version ]
+      | unique | if length == 1 then .[0] else error("expected one scanned libxml2 version") end
+    ' "${output_dir}/${image_name}.trivy.json")"
+    printf '%s image=%s image_id=%s package=libxml2 version=%s\n' \
+      "$image_name" "$image" "$image_id" "$libxml2_version"
   done
 } > "${output_dir}/alpine-libxml2-versions.txt"
 database_sha256_after="$(sha256sum "$database_file" | awk '{print $1}')"
@@ -173,7 +179,7 @@ cat > "${output_dir}/README.md" <<EOF
 - Scope: local app, validator, and operations images built from the source checkout plus the exact pinned PostgreSQL image declared by the checkout's \`docker-compose.yml\`; vulnerability scanner only
 - Policy: findings are reported without a general severity threshold; CVE-2026-6653 is a targeted release gate for the Alpine operations/database images
 - Image metadata sidecars record local image IDs (config digests), tags, source identity, and scan time
-- The CI scan fails if CVE-2026-6653 appears in either Alpine image; exact installed libxml2 package versions are in `alpine-libxml2-versions.txt`
+- The CI scan fails if CVE-2026-6653 appears in either Alpine image; installed libxml2 versions come from each image-ID-bound Trivy package inventory in `alpine-libxml2-versions.txt`
 
 These reports do not represent a production deployment or a published registry image.
 EOF
