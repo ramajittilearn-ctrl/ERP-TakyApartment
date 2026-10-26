@@ -1,10 +1,10 @@
 # Phase 4 GitHub CI
 
-The workflow in `.github/workflows/phase4-ci.yml` runs on pull requests targeting `release/phase4` and pushes to `release/phase4` or `codex/phase4-production-prep`. Its current branch-protection status-check contexts are **`required-quality`**, **`container-verification`**, and **`agent-uat`** (workflow title `Phase 4 CI`).
+The workflow in `.github/workflows/phase4-ci.yml` runs on pull requests targeting `release/phase4` and pushes to `release/phase4` or `codex/phase4-production-prep`. Its configured branch-protection contexts are **`required-quality`**, **`container-verification`**, and **`agent-uat`** (workflow title `Phase 4 CI`). Stage 5 adds the job context **`stage5-runtime-verification`**. Once its first run succeeds on the candidate PR, add that exact context as a required status check in live `release/phase4` branch protection. It is pending successful CI evidence and external branch-protection configuration; do not report it as already required.
 
 It checks out the source without persisting Git credentials, installs the lockfile with `npm ci`, generates Prisma, then runs typecheck, unit tests, operations tests, lint, and the production build. It uses the Node 22 line required by the project and its release image. GitHub token access is limited to `contents: read`; the workflow has no production secrets, database service, seed, image publication, or deployment step.
 
-Database integration and browser E2E tests are not part of this check. They require separate synthetic database and browser-service jobs. The workflow is not a substitute for the Agent UAT report or target-specific production checks.
+The Stage 5 runtime job uses a fresh synthetic database and a separate browser/TLS/PDF toolchain on an isolated GitHub runner. The workflow is not a substitute for the Agent UAT report or target-specific production checks.
 
 Pstack design review compared two single-job candidates. The independent cross-judge selected Candidate A for its fixed runner, full-SHA action pins, and disabled checkout credential persistence. The final workflow updates setup-node to the current verified v7.1.0 SHA, uses the supported Node 22 line, and includes explicit CI and telemetry environment settings. `prettier --check` passed locally; `actionlint` was not installed in the local environment.
 

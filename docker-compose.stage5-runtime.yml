@@ -1,0 +1,70 @@
+name: ${STAGE5_PROJECT:?A unique Stage 5 project is required}
+services:
+  db:
+    labels:
+      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+  app:
+    command: ["node", "server.js"]
+    ports: !reset []
+    environment:
+      APP_ORIGIN: ${APP_ORIGIN:?The Stage 5 HTTPS origin is required}
+      COOKIE_SECURE: "true"
+      STAGE5_RUN_ID: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+      STAGE5_DATABASE_NAME: ${POSTGRES_DB:?Database name required}
+      STAGE5_DATABASE_USER: ${POSTGRES_USER:?Database user required}
+    build:
+      labels:
+        org.opencontainers.image.revision: ${STAGE5_SOURCE_REVISION:?Source revision is required}
+        org.opencontainers.image.tree: ${STAGE5_SOURCE_TREE:?Source tree is required}
+        com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+    labels:
+      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+  caddy:
+    image: caddy@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    environment:
+      LAN_HOST: ${STAGE5_HOST:?The Stage 5 TLS hostname is required}
+    ports:
+      - "127.0.0.1:${STAGE5_HTTPS_PORT:?A Stage 5 loopback port is required}:443"
+    volumes:
+      - ./operations/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1:2019/config/",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: "no"
+    security_opt: ["no-new-privileges:true"]
+    networks: [private]
+    labels:
+      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+volumes:
+  database:
+    labels:
+      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+  attachments:
+    labels:
+      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+  caddy_data:
+    labels:
+      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+  caddy_config:
+    labels:
+      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+networks:
+  private:
+    internal: true
+    labels:
+      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
