@@ -126,12 +126,21 @@ function runChecked(label, command, args, env = childEnv) {
   };
   if (result.status !== 0) {
     const childOutput = [
+      result.error
+        ? `spawnError: ${result.error.code ?? "unknown"}: ${result.error.message}`
+        : "",
       result.stdout ? `stdout:\n${result.stdout}` : "",
       result.stderr ? `stderr:\n${result.stderr}` : "",
     ]
       .filter(Boolean)
       .join("\n");
-    row.failureDiagnostic = sanitizeDiagnostic(childOutput);
+    const diagnostic = sanitizeDiagnostic(
+      childOutput,
+      result.error?.code === "ENOBUFS" ||
+        /maxbuffer|enobufs/i.test(result.error?.message ?? ""),
+    );
+    row.failureDiagnostic = diagnostic.text;
+    row.diagnosticTruncated = diagnostic.truncated;
     state.checks.push(row);
     throw new Error(
       `${label} failed with exit ${result.status ?? result.signal}`,
@@ -140,7 +149,10 @@ function runChecked(label, command, args, env = childEnv) {
   state.checks.push(row);
   return result.stdout;
 }
-function sanitizeDiagnostic(input) {
+function sanitizeDiagnostic(input, processOutputTruncated = false) {
+  const maxLines = 120;
+  const maxBytes = 16 * 1024;
+  let truncated = processOutputTruncated;
   let output = String(input);
   for (const secret of generatedSecrets)
     if (secret) output = output.replaceAll(secret, "[REDACTED]");
@@ -163,9 +175,32 @@ function sanitizeDiagnostic(input) {
       /\b(password|passwd|secret|client_secret|token|tokenhash|access_token|refresh_token|cookie|session|sessionid|sessiontoken|authorization|api_key|apikey)\s*[=:]\s*(?:"[^"]*"|'[^']*'|[^&\s,;}]+)/gi,
       "$1=[REDACTED]",
     );
-  return Buffer.from(output.split(/\r?\n/).slice(0, 120).join("\n"), "utf8")
-    .subarray(0, 16 * 1024)
-    .toString("utf8");
+  let lines = output.split(/\r?\n/);
+  if (lines.length > maxLines) {
+    const firstCount = Math.floor((maxLines - 1) / 2);
+    const lastCount = maxLines - firstCount - 1;
+    const omitted = lines.length - firstCount - lastCount;
+    lines = [
+      ...lines.slice(0, firstCount),
+      `[${omitted} diagnostic lines omitted]`,
+      ...lines.slice(-lastCount),
+    ];
+    truncated = true;
+  }
+  let bytes = Buffer.from(lines.join("\n"), "utf8");
+  if (bytes.length > maxBytes) {
+    const marker = Buffer.from("\n[diagnostic bytes omitted]\n", "utf8");
+    const payloadBytes = maxBytes - marker.length;
+    const firstBytes = Math.floor(payloadBytes / 2);
+    const lastBytes = payloadBytes - firstBytes;
+    bytes = Buffer.concat([
+      bytes.subarray(0, firstBytes),
+      marker,
+      bytes.subarray(bytes.length - lastBytes),
+    ]);
+    truncated = true;
+  }
+  return { text: bytes.toString("utf8"), truncated };
 }
 function assertRenderedEqual(actual, expected, label) {
   assert.ok(actual === expected, `Compose rendered unexpected ${label}`);
