@@ -107,6 +107,22 @@ function compose(args, options = {}) {
     options,
   );
 }
+function parseComposeVersion(rawVersion) {
+  const version = rawVersion.trim();
+  const match =
+    /^(?:Docker Compose version\s+)?v?(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.-]+)?$/i.exec(
+      version,
+    );
+  assert.ok(match, `unable to parse Docker Compose version: ${version}`);
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  const patch = Number(match[3]);
+  assert.ok(
+    major > 2 || (major === 2 && (minor > 24 || (minor === 24 && patch >= 4))),
+    `Stage 5 requires Docker Compose >=2.24.4 for !override support (found ${version})`,
+  );
+  return version;
+}
 function runChecked(label, command, args, env = childEnv) {
   const result = spawnSync(command, args, {
     cwd: root,
@@ -699,6 +715,9 @@ try {
     checkoutCommit: revision,
     checkoutTree: tree,
   };
+  const composeVersion = parseComposeVersion(
+    docker(["compose", "version", "--short"]),
+  );
   port = await selectPort();
   await assertPortFree(port);
   const context = JSON.parse(docker(["context", "inspect", "default"]))[0];
@@ -718,6 +737,7 @@ try {
   assert.ok(daemonIdentity[0] && daemonIdentity[1] && daemonIdentity[2]);
   state.docker = {
     context: "default",
+    composeVersion,
     endpoint: daemonEndpoint,
     engineId: daemonIdentity[0],
     serverVersion: daemonIdentity[1],
