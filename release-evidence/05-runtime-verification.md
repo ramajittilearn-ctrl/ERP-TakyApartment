@@ -8,9 +8,13 @@ Run [40356454371](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actio
 
 This hosted harness is narrower than the full Stage 5 application runtime flow below. It does not verify billing/PDF behavior, production data, off-device storage or key recovery, published image pullability, or an application-level attachment download-authorization endpoint. CI-local image IDs and vulnerability findings are recorded in `08-container-security-remediation.md`.
 
-## Latest hosted current-source image check — run 40360707470
+## Prior hosted current-source image check — run 40360707470
 
 Run [40360707470](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40360707470) passed `container-verification` on PR head `76860a474faf49fbcc5292284df4c274619ed4e7`, merge checkout `01fa4f15872f33293987c251bb4c5265297894a7`, tree `12e0273957b19e08c11e2e534cd0b739b8ab451c`. The CI report confirms pinned app/validator/operations images built on isolated `linux/amd64`, fresh database/app health with 15 seeded rooms, and invalid validator token rejection with HTTP 401. Synthetic encrypted remote upload, read-back, and isolated restore passed; restored Attachment owner links were present and file SHA-256 matched `68e533fab04c85212338f91bd9dc0acf508f772764fea84333f966cd7275ffd4`. Agent UAT also passed 90/90 in this run (artifact `12667957853`). The limitations above continue to apply: no full billing/PDF flow on this source, production recovery, off-device key recovery, published image pull, or application download-authorization test.
+
+## Latest hosted current-source image check — run 40362968827
+
+Run [40362968827](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40362968827) passed `container-verification` on PR head `aa171b8e0273e86e77212bf56972d0a2bab89b6e`, merge checkout `08eaa89ed5258b1c1c22a80f649db882afe574aa`, tree `1beb81abad4ad5643f800451e6d72b5f7e2eb009`. The CI report confirms pinned app/validator/operations images built on isolated `linux/amd64`, fresh database/app health with 15 seeded rooms, invalid validator token rejection with HTTP 401, and synthetic encrypted remote upload, read-back, and isolated restore. Restored Attachment owner links were present and file SHA-256 matched `68e533fab04c85212338f91bd9dc0acf508f772764fea84333f966cd7275ffd4`. Agent UAT passed 90/90 in this run (artifact `12668289110`). The full Stage 5 billing/PDF flow, production recovery, off-device key recovery, published image pull, and application download-authorization test remain unverified on production.
 
 ## Runtime and image evidence
 

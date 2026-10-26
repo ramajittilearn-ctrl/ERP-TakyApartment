@@ -1,9 +1,13 @@
 # Agent-run Phase 4 UAT
 
-**Latest code validation:** PASS on PR head `76860a474faf49fbcc5292284df4c274619ed4e7` in [run 40360707470](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40360707470). All three jobs passed. Agent UAT artifact [12667957853](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40360707470/artifacts/12667957853) reports 90 passed, zero failed, skipped, or flaky on merge checkout `01fa4f15872f33293987c251bb4c5265297894a7` (browser run `1e13119ee38f5ff9d81ff29e`). This synthetic run is not Owner acceptance or production verification; the previous source-head run and the test coverage/limits follow.
+**Latest code validation:** PASS on PR head `aa171b8e0273e86e77212bf56972d0a2bab89b6e` in [run 40362968827](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40362968827). All three jobs passed. Agent UAT artifact [12668289110](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40362968827/artifacts/12668289110) reports 90 passed, zero failed, skipped, or flaky on merge checkout `08eaa89ed5258b1c1c22a80f649db882afe574aa` (browser run `e920b7f851c3a91537d216b5`). This synthetic run is not Owner acceptance or production verification; the previous source-head run and the test coverage/limits follow.
 **Owner UAT:** Not performed. The Owner delegated UAT execution and requested a report.
 
 ## Latest PR CI run
+
+- Workflow: [Phase 4 CI run 40362968827](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40362968827); PR head `aa171b8e0273e86e77212bf56972d0a2bab89b6e`; merge checkout `08eaa89ed5258b1c1c22a80f649db882afe574aa`.
+- Result: `required-quality`, `container-verification`, and `agent-uat` all passed. Agent UAT artifact [12668289110](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40362968827/artifacts/12668289110) records 90 passed, 0 failed, 0 skipped, 0 flaky.
+- This is synthetic agent-run UAT, not Owner acceptance or production verification.
 
 - Workflow: [Phase 4 CI run 40360707470](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40360707470); PR head `76860a474faf49fbcc5292284df4c274619ed4e7`; merge checkout `01fa4f15872f33293987c251bb4c5265297894a7`.
 - Result: all three required branch-protection checks passed: `required-quality`, `container-verification`, and `agent-uat`. Agent UAT artifact [12667957853](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40360707470/artifacts/12667957853) records 90 passed, 0 failed, 0 skipped, 0 flaky.

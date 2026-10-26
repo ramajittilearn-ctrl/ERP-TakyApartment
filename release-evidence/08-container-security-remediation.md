@@ -91,7 +91,7 @@ Counts are unique Trivy vulnerability/advisory IDs; package occurrences can repe
 
 The same run's container verification log confirms synthetic encrypted backup and isolated restore with 15 rooms, Attachment metadata owner links, uploader and Tenant links, and matching attachment SHA-256 `68e533fab04c85212338f91bd9dc0acf508f772764fea84333f966cd7275ffd4`. This validates database ownership metadata and file-byte recovery for its fixture; it does not test an application download-authorization endpoint, production target recovery, or off-device recovery.
 
-## Latest inspected hosted scan — run 40360707470
+## Prior inspected hosted scan — run 40360707470
 
 PR #2 documentation head `76860a474faf49fbcc5292284df4c274619ed4e7` passed all three jobs in run `40360707470`; Agent UAT artifact [12667957853](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40360707470/artifacts/12667957853) reports 90/90. Its scan report is artifact [12668551696](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40360707470/artifacts/12668551696), archive SHA-256 `d093de2e277f68ff0de627258a8fdc1f9597f0d714f3da81eafb32428f3eba47`. Trivy 0.76.1 scanned the isolated `linux/amd64` app, validator and operations images from merge checkout `01fa4f15872f33293987c251bb4c5265297894a7`, tree `12e0273957b19e08c11e2e534cd0b739b8ab451c`. Image scan counts are unchanged from run `40356454371`:
 
@@ -102,6 +102,10 @@ PR #2 documentation head `76860a474faf49fbcc5292284df4c274619ed4e7` passed all t
 | Operations | 1 ID (1) | 16 (61) | 39 (110) | 61 (138) | 2 (5) |
 
 All three sidecars again match vulnerability DB content SHA-256 `36cfc99204b7ee124c2e47daf8a83cd0cf98bf4e6b6a67c30687da049d5828f6` and report the same schema version 2 and update/next-update times recorded above; only the download timestamp advanced to `2026-10-26T16:40:45.489592488Z`. Operations Critical `CVE-2026-6653` and shared util-linux High findings remain. `CVE-2026-111943` remains absent. Findings are report-only; no image was published.
+
+## Latest inspected hosted scan — run 40362968827
+
+PR #2 head `aa171b8e0273e86e77212bf56972d0a2bab89b6e` passed all three CI jobs in run `40362968827`; Agent UAT artifact [12668289110](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40362968827/artifacts/12668289110) reports 90/90. Scan artifact [12669796308](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40362968827/artifacts/12669796308) has GitHub digest `sha256:871dac2ebc5aefd38d93d22accf460e485b1ef19615e0d5867b371bf9bc69612`. Trivy 0.76.1 scanned isolated `linux/amd64` app, validator and operations images from merge checkout `08eaa89ed5258b1c1c22a80f649db882afe574aa`, tree `1beb81abad4ad5643f800451e6d72b5f7e2eb009`; counts match the prior scan: app 0C/8H/29M/33L/1U, validator 0C/8H/31M/40L/1U, operations 1C/16H/39M/61L/2U. All sidecars share DB content SHA-256 `36cfc99204b7ee124c2e47daf8a83cd0cf98bf4e6b6a67c30687da049d5828f6`, schema v2, UpdatedAt `2026-10-26T14:38:04.845305817Z`, DownloadedAt `2026-10-26T16:55:41.048078253Z`, and NextUpdate `2026-10-27T14:38:04.845305326Z`. Operations Critical `CVE-2026-6653` and shared util-linux High findings remain; `CVE-2026-111943` remains absent. Findings are report-only, and images remain unpublished.
 
 ### Bounded remediation review
 
