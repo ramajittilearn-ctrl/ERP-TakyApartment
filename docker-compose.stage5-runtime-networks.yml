@@ -1,0 +1,16 @@
+networks:
+  db-private:
+    driver: bridge
+    internal: true
+    labels:
+      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+  proxy-private:
+    driver: bridge
+    internal: true
+    labels:
+      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+  ingress:
+    driver: bridge
+    internal: false
+    labels:
+      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}

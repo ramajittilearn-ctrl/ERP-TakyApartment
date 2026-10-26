@@ -100,6 +100,8 @@ function compose(args, options = {}) {
       "docker-compose.yml",
       "-f",
       "docker-compose.stage5-runtime.yml",
+      "-f",
+      "docker-compose.stage5-runtime-networks.yml",
       ...args,
     ],
     options,
@@ -228,26 +230,44 @@ function assertMounts(service, expected, name) {
 function verifyComposeConfig(config, env, revision, tree) {
   assertRenderedEqual(config.name, project, "project name");
   assert.deepEqual(Object.keys(config.services).sort(), ["app", "caddy", "db"]);
-  assert.deepEqual(Object.keys(config.networks).sort(), ["private"]);
+  assert.deepEqual(Object.keys(config.networks).sort(), [
+    "db-private",
+    "ingress",
+    "proxy-private",
+  ]);
   assert.deepEqual(Object.keys(config.volumes).sort(), [
     "attachments",
     "caddy_config",
     "caddy_data",
     "database",
   ]);
+  for (const name of ["db-private", "proxy-private"]) {
+    assertRenderedEqual(config.networks[name].internal, true, `${name} mode`);
+    assertRenderedEqual(
+      config.networks[name].driver,
+      "bridge",
+      `${name} driver`,
+    );
+  }
   assertRenderedEqual(
-    config.networks.private.internal,
-    true,
-    "private network mode",
+    config.networks.ingress.driver,
+    "bridge",
+    "ingress network driver",
+  );
+  assertRenderedEqual(
+    config.networks.ingress.internal,
+    false,
+    "ingress network mode",
   );
   const runLabels = { [ownerLabel]: runId };
   for (const name of ["db", "app", "caddy"])
     assertRenderedLabels(config.services[name].labels, runLabels, name);
-  assertRenderedLabels(
-    config.networks.private.labels,
-    runLabels,
-    "private network",
-  );
+  for (const name of ["db-private", "proxy-private", "ingress"])
+    assertRenderedLabels(
+      config.networks[name].labels,
+      runLabels,
+      `${name} network`,
+    );
   for (const [name, volume] of Object.entries(config.volumes))
     assertRenderedLabels(volume.labels, runLabels, `${name} volume`);
 
@@ -258,7 +278,7 @@ function verifyComposeConfig(config, env, revision, tree) {
     "pinned database image",
   );
   assert.deepEqual(db.ports ?? [], [], "database must not publish a host port");
-  assert.deepEqual(Object.keys(db.networks ?? {}), ["private"]);
+  assert.deepEqual(Object.keys(db.networks ?? {}), ["db-private"]);
   assertMounts(
     db,
     [
@@ -288,7 +308,10 @@ function verifyComposeConfig(config, env, revision, tree) {
 
   const app = config.services.app;
   assert.deepEqual(app.ports ?? [], [], "app must not publish a host port");
-  assert.deepEqual(Object.keys(app.networks ?? {}), ["private"]);
+  assert.deepEqual(Object.keys(app.networks ?? {}).sort(), [
+    "db-private",
+    "proxy-private",
+  ]);
   assertMounts(
     app,
     [
@@ -365,7 +388,10 @@ function verifyComposeConfig(config, env, revision, tree) {
 
   const caddy = config.services.caddy;
   assertRenderedEqual(caddy.image, CADDY_IMAGE, "immutable Caddy image");
-  assert.deepEqual(Object.keys(caddy.networks ?? {}), ["private"]);
+  assert.deepEqual(Object.keys(caddy.networks ?? {}).sort(), [
+    "ingress",
+    "proxy-private",
+  ]);
   assert.deepEqual(caddy.ports, [
     {
       mode: "ingress",
@@ -448,6 +474,63 @@ function inspectLabels(kind, id) {
   return JSON.parse(
     docker([kind, "inspect", id, "--format", "{{json .Config.Labels}}"]),
   );
+}
+function captureOwnedNetworks() {
+  const networkIds = docker([
+    "network",
+    "ls",
+    "-q",
+    "--filter",
+    `label=com.docker.compose.project=${project}`,
+  ])
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const networks = networkIds.map(
+    (id) => JSON.parse(docker(["network", "inspect", id]))[0],
+  );
+  assert.equal(
+    networks.length,
+    3,
+    "run must own exactly three Compose networks",
+  );
+  const byComposeName = new Map(
+    networks.map((network) => [
+      network.Labels?.["com.docker.compose.network"],
+      network,
+    ]),
+  );
+  const expectedServices = {
+    "db-private": ["app", "db"],
+    "proxy-private": ["app", "caddy"],
+    ingress: ["caddy"],
+  };
+  for (const [name, expected] of Object.entries(expectedServices)) {
+    const network = byComposeName.get(name);
+    assert.ok(network, `owned ${name} network missing`);
+    assert.equal(network.Labels?.[ownerLabel], runId);
+    assert.equal(network.Labels?.["com.docker.compose.project"], project);
+    assert.equal(network.Driver, "bridge");
+    assert.equal(network.Internal, name !== "ingress");
+    const attachedServices = Object.keys(network.Containers ?? {}).map((id) => {
+      const labels = inspectLabels("container", id);
+      assert.equal(labels[ownerLabel], runId);
+      assert.equal(labels["com.docker.compose.project"], project);
+      return labels["com.docker.compose.service"];
+    });
+    assert.deepEqual(attachedServices.sort(), expected);
+  }
+  state.networks = networks.map((network) => ({
+    composeName: network.Labels["com.docker.compose.network"],
+    dockerName: network.Name,
+    driver: network.Driver,
+    internal: network.Internal,
+    ownerRunId: network.Labels[ownerLabel],
+    composeProject: network.Labels["com.docker.compose.project"],
+    attachedServices: Object.keys(network.Containers ?? {})
+      .map((id) => inspectLabels("container", id)["com.docker.compose.service"])
+      .sort(),
+  }));
 }
 async function writeEvidence() {
   await mkdir(artifactDir, { recursive: true, mode: 0o700 });
@@ -866,6 +949,7 @@ try {
     label: "app and loopback TLS proxy startup",
     result: "passed",
   });
+  captureOwnedNetworks();
   caddyContainer = compose(["ps", "-q", "caddy"]).trim();
   assert.ok(caddyContainer);
   assert.equal(inspectLabels("container", caddyContainer)[ownerLabel], runId);

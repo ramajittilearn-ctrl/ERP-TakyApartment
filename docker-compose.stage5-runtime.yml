@@ -1,9 +1,11 @@
 name: ${STAGE5_PROJECT:?A unique Stage 5 project is required}
 services:
   db:
+    networks: !reset [db-private]
     labels:
       com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
   app:
+    networks: !reset [db-private, proxy-private]
     command: ["node", "server.js"]
     ports: !reset []
     environment:
@@ -47,7 +49,7 @@ services:
       retries: 30
     restart: "no"
     security_opt: ["no-new-privileges:true"]
-    networks: [private]
+    networks: !reset [proxy-private, ingress]
     labels:
       com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
 volumes:
@@ -63,8 +65,4 @@ volumes:
   caddy_config:
     labels:
       com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
-networks:
-  private:
-    internal: true
-    labels:
-      com.taky.stage5.run: ${STAGE5_RUN_ID:?A Stage 5 run ID is required}
+networks: !reset null
