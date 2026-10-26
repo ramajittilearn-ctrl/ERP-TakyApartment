@@ -168,24 +168,28 @@ docker run --detach --platform linux/amd64 \
   -c 'sleep 300' >/dev/null
 
 wait_http() {
-  local url="$1"
+  local url="$1" service="$2" last_probe_result=""
   for _ in $(seq 1 90); do
-    if docker exec "$probe" node -e \
-      "fetch('$url').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; then
+    if last_probe_result="$(docker exec "$probe" node -e \
+      "fetch('$url').then(async r=>{if(!r.ok){console.error('HTTP '+r.status+' '+(await r.text()).slice(0,500));process.exit(1)}}).catch(e=>{console.error(e.message);process.exit(1)})" 2>&1)"; then
       return 0
     fi
-    if [[ "$(docker inspect --format '{{.State.Running}}' "$app" 2>/dev/null || true)" != true ]]; then
-      docker logs "$app"
+    if [[ "$(docker inspect --format '{{.State.Running}}' "$service" 2>/dev/null || true)" != true ]]; then
+      echo "Container $service stopped while probing $url; last probe: $last_probe_result" >&2
+      docker inspect --format 'state={{json .State}}' "$service" >&2 || true
+      docker logs --tail 100 "$service" >&2 || true
       return 1
     fi
     sleep 2
   done
-  docker logs "$app"
+  echo "Timed out probing $url; last probe: $last_probe_result" >&2
+  docker inspect --format 'state={{json .State}}' "$service" >&2 || true
+  docker logs --tail 100 "$service" >&2 || true
   return 1
 }
 
-wait_http http://evidence-validator:3835/health
-wait_http http://app:3000/api/health/
+wait_http http://evidence-validator:3835/health "$validator"
+wait_http http://app:3000/api/health/ "$app"
 room_count="$(docker exec "$database" psql -U taky_ci -d taky_ci -Atc 'SELECT count(*) FROM "Room";')"
 [[ "$room_count" == 15 ]]
 echo "App health passed; fresh database migrated and seeded $room_count rooms."
