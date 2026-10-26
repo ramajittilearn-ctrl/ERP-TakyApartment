@@ -71,9 +71,31 @@ The scan artifact from [run 40333071309](https://github.com/ramajittilearn-ctrl/
 
 The scan findings match the prior hosted result: app and validator each have 8 unique High IDs; operations has one Critical (`CVE-2026-6653`) and 16 unique High IDs. The rclone Go stdlib issue `CVE-2026-111943` remains absent. The Agent UAT job in that run failed one report-month interaction test; quality and container verification passed. Keep the security finding and UAT states separate. Production remains **NO-GO**.
 
-## Most recent hosted scan artifact — run 40335249346
+## Prior hosted scan artifact before retrieval recovered — run 40335249346
 
-The latest code-validation run [40335249346](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40335249346) succeeded, including container verification, and lists a `container-vulnerability-scan-40335249346-1` artifact (archive SHA-256 `d1aa528b91cf5fa37016d4db6c17a6a37250fe786aed61d93556803864b0b102`). The GitHub artifact API returned HTTP 403 rate-limit errors during this audit, so the raw scan JSON and sidecars have not been inspected. Do not attribute the prior detailed counts or DB sidecar hash to this newest artifact until it is downloaded and checked. Prior inspected findings and production **NO-GO** remain the conservative current security posture.
+At the time of the previous audit, run [40335249346](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40335249346) had succeeded and listed a `container-vulnerability-scan-40335249346-1` artifact (archive SHA-256 `d1aa528b91cf5fa37016d4db6c17a6a37250fe786aed61d93556803864b0b102`). GitHub returned HTTP 403 during that audit, so its raw scan JSON was not inspected then. The later run `40356454371` evidence is recorded below.
+
+## Latest inspected hosted scan — run 40356454371
+
+Run [40356454371](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40356454371) passed all three CI jobs on PR head `8ca7f4fff329fa15bc9095208911120ea2074088`. The vulnerability report is [artifact 12666751076](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40356454371/artifacts/12666751076); its archive SHA-256 is `fc7745e50b0bafb5ce54b4f4d2185a89fc8104f5f86e8eee0dcb61f766a0c0e7`. Trivy 0.76.1 scanned three local `linux/amd64` images built from merge checkout `a3268cc17ca2f59f641548dec5bdc41998c42662`, tree `1da11b27793408670b879c5c9edb352f15f275cf`. These are CI-local images, not published registry images.
+
+All three image sidecars report the same Trivy DB file-content SHA-256 `36cfc99204b7ee124c2e47daf8a83cd0cf98bf4e6b6a67c30687da049d5828f6`, schema version 2, `UpdatedAt` `2026-10-26T14:38:04.845305817Z`, `DownloadedAt` `2026-10-26T16:15:13.107919584Z`, and `NextUpdate` `2026-10-27T14:38:04.845305326Z`. This ties the three reports to one DB snapshot; it does not establish a reproducible scan or published OCI digest.
+
+| Image | Critical | High | Medium | Low | Unknown |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| App | 0 | 8 IDs (43 package occurrences) | 29 (58) | 33 (60) | 1 (1) |
+| Validator | 0 | 8 IDs (43) | 31 (60) | 40 (67) | 1 (1) |
+| Operations | 1 ID (1) | 16 (61) | 39 (110) | 61 (138) | 2 (5) |
+
+Counts are unique Trivy vulnerability/advisory IDs; package occurrences can repeat an ID. Operations' Critical remains `CVE-2026-6653`; the shared util-linux High findings remain unresolved. The operations image no longer reports rclone Go stdlib `CVE-2026-111943`. Findings remain report-only and have not been suppressed or risk-accepted. Production remains **NO-GO**.
+
+The same run's container verification log confirms synthetic encrypted backup and isolated restore with 15 rooms, Attachment metadata owner links, uploader and Tenant links, and matching attachment SHA-256 `68e533fab04c85212338f91bd9dc0acf508f772764fea84333f966cd7275ffd4`. This validates database ownership metadata and file-byte recovery for its fixture; it does not test an application download-authorization endpoint, production target recovery, or off-device recovery.
+
+### Bounded remediation review
+
+An independent security review traced the current findings to the scanned image packages and inspected the Dockerfiles plus backup/restore commands. App and validator inherit util-linux from the pinned Node Trixie base. Operations inherits util-linux from PostgreSQL Trixie and explicitly needs `flock` to serialize backup, upload, and restore operations. The operations Critical is libxml2 inherited from the PostgreSQL Trixie base; removing that dependency or replacing the base could affect `pg_dump`/`pg_restore`.
+
+No safe, bounded remediation was established. Do not remove locking utilities or swap database/client bases without an equivalent-lock design, source-pinned build, and complete restore rehearsal. Monitor for supported Trixie fixes and refresh pinned digests when available. A minimal operations image or lock helper would require design review and end-to-end backup/restore verification. Do not suppress the findings; they remain unresolved production blockers unless fixed or explicitly dispositioned.
 
 ## Debian's disposition for the remaining Critical finding
 

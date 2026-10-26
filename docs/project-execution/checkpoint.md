@@ -1,6 +1,14 @@
 # Production Go-Live continuation checkpoint — 2026-10-26
 
-> **Current-state pointer:** authoritative current state is in the final continuation checkpoint below. Older checkpoints are historical snapshots; their pending/complete statements are superseded by the newest dated checkpoint.
+> **Current-state pointer:** authoritative current state is in the latest dated checkpoint immediately below. Older checkpoints are historical snapshots; their pending/complete statements are superseded by that checkpoint.
+
+## Latest continuation checkpoint — 2026-10-26
+
+PR #2 remains OPEN/Draft from `codex/phase4-current-source-20261026` into protected `release/phase4`. Current head `8ca7f4fff329fa15bc9095208911120ea2074088` passed all CI jobs in run `40356454371`: required quality, hosted container verification, and Agent UAT. UAT artifact `12667808269` reports 90 passed, 0 failed/skipped/flaky on merge checkout `a3268cc17ca2f59f641548dec5bdc41998c42662`. No Owner UAT acceptance is claimed; the Owner requested agent-run UAT instead.
+
+Container verification passed synthetic encrypted backup and isolated restore: 15 rooms, Attachment owner/uploader/Tenant links, and attachment SHA-256 `68e533fab04c85212338f91bd9dc0acf508f772764fea84333f966cd7275ffd4` matched. This does not verify app-level attachment download authorization, production recovery, or off-device recovery. Trivy artifact `12666751076` was retrieved and inspected; all three image sidecars share DB hash `36cfc99204b7ee124c2e47daf8a83cd0cf98bf4e6b6a67c30687da049d5828f6`. App and validator each have 8 High IDs; operations has one Critical (`CVE-2026-6653`) and 16 High IDs. Findings are report-only and unresolved.
+
+Current PR head has not yet included the documentation refresh recorded in this checkpoint. Next: independently cross-review the refreshed release status, UAT report, security report, backlog and checkpoint; correct factual issues; commit and push the evidence update; then inspect CI for that new head. Keep production NO-GO: target host/origin/access, target backup/restore, migration and rollback, off-device recovery, registry publication/pull, and security disposition remain open. No merge, publish, or deployment.
 
 ## Latest continuation addendum — container security (2026-10-26)
 
