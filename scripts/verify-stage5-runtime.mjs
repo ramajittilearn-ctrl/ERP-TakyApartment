@@ -563,8 +563,6 @@ try {
     POSTGRES_PASSWORD: password,
     DATABASE_URL: `postgresql://${dbUser}:${password}@db:5432/${dbName}?schema=public`,
     SESSION_SECRET: sessionSecret,
-    TEST_ADMIN_PASSWORD: adminPassword,
-    TEST_STAFF_PASSWORD: staffPassword,
     STAGE5_ADMIN_USERNAME: `stage5-admin-${runId.slice(0, 8)}`,
     STAGE5_STAFF_USERNAME: `stage5-staff-${runId.slice(0, 8)}`,
   };
@@ -722,17 +720,30 @@ try {
   });
 
   const bootstrapName = `${project}-bootstrap`;
-  compose([
-    "run",
-    "-d",
-    "--no-deps",
-    "--name",
-    bootstrapName,
-    "app",
-    "node",
-    "node_modules/tsx/dist/cli.mjs",
-    "scripts/stage5/bootstrap-users.ts",
-  ]);
+  compose(
+    [
+      "run",
+      "-d",
+      "--no-deps",
+      "--name",
+      bootstrapName,
+      "-e",
+      "TEST_ADMIN_PASSWORD",
+      "-e",
+      "TEST_STAFF_PASSWORD",
+      "app",
+      "node",
+      "node_modules/tsx/dist/cli.mjs",
+      "scripts/stage5/bootstrap-users.ts",
+    ],
+    {
+      env: {
+        ...childEnv,
+        TEST_ADMIN_PASSWORD: adminPassword,
+        TEST_STAFF_PASSWORD: staffPassword,
+      },
+    },
+  );
   const bootstrapExit = docker(["wait", bootstrapName]).trim();
   assert.equal(bootstrapExit, "0", "synthetic account bootstrap must succeed");
   state.checks.push({
@@ -795,16 +806,10 @@ try {
     APP_ORIGIN: origin,
     STAGE5_RUN_ID: runId,
     STAGE5_ARTIFACT_DIR: artifactDir,
-    ...Object.fromEntries(
-      Object.entries(env).filter(([key]) =>
-        [
-          "STAGE5_ADMIN_USERNAME",
-          "STAGE5_STAFF_USERNAME",
-          "TEST_ADMIN_PASSWORD",
-          "TEST_STAFF_PASSWORD",
-        ].includes(key),
-      ),
-    ),
+    STAGE5_ADMIN_USERNAME: env.STAGE5_ADMIN_USERNAME,
+    STAGE5_STAFF_USERNAME: env.STAGE5_STAFF_USERNAME,
+    TEST_ADMIN_PASSWORD: adminPassword,
+    TEST_STAFF_PASSWORD: staffPassword,
   };
   runChecked(
     "Node HTTPS API billing/payment/PDF scenario with hostname validation",
