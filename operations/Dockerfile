@@ -14,7 +14,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     -o /out/rclone .
 
 FROM postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
-RUN apk add --no-cache ca-certificates flock libatomic libstdc++ util-linux-misc
+RUN apk add --no-cache ca-certificates flock libatomic libstdc++
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=rclone-build /out/rclone /usr/local/bin/rclone
 RUN rm -f /usr/local/bin/gosu

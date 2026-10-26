@@ -113,15 +113,29 @@ export async function verifyDatabase(dump, expected) {
   return withTemp("verify", async (directory) => {
     const data = path.join(directory, "data");
     const root = process.getuid() === 0;
-    if (root)
+    const postgresUid = root
+      ? Number(await run("id", ["-u", "postgres"]))
+      : undefined;
+    const postgresGid = root
+      ? Number(await run("id", ["-g", "postgres"]))
+      : undefined;
+    if (root) {
+      if (
+        !Number.isSafeInteger(postgresUid) ||
+        postgresUid < 0 ||
+        !Number.isSafeInteger(postgresGid) ||
+        postgresGid < 0
+      )
+        throw new Error("PostgreSQL account has invalid numeric ownership");
       await fs.chown(
         directory,
-        Number(await run("id", ["-u", "postgres"])),
-        Number(await run("id", ["-g", "postgres"])),
+        postgresUid,
+        postgresGid,
       );
+    }
     const asPostgres = (command, args) =>
       root
-        ? run("runuser", ["-u", "postgres", "--", command, ...args])
+        ? run(command, args, { uid: postgresUid, gid: postgresGid })
         : run(command, args);
     await asPostgres("initdb", [
       "-D",

@@ -132,7 +132,6 @@ docker run --rm --platform linux/amd64 --read-only \
     command -v pg_restore >/dev/null
     command -v rclone >/dev/null
     command -v flock >/dev/null
-    command -v runuser >/dev/null
     command -v timeout >/dev/null
     ! command -v gosu >/dev/null
     rclone_version="$(rclone version)"
