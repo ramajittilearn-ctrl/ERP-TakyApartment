@@ -1,3 +1,19 @@
+# Current checkpoint: verified candidate, integration in progress
+
+Owner scope is completion through Stage3E and Phase4 Expense Management, then stop. Subsequent Dashboard, Reporting, maintenance-demo replacement and Go-Live are outside this stop boundary. The latest instruction freezes completed features: do not refactor or reopen them because Pstack changed.
+
+The actual installed Pstack is now0.15.32+codex.1. Its Codex adapter and shipping guidance are applied only to remaining integration, verdict-to-code checks, publication and handoff. New formal-verification or redesign workflows are not introduced into accepted modules.
+
+Main is codex/phase4-recovery-integration in .local/development-recovered-20261025. Verified candidate is codex/deposit-qa-candidate at5177ed1. Final actual browser run8f40b1e18daa4bbab16f1f09 passed35/35 with zero skips, retries, unexpected or flaky results. Core50/50, evidence9/9, payment39/39 with historical rehearsal, expense export5/5, operations68/68, validator28/28 and built-image12/12 passed. V5 actual44-model encrypted backup/restore, lock-owner loss and late003 rollback passed. Full app unit409/409, typecheck, lint and supported Webpack build passed on the candidate.
+
+Independent reports are evidence/deposit-core/operations-peer-review.md, pdf-packaging-peer-review.md and evidence/phase4/closure-audit-20261025.md. Main independently approved the financial and UI changes. Root must finish safe local merge, confirm accepted source trees are identical, generate its own44-model client, verify integration readiness, scan and push the reviewed development branch, then record closure and stop. Never merge protected/main/OwnerUAT branches or mutate production.
+
+Native-popup keyboard navigation is not established by this Chrome runner. Native select interaction, keyboard focus/submission and Axe are verified. Human Owner UAT was delegated to agents; no human UAT or Go-Live pass is claimed. Older failed runs remain preserved alongside successful corrections.
+
+## Historical checkpoints below
+
+Earlier next-step lists are superseded by the current stop boundary and verified frontier above.
+
 # Current execution checkpoint
 
 Recorded 2026-10-24, Asia/Bangkok. Main thread 01a164a6-91ca-7913-ad0f-9a5d343652a6. Continue the authorized Pstack project mission without a new routine approval request.
@@ -109,3 +125,14 @@ Ops candidate frozenfa7f068 oncodex/deposit-operations: publication sessionlock7
 UIcandidate branchcodex/deposit-ui-candidate througha396d76 prerequisites, own467lockeddeps and44Prismaclient generated. evidence_review implementing approved SSRlease list/detail, strictcurrentrole/Origin/pathownedfinancialroutes, explicitactorheader and currentidentityreplay, evidenceupload, fullauthoritativetotals/pagination, immutable document views. No UI/browser acceptance yet.
 
 Next: resolve bankidentityrace without weakeningassertions, independentlyreviewfix, newtargetif003changes; finishopsactualharness+crossreview; settlevalidatortransporttest; independentUIreview plus realbrowseragentUAT; finalintegratedregressions, reviewedlocalcommits+GitHubpublication; closePhase4thenstop. No Dashboard or GoLive work authorized beyond this stop boundary.
+
+
+## Verified correction after the previous frontier
+
+Root independently accepted source correctionaffae02 after directional reproduction: deposit SERIALIZABLE snapshot was established before waiting for bank admission, while Payment uses READ COMMITTED. Post-lock snapshot stayed stale and could miss the committed Payment claim. Deposit commands now use READ COMMITTED with unchanged mandatory source/bank gates, version/idempotency/SQL guards and retry bound. Ledger/document reads remain REPEATABLE READ. Actual50/50 PostgreSQL cases passed on Core3 with fresh synthetic fixtures, including added cross-lease bank identities in both arrival orders. Old unsafe synthetic fixtures remain preserved without repair. Evidence50-case rawlog copied alongside original44/46 failure. No production database touched.
+
+UI e8f8d16 was integrated only in the QA candidate329edca, not Main. Fresh406/406 unit passed and NextWebpack build produced the full routes/standalone artifact; full lint initially failed on unused finite-rehearsal readFileSync import. Root removed only that unused import; corrected full lint exited0. UIbrowser tests authored in separatecandidate but not yet executed. Fresh planned6b12a4f60acb471aa2e09183 browserDB container nowhealthy: ownproject, port55452, explicit10.254.247.0/28, freshretainedvolume. FixedMainwrapper allows actualvalidator3835/token and freshowned0700syntheticstorage while retainingexistingplan/currentDB/roleattestation. No browser success inferred yet.
+
+Validator declaration-size transportfixture7b3840e now reads413 before sending any oversizedbody; actualchunkedoverflowtest unchanged. Main freshnative28/28PASS. Image native12/12 remainsaccepted.
+
+Ops Mainactualfull64/64PASS. Imagebuildpassed, first17/V5actualrestorefailedguardfingerprint. Diagnosticd0dcd42 actualattempt2 provesonlyfiveCHECK deparse differences, no missing/addedguard and noindex/trigger/functionchange. NativePostgreSQL canonical CHECK reparse comparison withbounded4passfailclosed andsemanticnegativecontrols approveddesign; implementation andindependentreviewpending. Broaderactualpublication/backuporphanproof notyetreached. Requiredlate003atomicityprobe stillpending. Do notreplacefailedlogsorclaimrestorepass.
