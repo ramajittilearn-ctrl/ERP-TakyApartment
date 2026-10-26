@@ -1,6 +1,6 @@
 # Agent-run Phase 4 UAT
 
-**Latest attempt:** PASS on PR head `d607b6cf720931d684aed2c9ebabef4a19364b36`. Run [40335249346](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40335249346) completed successfully with all three jobs, including Agent UAT. The workflow's report gate requires at least 89 expected tests and zero unexpected, skipped, or flaky tests. Its artifact is listed on GitHub, but could not be retrieved in this session because GitHub's artifact API returned HTTP 403 rate-limit errors; therefore the exact test count and source merge-checkout hash are not recorded here. The preceding failed run and test-only timing correction are retained below.
+**Latest code validation:** PASS on PR source head `d607b6cf720931d684aed2c9ebabef4a19364b36`; current PR head `9831c0783865008303f253a26b75f7866a2a96d3` adds documentation only. Run [40335249346](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40335249346) completed successfully with all three jobs, including Agent UAT. The workflow's report gate requires at least 89 expected tests and zero unexpected, skipped, or flaky tests. Its artifact is listed on GitHub, but could not be retrieved in this session because GitHub's artifact API returned HTTP 403 rate-limit errors; therefore the exact test count and source merge-checkout hash are not recorded here. The preceding failed run and test-only timing correction are retained below.
 **Owner UAT:** Not performed. The Owner delegated UAT execution and requested a report.
 
 ## Latest PR CI run
@@ -31,7 +31,7 @@
 - This suite includes the monthly report CSV UI download and exact-total assertion against a synthetic monthly report response intercepted by the browser test. The separate month-selection/loading test calls the actual API; the CSV case does not independently prove persisted database aggregation. It also includes tenant contract rent save/reload/reselection cases.
 - This synthetic source-build run does not verify production data, deployment-host configuration, Owner acceptance, or production recovery.
 
-Run [40325482014](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40325482014) on prior head `cc5e1ab` is a failed historical attempt: 89 passed and one monthly report CSV browser assertion failed because the test helper rejected a valid final record without a line terminator. Commit `6363f22` corrected that test helper, added edge-case tests, and the latest 90-case run above passed.
+Run [40325482014](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40325482014) on prior head `cc5e1ab` is a failed historical attempt: 89 passed and one monthly report CSV browser assertion failed because the test helper rejected a valid final record without a line terminator. Commit `6363f22` corrected that test helper, added edge-case tests, and the then-latest 90-case run above passed.
 
 Earlier run [40317435858](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40317435858), PR head `573bbed`, also passed all three jobs and 89/89 browser tests. It is retained as historical evidence for that earlier head.
 
