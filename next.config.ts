@@ -3,6 +3,16 @@ const config: NextConfig = {
   output: "standalone",
   trailingSlash: true,
   poweredByHeader: false,
+  outputFileTracingIncludes: {
+    "/api/v1/invoices/*/pdf": [
+      "node_modules/@fontsource/noto-sans-thai/files/noto-sans-thai-thai-400-normal.woff",
+      "node_modules/@fontsource/noto-sans-thai/files/noto-sans-thai-latin-400-normal.woff",
+    ],
+    "/api/v1/receipts/*/pdf": [
+      "node_modules/@fontsource/noto-sans-thai/files/noto-sans-thai-thai-400-normal.woff",
+      "node_modules/@fontsource/noto-sans-thai/files/noto-sans-thai-latin-400-normal.woff",
+    ],
+  },
   async headers() {
     return [
       {
