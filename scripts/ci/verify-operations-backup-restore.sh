@@ -52,6 +52,11 @@ restore_attachments_volume="${project}-restore-attachments"
 backup_volume="${project}-backups"
 database_password="ci_synthetic_password_only"
 fixture_content="Synthetic CI attachment for isolated restore verification."
+fixture_storage_key="ci-fixtures/retained.txt"
+fixture_uploaded_by_id="10000000-0000-4000-8000-000000000001"
+fixture_tenant_id="10000000-0000-4000-8000-000000000002"
+fixture_attachment_id="10000000-0000-4000-8000-000000000003"
+fixture_bytes="$(node -e 'process.stdout.write(String(Buffer.byteLength(process.argv[1], "utf8")))' "$fixture_content")"
 fixture_sha="$(node -e 'process.stdout.write(require("node:crypto").createHash("sha256").update(process.argv[1]).digest("hex"))' "$fixture_content")"
 tmp_root="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
 key_dir="${tmp_root%/}/${project}"
@@ -263,8 +268,8 @@ if [[ "$rooms_ready" != true ]]; then
   exit 1
 fi
 
-# A file-only fixture checks hash-preserving recovery without inventing
-# application-owned Attachment metadata.
+# Seed one synthetic Attachment owner graph in the isolated source database so
+# restore verification covers both database metadata and the matching file.
 docker run --rm --platform linux/amd64 --label "$ownership_label=$project" \
   --name "${project}-source-volume-owner" --network none --user 0 \
   --mount "type=volume,source=$source_attachments_volume,target=/app/storage/attachments" \
@@ -274,6 +279,20 @@ docker run --rm --platform linux/amd64 --label "$ownership_label=$project" \
   --entrypoint node "$app_image" -e \
   'const fs=require("node:fs");const path=require("node:path");const file=path.join("/app/storage/attachments","ci-fixtures","retained.txt");fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});fs.writeFileSync(file,process.argv[1],{flag:"wx",mode:0o600});' \
   "$fixture_content"
+docker exec "$source_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_ci \
+  -v "user_id=$fixture_uploaded_by_id" \
+  -v "tenant_id=$fixture_tenant_id" \
+  -v "attachment_id=$fixture_attachment_id" \
+  -v "storage_key=$fixture_storage_key" \
+  -v "fixture_bytes=$fixture_bytes" \
+  -v "fixture_sha=$fixture_sha" <<'SQL' >/dev/null
+INSERT INTO "User" (id, username, email, name, "passwordHash", role, disabled, "updatedAt")
+VALUES (:'user_id'::uuid, 'ci-restore-uploader', 'ci-restore-uploader@example.invalid', 'Synthetic CI uploader', 'not-a-login-credential', 'STAFF', false, now());
+INSERT INTO "Tenant" (id, name, "isDemo", "updatedAt")
+VALUES (:'tenant_id'::uuid, 'Synthetic CI Attachment Owner', true, now());
+INSERT INTO "Attachment" (id, "storageKey", "originalName", "mimeType", bytes, sha256, "uploadedById", "tenantId", "updatedAt")
+VALUES (:'attachment_id'::uuid, :'storage_key', 'retained.txt', 'text/plain', :fixture_bytes::bigint, :'fixture_sha', :'user_id'::uuid, :'tenant_id'::uuid, now());
+SQL
 
 mkdir -m 0700 "$key_dir"
 mkdir -m 0700 "$remote_dir"
@@ -357,13 +376,15 @@ if [[ "$restored_rooms" != 15 ]]; then
   docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -c '\dt' >&2 || true
   exit 1
 fi
+restored_attachment="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc \
+  "SELECT json_build_object('id',a.id,'storageKey',a.\"storageKey\",'bytes',a.bytes,'sha256',a.sha256,'uploadedById',a.\"uploadedById\",'uploaderUsername',u.username,'uploaderRole',u.role,'uploaderDisabled',u.disabled,'tenantId',a.\"tenantId\",'tenantName',t.name,'tenantDemo',t.\"isDemo\",'ownerCount',num_nonnulls(a.\"tenantId\",a.\"leaseId\",a.\"paymentId\",a.\"expenseId\")) FROM \"Attachment\" a JOIN \"User\" u ON u.id=a.\"uploadedById\" JOIN \"Tenant\" t ON t.id=a.\"tenantId\" WHERE a.id='${fixture_attachment_id}'")"
+node -e 'const a=JSON.parse(process.argv[1]);const expected={id:process.argv[2],storageKey:process.argv[3],bytes:Number(process.argv[4]),sha256:process.argv[5],uploadedById:process.argv[6],uploaderUsername:"ci-restore-uploader",uploaderRole:"STAFF",uploaderDisabled:false,tenantId:process.argv[7],tenantName:"Synthetic CI Attachment Owner",tenantDemo:true,ownerCount:1};for(const [key,value] of Object.entries(expected)){if(a[key]!==value)throw new Error(`Restored Attachment ${key} mismatch: expected ${value}, got ${a[key]}`)}' \
+  "$restored_attachment" "$fixture_attachment_id" "$fixture_storage_key" "$fixture_bytes" "$fixture_sha" "$fixture_uploaded_by_id" "$fixture_tenant_id"
 restored_fixture="$(docker run --rm --platform linux/amd64 --label "$ownership_label=$project" \
   --name "${project}-restore-check" --network none --mount "type=volume,source=$restore_attachments_volume,target=/attachments,readonly" \
   --entrypoint node "$app_image" -e \
-  'const fs=require("node:fs");const c=require("node:crypto");const p="/attachments/ci-fixtures/retained.txt";const b=fs.readFileSync(p);process.stdout.write(c.createHash("sha256").update(b).digest("hex"));')"
-if [[ "$restored_fixture" != "$fixture_sha" ]]; then
-  echo "Isolated restore attachment hash mismatch: expected $fixture_sha, got ${restored_fixture:-unavailable}" >&2
-  exit 1
-fi
+  'const fs=require("node:fs");const c=require("node:crypto");const p="/attachments/ci-fixtures/retained.txt";const b=fs.readFileSync(p);process.stdout.write(JSON.stringify({bytes:b.byteLength,sha256:c.createHash("sha256").update(b).digest("hex")}));')"
+node -e 'const f=JSON.parse(process.argv[1]);if(f.bytes!==Number(process.argv[2])||f.sha256!==process.argv[3])throw new Error(`Restored attachment bytes mismatch: ${JSON.stringify(f)}`)' \
+  "$restored_fixture" "$fixture_bytes" "$fixture_sha"
 
-echo "Synthetic remote upload, read-back, and isolated restore passed: 15 rooms and attachment SHA-256 $restored_fixture."
+echo "Synthetic remote upload, read-back, and isolated restore passed: 15 rooms, Attachment metadata owner links, and attachment SHA-256 $fixture_sha."
