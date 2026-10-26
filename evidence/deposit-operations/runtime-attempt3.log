@@ -1,0 +1,97 @@
+time="2026-10-25T22:41:47+07:00" level=warning msg="Found orphan containers ([taky-deposit-operations-proof-20261025-attempt2 taky-deposit-operations-proof-20261025]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container taky-deposit-operations-proof-20261025-attempt3 Creating 
+ Container taky-deposit-operations-proof-20261025-attempt3 Created 
+PASS baseline v2 and unchanged unversioned legacy inventory
+PASS equal-count decimal mutation Property
+PASS equal-count decimal mutation Floor
+PASS equal-count decimal mutation Room
+PASS equal-count decimal mutation Tenant
+PASS equal-count decimal mutation Lease
+PASS equal-count decimal mutation SecurityDeposit
+PASS equal-count decimal mutation UtilityMeter
+PASS equal-count decimal mutation MeterReading
+PASS equal-count decimal mutation MeterReadingCorrection
+PASS equal-count decimal mutation MeterReplacement
+PASS equal-count decimal mutation UtilityRate
+PASS equal-count decimal mutation BillingPeriod
+PASS equal-count decimal mutation BillingRateSelection
+PASS equal-count decimal mutation BillingConsumptionApproval
+PASS equal-count decimal mutation Invoice
+PASS equal-count decimal mutation InvoiceItem
+PASS equal-count decimal mutation Payment
+PASS equal-count decimal mutation PaymentAllocation
+PASS equal-count decimal mutation ExpenseCategory
+PASS equal-count decimal mutation Expense
+PASS equal-count decimal mutation MaintenanceRequest
+PASS equal-count decimal mutation User
+PASS equal-count decimal mutation Session
+PASS equal-count decimal mutation LoginThrottle
+PASS equal-count decimal mutation Attachment
+PASS equal-count decimal mutation AuditLog
+PASS equal-count decimal mutation BackupHistory
+PASS equal-count decimal mutation BillingPeriodFreeze
+PASS equal-count decimal mutation BillingFreezeLease
+PASS equal-count decimal mutation InvoiceCorrection
+PASS equal-count decimal mutation InvoiceMonthCounter
+PASS equal-count decimal mutation PropertyDuePolicy
+PASS equal-count decimal mutation InvoiceCommand
+PASS deletion, NULL/empty distinction, large numeric precision and reordered rows
+PASS real pg_dump exported-snapshot consistency and private-socket pg_restore inventory comparison
+PASS unknown/missing v2 version rejection
+PASS v2 live row differs from exported snapshot before pg_dump
+PASS actual historical33 v2 33-table exported snapshot pg_dump/pg_restore (database=inventory_historical33_restore)
+PASS actual historical33 unversioned legacy pg_dump/pg_restore
+PASS v3 live row differs from exported snapshot before pg_dump
+PASS v3 restored equal-count mutation PaymentReversal
+PASS v3 restored equal-count mutation Receipt
+PASS v3 restored equal-count mutation ReceiptCancellation
+PASS v3 restored equal-count mutation PaymentCommand
+PASS v3 restored equal-count mutation ReceiptMonthCounter
+PASS actual migrated38 v3 38-table exported snapshot pg_dump/pg_restore (database=inventory_migrated38_restore)
+PASS all14 actual migrations; synthetic inventory-only payment fixture; trigger state origin/enabled
+PASS v4 migration preserves every historical expense/category column
+PASS v4 live row differs from exported snapshot before pg_dump
+PASS v4 restored equal-count mutation PaymentReversal
+PASS v4 restored equal-count mutation Receipt
+PASS v4 restored equal-count mutation ReceiptCancellation
+PASS v4 restored equal-count mutation PaymentCommand
+PASS v4 restored equal-count mutation ReceiptMonthCounter
+PASS v4 restored equal-count mutation ExpenseCommand.result
+PASS v4 restored equal-count mutation Expense.note
+PASS v4 restored equal-count mutation ExpenseCategory.active
+PASS actual migrated39 v4 39-table exported snapshot pg_dump/pg_restore (database=inventory_migrated39_restore)
+PASS all15 actual migrations; frozen v4 captures all39 tables and added expense columns
+PASS v4 live row differs from exported snapshot before pg_dump
+PASS v4 restored equal-count mutation PaymentReversal
+PASS v4 restored equal-count mutation Receipt
+PASS v4 restored equal-count mutation ReceiptCancellation
+PASS v4 restored equal-count mutation PaymentCommand
+PASS v4 restored equal-count mutation ReceiptMonthCounter
+PASS v4 restored equal-count mutation ExpenseCommand.result
+PASS v4 restored equal-count mutation Expense.note
+PASS v4 restored equal-count mutation ExpenseCategory.active
+PASS actual finite39 v4 39-table exported snapshot pg_dump/pg_restore (database=inventory_finite39_restore)
+PASS all16 actual migrations; finite payment checks preserve v4 compatibility
+PASS forced P0001 at final deposit003 DDL rolls back all new tables, functions, guards and old-data changes before unchanged migration is applied
+PASS native typed CHECK canonicalization preserves zero/NaN limits, AND/OR precedence and NO INHERIT while stabilizing observed array casts and associative AND formatting
+PASS v5 live row differs from exported snapshot before pg_dump
+PASS v5 restore preserves normalized public constraints, indexes, trigger definitions/states and function definitions
+PASS v5 restored equal-count mutation PaymentReversal
+PASS v5 restored equal-count mutation Receipt
+PASS v5 restored equal-count mutation ReceiptCancellation
+PASS v5 restored equal-count mutation PaymentCommand
+PASS v5 restored equal-count mutation ReceiptMonthCounter
+PASS v4 restored equal-count mutation ExpenseCommand.result
+PASS v4 restored equal-count mutation Expense.note
+PASS v4 restored equal-count mutation ExpenseCategory.active
+PASS v5 restored equal-count mutation DepositAccount.reviewReason
+PASS v5 restored equal-count mutation DepositEntry.reason
+PASS v5 restored equal-count mutation DepositCommand.result
+PASS v5 restored equal-count mutation DepositEvidence.acceptedAt
+PASS v5 restored equal-count mutation DepositDocumentCounter.nextValue
+PASS actual deposit44 v5 44-table exported snapshot pg_dump/pg_restore (database=inventory_deposit44_restore)
+PASS all17 actual migrations; default v5 captures44 tables including inventory-only deposit representation
+PASS real nonsuperuser session publication lock excludes upload transaction lock and releases afterward
+PASS real protected-work failure releases publication session
+PASS real lock-owner termination aborts protected child work; no verified result returned
+PASS actual encrypted backup and isolated restore retain44-model snapshot, metadata-referenced file, orphan and destination partial without source deletion

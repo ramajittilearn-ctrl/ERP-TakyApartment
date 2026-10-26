@@ -1,0 +1,21 @@
+{"mode":"evidence","source":{"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","project":"taky-phase4-recovery-20261025","host":"127.0.0.1","port":55489},"targets":{"integration":"taky_deposit_test_20261025_core3","rehearsal":"taky_payment_test_2b5214bd52_finite_rehearsal2","blocker":"taky_payment_test_2b5214bd52_finite_blocker2","allocBlocker":"taky_payment_test_2b5214bd52_finite_alloc_blocker2"},"planValidated":true}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+{"attested":true,"database":"taky_deposit_test_20261025_core3","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.12 [39m[90m/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate[39m
+
+ [32m✓[39m tests/integration/deposit-evidence.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 1787[2mms[22m[39m
+   [33m[2m✓[22m[39m accepts actual validator-checked retained bytes through a genuine stored session and downloads them [33m 529[2mms[22m[39m
+   [33m[2m✓[22m[39m serializes two actors competing for the last retained-file capacity without exceeding actual bytes [33m 506[2mms[22m[39m
+   [33m[2m✓[22m[39m does not authorize financial use after same-length file tampering or for a different lease [33m 304[2mms[22m[39m
+ [32m✓[39m tests/integration/deposit-evidence-failures.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1170[2mms[22m[39m
+   [33m[2m✓[22m[39m rolls back acceptance metadata after a scoped audit failure while preserving the published orphan and allowing a healthy retry [33m 502[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects the actual upload service while an owned backup publication session holds the gate, then succeeds after release [33m 350[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 23:08:25
+[2m   Duration [22m 3.84s[2m (transform 206ms, setup 0ms, import 584ms, tests 2.96s, environment 0ms)[22m
+
+Child exit: 0; signal: none; timeout: false; outputLimit: false
+QA outcome: 0

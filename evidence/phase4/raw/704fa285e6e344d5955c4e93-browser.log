@@ -1,0 +1,242 @@
+{"started":"2026-10-25T15:48:54.457Z","command":"npx playwright test --output evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results --grep deposit persisted|expense persisted|payment persisted|receipt PDF persisted|tenant contract rent|a tenant without|room defaults fill|tenant rent entered|ADMIN completes a fictional monthly billing flow","runId":"704fa285e6e344d5955c4e93","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_704fa285e6e344d5955c4e93"}}
+
+Running 35 tests using 1 worker
+
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"704fa285e6e344d5955c4e93","database":"taky_phase2_test","role":"e2e_704fa285e6e344d5955c4e93","proxy":"http://127.0.0.1:3822"}
+  ✘   1 tests/phase2/billing-setup.spec.ts:38:5 › ADMIN completes a fictional monthly billing flow in the UI (1.5m)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"704fa285e6e344d5955c4e93","database":"taky_phase2_test","role":"e2e_704fa285e6e344d5955c4e93","proxy":"http://127.0.0.1:3822"}
+  ✓   2 tests/phase2/deposit-persisted.spec.ts:193:5 › deposit persisted valid missing UUID pages render noindex not-found while APIs keep strict 404 (1.9s)
+  ✓   3 tests/phase2/deposit-persisted.spec.ts:232:5 › deposit persisted genuine upload zero and positive review all movements immutable document and full totals (9.3s)
+  ✓   4 tests/phase2/deposit-persisted.spec.ts:392:5 › deposit persisted wrong lease evidence and download query reject while STAFF reads and cannot post (5.1s)
+  ✓   5 tests/phase2/deposit-persisted.spec.ts:508:5 › deposit persisted lost financial response keeps exact key body actor and recovery inside reopened modal (4.9s)
+  ✘   6 tests/phase2/deposit-persisted.spec.ts:585:5 › deposit persisted mobile keyboard focus and Axe keep genuine evidence form accessible (14.7s)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"704fa285e6e344d5955c4e93","database":"taky_phase2_test","role":"e2e_704fa285e6e344d5955c4e93","proxy":"http://127.0.0.1:3822"}
+  ✓   7 tests/phase2/expense-persisted.spec.ts:187:5 › expense persisted STAFF capture retains satang/date/history and server denies approval (3.0s)
+  ✓   8 tests/phase2/expense-persisted.spec.ts:228:5 › expense persisted ADMIN category, post, cancel, reversal and correction preserve original history (4.6s)
+  ✓   9 tests/phase2/expense-persisted.spec.ts:353:5 › expense persisted response loss survives navigation and exact replay without duplicate capture (2.1s)
+  ✓  10 tests/phase2/expense-persisted.spec.ts:406:5 › expense persisted uncertain category replay remains protected after real ADMIN demotion and logout (2.5s)
+  ✓  11 tests/phase2/expense-persisted.spec.ts:470:5 › expense persisted full paging and CSV cover 105 filtered records in a populated database (3.6s)
+  ✓  12 tests/phase2/expense-persisted.spec.ts:518:5 › expense persisted mobile keyboard, validation retention, max precision and explicit demo separation (1.9s)
+  ✓  13 tests/phase2/expense-persisted.spec.ts:569:5 › expense persisted uncertain command stays keyboard reachable in selected detail (2.1s)
+  ✓  14 tests/phase2/expense-persisted.spec.ts:652:5 › expense persisted delayed filter and detail reads never overwrite a newer selection (1.8s)
+  ✓  15 tests/phase2/payment-persisted.spec.ts:259:5 › payment persisted STAFF pending capture, Bangkok date, roles and reload (1.8s)
+(node:77006) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  ✓  16 tests/phase2/payment-persisted.spec.ts:299:5 › payment persisted ADMIN exact multi-invoice allocations, immutable receipt, reversal and pending cancellation (3.0s)
+  ✓  17 tests/phase2/payment-persisted.spec.ts:369:5 › payment persisted lost create response survives Next navigation and exact replay (1.4s)
+  ✓  18 tests/phase2/payment-persisted.spec.ts:421:5 › payment persisted cash duplicate review, explicit override and stale invoice rejection (3.7s)
+  ✓  19 tests/phase2/payment-persisted.spec.ts:486:5 › payment persisted invalid precision, maximum amount, keyboard and narrow accessibility (2.2s)
+  ✓  20 tests/phase2/payment-persisted.spec.ts:515:5 › payment persisted uncertain retry403 stays protected and logout never resurrects its command (3.9s)
+  ✓  21 tests/phase2/payment-persisted.spec.ts:576:5 › payment persisted lost confirmation replay remains uncertain after real ADMIN demotion (4.3s)
+  ✓  22 tests/phase2/payment-persisted.spec.ts:641:5 › payment persisted all-history allocations load the second balance page (22.1s)
+  ✓  23 tests/phase2/payment-persisted.spec.ts:667:5 › payment persisted malformed list and receipt mismatch remain failures, stale detail never overwrites selection (2.1s)
+  ✓  24 tests/phase2/payment-persisted.spec.ts:760:5 › payment persisted bank duplicate has no override and failed allocation paging cannot confirm (1.4s)
+  ✓  25 tests/phase2/payment-persisted.spec.ts:819:5 › payment persisted genuine doubleclick settles original POST while the view is unmounted (1.3s)
+  ✓  26 tests/phase2/payment-persisted.spec.ts:878:5 › payment persisted two ADMIN browser sessions race explicit allocations without overpayment (3.2s)
+  ✓  27 tests/phase2/payment-persisted.spec.ts:988:5 › payment persisted list pages beyond fifty managed records without inventing a total (2.3s)
+  ✓  28 tests/phase2/payment-persisted.spec.ts:1030:5 › payment persisted keyboard-only dialogs complete pending capture and receipt confirmation without runtime errors (2.8s)
+  ✘  29 tests/phase2/receipt-pdf.spec.ts:241:7 › receipt PDF persisted ADMIN opens inline, downloads real bytes and supports narrow keyboard actions (3.6s)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"704fa285e6e344d5955c4e93","database":"taky_phase2_test","role":"e2e_704fa285e6e344d5955c4e93","proxy":"http://127.0.0.1:3822"}
+(node:77685) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  ✘  30 tests/phase2/receipt-pdf.spec.ts:241:7 › receipt PDF persisted STAFF opens inline, downloads real bytes and supports narrow keyboard actions (2.9s)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"704fa285e6e344d5955c4e93","database":"taky_phase2_test","role":"e2e_704fa285e6e344d5955c4e93","proxy":"http://127.0.0.1:3822"}
+(node:77706) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  ✘  31 tests/phase2/receipt-pdf.spec.ts:375:5 › receipt PDF persisted cancellation remains original and revoked or disabled sessions cannot export (17.6s)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"704fa285e6e344d5955c4e93","database":"taky_phase2_test","role":"e2e_704fa285e6e344d5955c4e93","proxy":"http://127.0.0.1:3822"}
+  ✓  32 tests/phase2/tenant-rent-persisted.spec.ts:19:5 › tenant contract rent survives room selection, save, reload and reselect (2.3s)
+  ✓  33 tests/phase2/tenant-rent-persisted.spec.ts:85:5 › a tenant without a room assignment has no invented contract rent (1.2s)
+  ✓  34 tests/phase2/tenant-rent-persisted.spec.ts:113:5 › room defaults fill untouched rent while explicit zero survives a room change and reload (2.0s)
+  ✓  35 tests/phase2/tenant-rent-persisted.spec.ts:180:5 › tenant rent entered after room selection survives immediate save and reload (1.3s)
+
+
+  1) tests/phase2/billing-setup.spec.ts:38:5 › ADMIN completes a fictional monthly billing flow in the UI 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: page.waitForEvent: Test timeout of 90000ms exceeded.
+    =========================== logs ===========================
+    waiting for event "download"
+    ============================================================
+
+      264 |   });
+      265 |   await expect(downloadButton).toBeEnabled();
+    > 266 |   const downloadPromise = page.waitForEvent("download");
+          |                                ^
+      267 |   await downloadButton.click();
+      268 |   const download = await downloadPromise;
+      269 |   expect(download.suggestedFilename()).toMatch(
+        at /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/tests/phase2/billing-setup.spec.ts:266:32
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-billing-setup-ADMIN-d8b08-thly-billing-flow-in-the-UI/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-billing-setup-ADMIN-d8b08-thly-billing-flow-in-the-UI/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-billing-setup-ADMIN-d8b08-thly-billing-flow-in-the-UI/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-billing-setup-ADMIN-d8b08-thly-billing-flow-in-the-UI/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/phase2/deposit-persisted.spec.ts:585:5 › deposit persisted mobile keyboard focus and Axe keep genuine evidence form accessible 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByRole('dialog').getByLabel('เลือกหลักฐานของสัญญานี้', { exact: true })
+    Expected: "51551b2b-d479-44ab-8301-5db492877e69"
+    Received: ""
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveValue" getByRole('dialog').getByLabel('เลือกหลักฐานของสัญญานี้', { exact: true }) with timeout 10000ms
+      - waiting for getByRole('dialog').getByLabel('เลือกหลักฐานของสัญญานี้', { exact: true })
+        23 × locator resolved to <select id="_r_g_" required="" aria-describedby="_r_g_-hint">…</select>
+           - unexpected value ""
+
+
+      630 |   await page.keyboard.press("ArrowDown");
+      631 |   await page.keyboard.press("Enter");
+    > 632 |   await expect(evidence).toHaveValue(f.evidence.id);
+          |                          ^
+      633 |   const checkbox = dialog.getByRole("checkbox");
+      634 |   await tabTo(page, checkbox);
+      635 |   await page.keyboard.press("Space");
+        at /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/tests/phase2/deposit-persisted.spec.ts:632:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-deposit-persisted-d-64642-ne-evidence-form-accessible/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-deposit-persisted-d-64642-ne-evidence-form-accessible/error-context.md
+
+    Error Context: evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-deposit-persisted-d-64642-ne-evidence-form-accessible/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-deposit-persisted-d-64642-ne-evidence-form-accessible/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-deposit-persisted-d-64642-ne-evidence-form-accessible/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/phase2/receipt-pdf.spec.ts:241:7 › receipt PDF persisted ADMIN opens inline, downloads real bytes and supports narrow keyboard actions 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 500
+
+      183 | }
+      184 | function pdfHeaders(response: Response, number: string, attachment: boolean) {
+    > 185 |   expect(response.status()).toBe(200);
+          |                             ^
+      186 |   const headers = response.headers();
+      187 |   expect(headers["content-type"]).toBe("application/pdf");
+      188 |   expect(headers["cache-control"]).toBe("private, no-store, max-age=0");
+        at pdfHeaders (/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/tests/phase2/receipt-pdf.spec.ts:185:29)
+        at /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/tests/phase2/receipt-pdf.spec.ts:317:5
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-cda3e-rts-narrow-keyboard-actions/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-cda3e-rts-narrow-keyboard-actions/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-cda3e-rts-narrow-keyboard-actions/error-context.md
+
+    Error Context: evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-cda3e-rts-narrow-keyboard-actions/error-context.md
+
+    attachment #6: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-cda3e-rts-narrow-keyboard-actions/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-cda3e-rts-narrow-keyboard-actions/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/phase2/receipt-pdf.spec.ts:241:7 › receipt PDF persisted STAFF opens inline, downloads real bytes and supports narrow keyboard actions 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 500
+
+      183 | }
+      184 | function pdfHeaders(response: Response, number: string, attachment: boolean) {
+    > 185 |   expect(response.status()).toBe(200);
+          |                             ^
+      186 |   const headers = response.headers();
+      187 |   expect(headers["content-type"]).toBe("application/pdf");
+      188 |   expect(headers["cache-control"]).toBe("private, no-store, max-age=0");
+        at pdfHeaders (/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/tests/phase2/receipt-pdf.spec.ts:185:29)
+        at /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/tests/phase2/receipt-pdf.spec.ts:317:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-ad907-rts-narrow-keyboard-actions/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-ad907-rts-narrow-keyboard-actions/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-ad907-rts-narrow-keyboard-actions/error-context.md
+
+    Error Context: evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-ad907-rts-narrow-keyboard-actions/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-ad907-rts-narrow-keyboard-actions/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-ad907-rts-narrow-keyboard-actions/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) tests/phase2/receipt-pdf.spec.ts:375:5 › receipt PDF persisted cancellation remains original and revoked or disabled sessions cannot export 
+
+    Error: Receipt link did not produce a real browser download
+
+      220 |       () =>
+      221 |         reject(
+    > 222 |           new Error("Receipt link did not produce a real browser download"),
+          |           ^
+      223 |         ),
+      224 |       15000,
+      225 |     );
+        at Timeout.<anonymous> (/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/tests/phase2/receipt-pdf.spec.ts:222:11)
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-7edbb-bled-sessions-cannot-export/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-7edbb-bled-sessions-cannot-export/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-7edbb-bled-sessions-cannot-export/error-context.md
+
+    Error Context: evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-7edbb-bled-sessions-cannot-export/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-7edbb-bled-sessions-cannot-export/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-704fa285e6e344d5955c4e93/test-results/phase2-receipt-pdf-receipt-7edbb-bled-sessions-cannot-export/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5 failed
+    tests/phase2/billing-setup.spec.ts:38:5 › ADMIN completes a fictional monthly billing flow in the UI 
+    tests/phase2/deposit-persisted.spec.ts:585:5 › deposit persisted mobile keyboard focus and Axe keep genuine evidence form accessible 
+    tests/phase2/receipt-pdf.spec.ts:241:7 › receipt PDF persisted ADMIN opens inline, downloads real bytes and supports narrow keyboard actions 
+    tests/phase2/receipt-pdf.spec.ts:241:7 › receipt PDF persisted STAFF opens inline, downloads real bytes and supports narrow keyboard actions 
+    tests/phase2/receipt-pdf.spec.ts:375:5 › receipt PDF persisted cancellation remains original and revoked or disabled sessions cannot export 
+  30 passed (4.1m)
+
+{"finished":"2026-10-25T15:53:03.549Z","exitCode":1}

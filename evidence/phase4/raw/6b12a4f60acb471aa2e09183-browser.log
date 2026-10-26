@@ -1,0 +1,92 @@
+{"started":"2026-10-25T15:31:47.545Z","command":"npx playwright test --output evidence/remediation/browser-6b12a4f60acb471aa2e09183/test-results --grep deposit persisted","runId":"6b12a4f60acb471aa2e09183","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_6b12a4f60acb471aa2e09183"}}
+
+Running 5 tests using 1 worker
+
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"6b12a4f60acb471aa2e09183","database":"taky_phase2_test","role":"e2e_6b12a4f60acb471aa2e09183","proxy":"http://127.0.0.1:3822"}
+  ✘  1 tests/phase2/deposit-persisted.spec.ts:193:5 › deposit persisted valid missing UUID pages return not-found instead of the generic server error (2.7s)
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"6b12a4f60acb471aa2e09183","database":"taky_phase2_test","role":"e2e_6b12a4f60acb471aa2e09183","proxy":"http://127.0.0.1:3822"}
+  ✓  2 tests/phase2/deposit-persisted.spec.ts:215:5 › deposit persisted genuine upload zero and positive review all movements immutable document and full totals (11.2s)
+  ✓  3 tests/phase2/deposit-persisted.spec.ts:375:5 › deposit persisted wrong lease evidence and download query reject while STAFF reads and cannot post (5.1s)
+  ✓  4 tests/phase2/deposit-persisted.spec.ts:491:5 › deposit persisted lost financial response keeps exact key body actor and recovery inside reopened modal (3.0s)
+  ✘  5 tests/phase2/deposit-persisted.spec.ts:568:5 › deposit persisted mobile keyboard focus and Axe keep genuine evidence form accessible (14.4s)
+
+
+  1) tests/phase2/deposit-persisted.spec.ts:193:5 › deposit persisted valid missing UUID pages return not-found instead of the generic server error 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 404
+    Received: 200
+
+      200 |   ]) {
+      201 |     const response = await page.goto(path);
+    > 202 |     expect(response?.status()).toBe(404);
+          |                                ^
+      203 |     await expect(
+      204 |       page.getByRole("heading", { name: "ไม่พบหน้าที่ต้องการ", exact: true }),
+      205 |     ).toBeVisible();
+        at /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/tests/phase2/deposit-persisted.spec.ts:202:32
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-6b12a4f60acb471aa2e09183/test-results/phase2-deposit-persisted-d-514a3-of-the-generic-server-error/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-6b12a4f60acb471aa2e09183/test-results/phase2-deposit-persisted-d-514a3-of-the-generic-server-error/error-context.md
+
+    Error Context: evidence/remediation/browser-6b12a4f60acb471aa2e09183/test-results/phase2-deposit-persisted-d-514a3-of-the-generic-server-error/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-6b12a4f60acb471aa2e09183/test-results/phase2-deposit-persisted-d-514a3-of-the-generic-server-error/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-6b12a4f60acb471aa2e09183/test-results/phase2-deposit-persisted-d-514a3-of-the-generic-server-error/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/phase2/deposit-persisted.spec.ts:568:5 › deposit persisted mobile keyboard focus and Axe keep genuine evidence form accessible 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByRole('dialog').getByLabel('เลือกหลักฐานของสัญญานี้', { exact: true })
+    Expected: "c9ba240a-8167-445f-b83c-0052fda818a2"
+    Received: ""
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveValue" getByRole('dialog').getByLabel('เลือกหลักฐานของสัญญานี้', { exact: true }) with timeout 10000ms
+      - waiting for getByRole('dialog').getByLabel('เลือกหลักฐานของสัญญานี้', { exact: true })
+        24 × locator resolved to <select id="_r_g_" required="" aria-describedby="_r_g_-hint">…</select>
+           - unexpected value ""
+
+
+      608 |   await page.keyboard.press("Home");
+      609 |   await page.keyboard.press("ArrowDown");
+    > 610 |   await expect(evidence).toHaveValue(f.evidence.id);
+          |                          ^
+      611 |   const checkbox = dialog.getByRole("checkbox");
+      612 |   await tabTo(page, checkbox);
+      613 |   await page.keyboard.press("Space");
+        at /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/tests/phase2/deposit-persisted.spec.ts:610:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    evidence/remediation/browser-6b12a4f60acb471aa2e09183/test-results/phase2-deposit-persisted-d-64642-ne-evidence-form-accessible/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: evidence/remediation/browser-6b12a4f60acb471aa2e09183/test-results/phase2-deposit-persisted-d-64642-ne-evidence-form-accessible/error-context.md
+
+    Error Context: evidence/remediation/browser-6b12a4f60acb471aa2e09183/test-results/phase2-deposit-persisted-d-64642-ne-evidence-form-accessible/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    evidence/remediation/browser-6b12a4f60acb471aa2e09183/test-results/phase2-deposit-persisted-d-64642-ne-evidence-form-accessible/trace.zip
+    Usage:
+
+        npx playwright show-trace evidence/remediation/browser-6b12a4f60acb471aa2e09183/test-results/phase2-deposit-persisted-d-64642-ne-evidence-form-accessible/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests/phase2/deposit-persisted.spec.ts:193:5 › deposit persisted valid missing UUID pages return not-found instead of the generic server error 
+    tests/phase2/deposit-persisted.spec.ts:568:5 › deposit persisted mobile keyboard focus and Axe keep genuine evidence form accessible 
+  3 passed (48.9s)
+
+{"finished":"2026-10-25T15:32:37.641Z","exitCode":1}

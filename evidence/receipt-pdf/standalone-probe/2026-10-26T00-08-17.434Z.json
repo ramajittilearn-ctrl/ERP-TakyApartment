@@ -1,0 +1,24 @@
+[
+  {
+    "event": "database_attested"
+  },
+  {
+    "event": "login",
+    "status": 200
+  },
+  {
+    "event": "font_lookup",
+    "code": "ENOENT",
+    "asset": "noto-sans-thai-thai-400-normal.woff"
+  },
+  {
+    "event": "receipt_pdf",
+    "status": 500,
+    "bytes": 154,
+    "code": "INTERNAL"
+  },
+  {
+    "event": "own_server_stopped",
+    "stopped": true
+  }
+]

@@ -1,0 +1,76 @@
+{"mode":"integration","source":{"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","project":"taky-phase4-recovery-20261025","host":"127.0.0.1","port":55489},"targets":{"integration":"taky_deposit_test_20261025_core3","rehearsal":"taky_payment_test_2b5214bd52_finite_rehearsal2","blocker":"taky_payment_test_2b5214bd52_finite_blocker2","allocBlocker":"taky_payment_test_2b5214bd52_finite_alloc_blocker2"},"planValidated":true}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+{"attested":true,"database":"taky_deposit_test_20261025_core3","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.12 [39m[90m/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate[39m
+
+ [32m✓[39m tests/integration/deposits.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 945[2mms[22m[39m
+(node:38163) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ [31m❯[39m tests/integration/deposit-races.test.ts [2m([22m[2m9 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 1901[2mms[22m[39m
+[31m   [31m×[31m permits exactly one active service bank claim in PAYMENT_FIRST arrival order[39m[32m 264[2mms[22m[39m
+   [32m✓[39m permits exactly one active service bank claim in DEPOSIT_FIRST arrival order[32m 156[2mms[22m[39m
+[31m   [31m×[31m serializes a READ COMMITTED direct Payment claim versus deposit service in DIRECT_FIRST order[39m[32m 239[2mms[22m[39m
+   [32m✓[39m serializes a READ COMMITTED direct Payment claim versus deposit service in SERVICE_FIRST order[32m 213[2mms[22m[39m
+   [33m[2m✓[22m[39m releases a reversed deposit identity and a cancelled pending Payment identity without erasing history [33m 329[2mms[22m[39m
+   [32m✓[39m allows one duplicate reversal and one of receipt reversal versus spend without partial commits[32m 170[2mms[22m[39m
+   [32m✓[39m replays a concurrent identical reversal key as one entry, version, command and audit[32m 61[2mms[22m[39m
+   [32m✓[39m queues supported writers before bank/entity locks while source close waits in DIRECT_FIRST order[32m 183[2mms[22m[39m
+   [32m✓[39m queues supported writers before bank/entity locks while source close waits in SERVICE_FIRST order[32m 204[2mms[22m[39m
+ [32m✓[39m tests/integration/deposit-integrity.test.ts [2m([22m[2m24 tests[22m[2m)[22m[33m 3202[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects a skipped raw account version and duplicate raw reversal without retained partial state [33m 321[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/integration/deposit-races.test.ts[2m > [22mpermits exactly one active service bank claim in PAYMENT_FIRST arrival order
+[31m[1mAssertionError[22m: expected [ 'fulfilled', 'fulfilled' ] to deeply equal [ 'fulfilled', 'rejected' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  [[22m
+[2m    "fulfilled",[22m
+[32m-   "rejected",[39m
+[31m+   "fulfilled",[39m
+[2m  ][22m
+
+[36m [2m❯[22m tests/integration/deposit-races.test.ts:[2m137:49[22m[39m
+    [90m135|[39m       [35mawait[39m holder[33m.[39mclient[33m.[39m[34mquery[39m([32m"COMMIT"[39m)[33m;[39m
+    [90m136|[39m       [35mconst[39m outcomes [33m=[39m [35mawait[39m [33mPromise[39m[33m.[39m[34mall[39m([first[33m,[39m second])[33m;[39m
+    [90m137|[39m       [34mexpect[39m(outcomes[33m.[39m[34mmap[39m((row) [33m=>[39m row[33m.[39mstatus))[33m.[39m[34mtoEqual[39m([
+    [90m   |[39m                                                 [31m^[39m
+    [90m138|[39m         [32m"fulfilled"[39m[33m,[39m
+    [90m139|[39m         [32m"rejected"[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/deposit-races.test.ts[2m > [22mserializes a READ COMMITTED direct Payment claim versus deposit service in DIRECT_FIRST order
+[31m[1mAssertionError[22m: expected [ 'fulfilled', 'fulfilled' ] to deeply equal [ 'fulfilled', 'rejected' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  [[22m
+[2m    "fulfilled",[22m
+[32m-   "rejected",[39m
+[31m+   "fulfilled",[39m
+[2m  ][22m
+
+[36m [2m❯[22m tests/integration/deposit-races.test.ts:[2m216:49[22m[39m
+    [90m214|[39m       [35mawait[39m holder[33m.[39mclient[33m.[39m[34mquery[39m([32m"COMMIT"[39m)[33m;[39m
+    [90m215|[39m       [35mconst[39m outcomes [33m=[39m [35mawait[39m [33mPromise[39m[33m.[39m[34mall[39m([first[33m,[39m second])[33m;[39m
+    [90m216|[39m       [34mexpect[39m(outcomes[33m.[39m[34mmap[39m((row) [33m=>[39m row[33m.[39mstatus))[33m.[39m[34mtoEqual[39m([
+    [90m   |[39m                                                 [31m^[39m
+    [90m217|[39m         [32m"fulfilled"[39m[33m,[39m
+    [90m218|[39m         [32m"rejected"[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m44 passed[39m[22m[90m (46)[39m
+[2m   Start at [22m 19:20:08
+[2m   Duration [22m 6.82s[2m (transform 133ms, setup 0ms, import 444ms, tests 6.05s, environment 0ms)[22m
+
+Child exit: 1; signal: none; timeout: false; outputLimit: false
+QA outcome: 1

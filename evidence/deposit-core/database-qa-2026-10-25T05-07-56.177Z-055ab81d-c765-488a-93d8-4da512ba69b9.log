@@ -1,0 +1,49 @@
+{"mode":"integration","source":{"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","project":"taky-phase4-recovery-20261025","host":"127.0.0.1","port":55489},"targets":{"integration":"taky_deposit_test_20261025_core2","rehearsal":"taky_payment_test_2b5214bd52_finite_rehearsal2","blocker":"taky_payment_test_2b5214bd52_finite_blocker2","allocBlocker":"taky_payment_test_2b5214bd52_finite_alloc_blocker2"},"planValidated":true}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+{"attested":true,"database":"taky_deposit_test_20261025_core2","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.12 [39m[90m/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate[39m
+
+ [31m❯[39m tests/integration/deposits.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 1758[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps contractual, legacy and reviewed opening distinct with replay [33m 399[2mms[22m[39m
+     [33m[2m✓[22m[39m handles receipt, deduction, refund and full original reversal exactly [33m 435[2mms[22m[39m
+     [32m✓[39m fails closed on missing review, stale versions, overspend and retained-byte tampering[32m 122[2mms[22m[39m
+     [32m✓[39m freezes financial and accepted attachment rows and rejects raw NaN reviews[32m 188[2mms[22m[39m
+[31m     [31m×[31m serializes competing spends and duplicate commands without partial commits[39m[32m 251[2mms[22m[39m
+     [32m✓[39m rejects historical drift and new receipts on ended leases while permitting refunds[32m 159[2mms[22m[39m
+     [32m✓[39m shows original non-finite legacy values without inferring liability or repairing data[32m 67[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/integration/deposits.test.ts[2m > [22mmanaged deposit PostgreSQL core[2m > [22mserializes competing spends and duplicate commands without partial commits
+[31m[1mPrismaClientKnownRequestError[22m: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+Raw query failed. Code: `40001`. Message: `could not serialize access due to concurrent update`[39m
+[90m [2m❯[22m vn.handleRequestError node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m238:12[22m[39m
+[90m [2m❯[22m vn.handleAndLogRequestError node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m184:11[22m[39m
+[90m [2m❯[22m vn.request node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m153:11[22m[39m
+[90m [2m❯[22m a node_modules/@prisma/client/src/runtime/getPrismaClient.ts:[2m1012:23[22m[39m
+[36m [2m❯[22m lockAccount src/server/deposits/service.ts:[2m196:3[22m[39m
+    [90m194|[39m   [35mif[39m ([33m![39m([35mawait[39m tx[33m.[39mdepositAccount[33m.[39m[34mfindUnique[39m({ where[33m:[39m { leaseId } })))
+    [90m195|[39m     [35mawait[39m tx[33m.[39mdepositAccount[33m.[39m[34mcreate[39m({ data[33m:[39m { leaseId } })[33m;[39m
+    [90m196|[39m   await tx.$queryRaw`SELECT "leaseId" FROM "DepositAccount" WHERE "lea…
+    [90m   |[39m   [31m^[39m
+    [90m197|[39m   [35mconst[39m account [33m=[39m [35mawait[39m tx[33m.[39mdepositAccount[33m.[39m[34mfindUniqueOrThrow[39m({
+    [90m198|[39m     where[33m:[39m { leaseId }[33m,[39m
+[90m [2m❯[22m reviewed src/server/deposits/service.ts:[2m386:20[22m[39m
+[90m [2m❯[22m src/server/deposits/service.ts:[2m452:36[22m[39m
+[90m [2m❯[22m db.$transaction.isolationLevel src/server/deposits/service.ts:[2m273:13[22m[39m
+[90m [2m❯[22m Proxy._transactionWithCallback node_modules/@prisma/client/src/runtime/getPrismaClient.ts:[2m859:17[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 12:07:57
+[2m   Duration [22m 3.13s[2m (transform 96ms, setup 0ms, import 310ms, tests 1.76s, environment 0ms)[22m
+
+Child exit: 1; signal: none; timeout: false; outputLimit: false
+QA outcome: 1

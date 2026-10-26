@@ -1,0 +1,10 @@
+
+> taky-apartment-erp@0.1.0 lint
+> eslint src tests prisma scripts operations *.ts *.mjs --no-warn-ignored --max-warnings 0
+
+
+/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/tests/integration/payment-finite-migration-rehearsal.ts
+  8:3  error  'readFileSync' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+

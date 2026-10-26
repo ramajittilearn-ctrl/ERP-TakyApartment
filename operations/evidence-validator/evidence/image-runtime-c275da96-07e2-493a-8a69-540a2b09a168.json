@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-25T12:04:09.967Z",
+  "origin": "http://127.0.0.1:3835",
+  "results": [
+    {
+      "pass": false,
+      "error": "TypeError: fetch failed"
+    }
+  ],
+  "outcome": 1
+}
