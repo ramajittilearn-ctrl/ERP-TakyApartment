@@ -1,0 +1,67 @@
+{
+  "at": "2026-10-25T12:15:40.247Z",
+  "origin": "http://127.0.0.1:3835",
+  "results": [
+    {
+      "name": "genuine PDF through actual qpdf",
+      "status": 200,
+      "pass": true
+    },
+    {
+      "name": "genuine PNG through actual Sharp",
+      "status": 200,
+      "pass": true
+    },
+    {
+      "name": "genuine JPEG through actual Sharp",
+      "status": 200,
+      "pass": true
+    },
+    {
+      "name": "PDF active OpenAction JavaScript",
+      "status": 422,
+      "pass": true
+    },
+    {
+      "name": "malformed PDF envelope",
+      "status": 422,
+      "pass": true
+    },
+    {
+      "name": "truncated PNG",
+      "status": 422,
+      "pass": true
+    },
+    {
+      "name": "appended JPEG payload",
+      "status": 422,
+      "pass": true
+    },
+    {
+      "name": "appended PDF payload",
+      "status": 422,
+      "pass": true
+    },
+    {
+      "name": "oversized body",
+      "status": 413,
+      "pass": true
+    },
+    {
+      "name": "wrong credential",
+      "status": 401,
+      "pass": true
+    },
+    {
+      "name": "actual image above pixel ceiling",
+      "status": 422,
+      "pass": true
+    },
+    {
+      "name": "real encrypted PDF",
+      "status": 422,
+      "pass": true
+    }
+  ],
+  "outcome": 0
+}

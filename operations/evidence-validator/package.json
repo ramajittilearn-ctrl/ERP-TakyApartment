@@ -1,0 +1,16 @@
+{
+  "name": "taky-evidence-validator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "sharp": "0.35.5"
+  }
+}

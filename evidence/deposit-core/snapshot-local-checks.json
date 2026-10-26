@@ -1,0 +1,14 @@
+[
+  {
+    "check": "snapshot-typecheck",
+    "exitCode": 0
+  },
+  {
+    "check": "snapshot-lint",
+    "exitCode": 0
+  },
+  {
+    "check": "snapshot-whitespace",
+    "exitCode": 0
+  }
+]

@@ -22,7 +22,7 @@ COPY --from=build --chown=node:node /app/package.json ./package.json
 COPY --from=build --chown=node:node /app/tests ./tests
 COPY --from=build --chown=node:node /app/vitest.integration.config.ts ./vitest.integration.config.ts
 COPY --from=build --chown=node:node /app/tsconfig.json ./tsconfig.json
-RUN mkdir -p /app/storage/attachments && chown -R node:node /app/storage
+RUN mkdir -p /app/storage/attachments && chmod 0700 /app/storage/attachments && chown -R node:node /app/storage
 USER node
 EXPOSE 3000
 CMD ["sh", "-c", "npm run db:migrate && npm run db:seed && node server.js"]

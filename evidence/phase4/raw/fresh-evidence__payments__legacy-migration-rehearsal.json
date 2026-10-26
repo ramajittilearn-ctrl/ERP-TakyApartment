@@ -1,0 +1,50 @@
+{
+  "result": "PASS",
+  "database": "taky_payment_test_2b5214bd52_integrated17_history",
+  "legacy": {
+    "property": "059592b7-8ead-4a3d-b1c9-fd4e0d1db780",
+    "floor": "bfca7817-43da-4ca5-94b8-d11d32292530",
+    "room": "68eeb18f-eb63-4f68-93f9-7d77971b05a3",
+    "tenant": "ef74d91c-b85b-44d9-80fe-9b29bb55ae69",
+    "lease": "a6147b13-d05e-4492-851f-7e2d23c20632",
+    "invoice": "ba2b897f-dfa5-4485-b61d-b10a01ddc0ba",
+    "paymentIds": [
+      "dda7bc57-4430-40a8-8f66-7d4030372b2f",
+      "b6b6d795-b768-4310-aef2-fd06465e648c",
+      "938a1114-e008-46fe-ba9a-cf62fbfe82da"
+    ],
+    "allocationIds": [
+      "aaeb731f-c427-4bcc-9106-cd2dc0f2382e",
+      "7db99d74-e467-4e3a-b17c-a94120bd815b",
+      "add6d95b-ae33-4d9e-8a88-06872b32a53d"
+    ]
+  },
+  "preservedPaymentRows": 3,
+  "preservedAllocationRows": 3,
+  "preservedConstraints": 7,
+  "preservedIndexes": 7,
+  "preservedStatuses": [
+    "PENDING",
+    "CONFIRMED",
+    "REVERSED"
+  ],
+  "migrations": [
+    "202610160001_foundation",
+    "202610160002_constraints",
+    "202610170001_backup_operations",
+    "202610170002_room_reserved",
+    "202610170003_occupancy_integrity",
+    "202610180001_phase3a_financial_foundation",
+    "202610180002_phase3b_meter_reading",
+    "202610190001_phase3c2_billing_inputs",
+    "202610200001_phase3c2_approval_sources",
+    "202610200002_phase3c2_lease_allocations",
+    "202610210001_phase3c3_invoice_lifecycle",
+    "202610210002_phase3c3_reference_capacity",
+    "202610210003_phase3c3_legacy_month_barrier",
+    "202610230001_phase3d_payments",
+    "202610240001_phase4_expenses",
+    "202610240002_payment_finite_amounts",
+    "202610240003_phase3e_deposits"
+  ]
+}

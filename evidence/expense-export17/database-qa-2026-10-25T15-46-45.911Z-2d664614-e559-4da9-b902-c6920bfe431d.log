@@ -1,0 +1,16 @@
+{"mode":"integration","source":{"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","project":"taky-phase4-recovery-20261025","host":"127.0.0.1","port":55489},"targets":{"integration":"taky_expense_test_20261025_export17","rehearsal":"taky_payment_test_2b5214bd52_finite_rehearsal2","blocker":"taky_payment_test_2b5214bd52_finite_blocker2","allocBlocker":"taky_payment_test_2b5214bd52_finite_alloc_blocker2"},"planValidated":true}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+{"attested":true,"database":"taky_expense_test_20261025_export17","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.12 [39m[90m/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate[39m
+
+ [32m✓[39m tests/integration/expense-export.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 1344[2mms[22m[39m
+   [33m[2m✓[22m[39m keeps the complete 10,000-row boundary and rejects 10,001 without partial CSV [33m 765[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 22:46:46
+[2m   Duration [22m 1.68s[2m (transform 111ms, setup 0ms, import 253ms, tests 1.34s, environment 0ms)[22m
+
+Child exit: 0; signal: none; timeout: false; outputLimit: false
+QA outcome: 0

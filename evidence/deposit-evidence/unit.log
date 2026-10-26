@@ -1,0 +1,9 @@
+
+ RUN  v4.1.12 /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/recovered-evidence
+
+
+ Test Files  4 passed (4)
+      Tests  23 passed (23)
+   Start at  12:03:34
+   Duration  680ms (transform 509ms, setup 0ms, import 1.36s, tests 582ms, environment 0ms)
+

@@ -1,0 +1,46 @@
+[
+  {
+    "check": "typecheck",
+    "command": [
+      "node",
+      "node_modules/typescript/bin/tsc",
+      "--noEmit"
+    ],
+    "exitCode": 0
+  },
+  {
+    "check": "lint",
+    "command": [
+      "node",
+      "node_modules/eslint/bin/eslint.js",
+      "src/server/deposits",
+      "src/server/payments/service.ts",
+      "tests/deposits.test.ts",
+      "tests/integration/deposits.test.ts",
+      "--max-warnings",
+      "0"
+    ],
+    "exitCode": 0
+  },
+  {
+    "check": "format",
+    "command": [
+      "node",
+      "node_modules/prettier/bin/prettier.cjs",
+      "--check",
+      "src/server/deposits",
+      "tests/deposits.test.ts",
+      "tests/integration/deposits.test.ts"
+    ],
+    "exitCode": 0
+  },
+  {
+    "check": "source-whitespace",
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exitCode": 0
+  }
+]

@@ -1,0 +1,149 @@
+{
+  "source_agent": "/root/deposit_core",
+  "source_rollout_name": "rollout-2026-10-24T17-00-13-01a16d5a-8e7d-7d41-933b-6cfe158b69f3.jsonl",
+  "operations": [
+    {
+      "call_id": "call_0b44658f149a4acbb804f721ff933807",
+      "operation": "write",
+      "path": "docs/project-execution/deposit-core-sketch.md"
+    },
+    {
+      "call_id": "call_70dfa7eac57248919febfa29d9f4a1c1",
+      "operation": "write",
+      "path": "src/server/deposits/contracts.ts"
+    },
+    {
+      "call_id": "call_70dfa7eac57248919febfa29d9f4a1c1",
+      "operation": "write",
+      "path": "src/server/deposits/domain.ts"
+    },
+    {
+      "call_id": "call_9794682180044f0a860769bb8964bea9",
+      "operation": "write",
+      "path": "tests/deposits.test.ts"
+    },
+    {
+      "call_id": "call_c828d2196eab446d98f38c511e390a58",
+      "operation": "reviewed-source-text-edit",
+      "path": "see source file hashes"
+    },
+    {
+      "call_id": "call_93ff7b0b00ec440688530841e1736762",
+      "operation": "write",
+      "path": ".local/deposit-models.txt"
+    },
+    {
+      "call_id": "call_93ff7b0b00ec440688530841e1736762",
+      "operation": "reviewed-source-text-edit",
+      "path": "see source file hashes"
+    },
+    {
+      "call_id": "call_9f1a5afd368c4ecf803bb01fdeba681f",
+      "operation": "append",
+      "path": "prisma/migrations/202610240003_phase3e_deposits/migration.sql"
+    },
+    {
+      "call_id": "call_9efcca41bbf8466588086d37cde2b973",
+      "operation": "reviewed-source-text-edit",
+      "path": "see source file hashes"
+    },
+    {
+      "call_id": "call_9efcca41bbf8466588086d37cde2b973",
+      "operation": "append",
+      "path": "src/server/deposits/contracts.ts"
+    },
+    {
+      "call_id": "call_9efcca41bbf8466588086d37cde2b973",
+      "operation": "write",
+      "path": "src/server/deposits/service.ts"
+    },
+    {
+      "call_id": "call_966ac734a39d4d07a259a4997dacc4b9",
+      "operation": "reviewed-source-text-edit",
+      "path": "see source file hashes"
+    },
+    {
+      "call_id": "call_73b058396fd846559f9c51306049315e",
+      "operation": "append",
+      "path": "prisma/migrations/202610240003_phase3e_deposits/migration.sql"
+    },
+    {
+      "call_id": "call_73b058396fd846559f9c51306049315e",
+      "operation": "write",
+      "path": "src/server/deposits/index.ts"
+    },
+    {
+      "call_id": "call_73b058396fd846559f9c51306049315e",
+      "operation": "reviewed-source-text-edit",
+      "path": "see source file hashes"
+    },
+    {
+      "call_id": "call_09a53e546cbc431889ac9d5c8b5b0dc6",
+      "operation": "append",
+      "path": "prisma/migrations/202610240003_phase3e_deposits/migration.sql"
+    },
+    {
+      "call_id": "call_09a53e546cbc431889ac9d5c8b5b0dc6",
+      "operation": "write",
+      "path": "tests/integration/deposits.test.ts"
+    },
+    {
+      "call_id": "call_f9d130b930dd430d8488e5d0a3a63357",
+      "operation": "reviewed-source-text-edit",
+      "path": "see source file hashes"
+    }
+  ],
+  "files": [
+    {
+      "path": "prisma/schema.prisma",
+      "sha256": "da5dd403bdbd254ac6039b79e4fb4023076a91db5a68517de2412af28504d38b"
+    },
+    {
+      "path": "prisma/migrations/202610240003_phase3e_deposits/migration.sql",
+      "sha256": "3457fc5e74ca5048b9449ba09f69f13c5adde1692bceaefeb667474f43a3e074"
+    },
+    {
+      "path": "src/server/payments/service.ts",
+      "sha256": "934ecfcd44c661e78203fa03a0784594a4ad9d9ff2f352413cf541f3f10b4db9"
+    },
+    {
+      "path": "tests/deposits.test.ts",
+      "sha256": "0e2ceb818c29d26bd606125c26af0a66652def4c924ebe58a9dd3c7174687d88"
+    },
+    {
+      "path": "tests/integration/deposits.test.ts",
+      "sha256": "b9bec1710ab2c77ba81fa04056cf1b03bbda6f918caf758a6977ff81c4389e40"
+    },
+    {
+      "path": "docs/project-execution/deposit-core-sketch.md",
+      "sha256": "adbe1c4276c7244918966d3a50db0c08eabb7965d894b14ca41900d4fc633ea1"
+    },
+    {
+      "path": "src/server/deposits/contracts.ts",
+      "sha256": "e59273739b1e25c7efe680aab7461c14c81b0dc5ee828266b18db1d9164044f6"
+    },
+    {
+      "path": "src/server/deposits/index.ts",
+      "sha256": "58aa061c14b1b09bbbadde4fd28a401ec7c1ea3579c3244d9ec358fbd43abf93"
+    },
+    {
+      "path": "src/server/deposits/domain.ts",
+      "sha256": "c712cb7141bc721f96c16d5b5b4d24777088e108a75f8a5ae22bd9a132abb27e"
+    },
+    {
+      "path": "src/server/deposits/service.ts",
+      "sha256": "f16d0361fabfb6c562b4f5c9435635ad91fb81fd8141925e2549c02c3ac71826"
+    }
+  ],
+  "limitations": [
+    "Recovered source is a development candidate, not independently approved financial behavior.",
+    "The initial CREATE TABLE/index/FK prefix was regenerated using the installed Prisma7.10.1 schema-only diff from the unchanged baseline39-model schema to recovered44-model schema. Recovered source guard tail was appended after that prefix.",
+    "Historical formatting-sensitive service corrections were reapplied after formatting; no shell command from the transcript was executed blindly.",
+    "Main regenerated this worktree own44-model client after offline locked dependency installation. No database call or build has been run by this recovery agent.",
+    "No deleted historical runtime artifact has been recreated or claimed as present. Fresh PostgreSQL, filesystem, independent review and integration remain required."
+  ],
+  "regenerated_prefix": {
+    "method": "prisma migrate diff --from-schema baseline39.prisma --to-schema prisma/schema.prisma --script",
+    "sha256": "9caede36a611065f4a05fed3dbbf3d8bb3297e961100caf4fc7e6b69c02ba03b"
+  }
+}

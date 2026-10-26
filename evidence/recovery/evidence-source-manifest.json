@@ -1,0 +1,70 @@
+{
+  "source_agent": "/root/expense_ui_design",
+  "source_rollout": "rollout-2026-10-24T06-23-27-01a16b13-6af6-7c43-830a-78f500b2979f.jsonl",
+  "files": [
+    {
+      "file": "docs/project-execution/deposit-evidence-interface.md",
+      "sha256": "bdb433bfca28a2a073d779b6778c49dc7acb9c0b4ed08507b8665b534f5eda5d",
+      "call_id": "call_7a2251b54d994e3c9ed00211dfc3400c",
+      "line": 998,
+      "method": "Extracted heredoc content as data; command not executed"
+    },
+    {
+      "file": "src/server/evidence/contracts.ts",
+      "sha256": "5814d6207b383e5ad018d49fb61755913c9c9ba899b2ea27116838855af912ea",
+      "call_id": "call_b279b3cc409a47b4babfeea2ab3d287d",
+      "line": 1079,
+      "method": "Extracted heredoc content as data; command not executed"
+    },
+    {
+      "file": "src/server/evidence/storage.ts",
+      "sha256": "ad3b735ab33af9a1bdc44cae7c1351f8dcc90b85af384fd58db2b0759de9872f",
+      "call_id": "call_b279b3cc409a47b4babfeea2ab3d287d",
+      "line": 1079,
+      "method": "Extracted heredoc content as data; command not executed"
+    },
+    {
+      "file": "src/server/evidence/admission.ts",
+      "sha256": "6b6bba85538321db6dbd0fd0ca273c78f0e4584392fcb7a631689d795d03268b",
+      "call_id": "call_293223defb3d411388dbd2ee0d77e0c8",
+      "line": 1088,
+      "method": "Extracted heredoc content as data; command not executed"
+    }
+  ],
+  "limitations": [
+    "Only three evidence modules and the interface sketch were written in the historical transcript. No service, index, formats validator, routes or evidence tests were implemented there.",
+    "Historical runtime worktrees and raw test artifacts were removed from temporary storage. Recovery does not imply verification or readiness.",
+    "The login admission candidate is excluded and remains parked."
+  ],
+  "historical_tool_result_records": {
+    "call_7a2251b54d994e3c9ed00211dfc3400c": {
+      "output_line": 1001,
+      "command_exit_zero_recorded": true,
+      "output_sha256": "892582b8597ed7d000e9345bcec7dee2ce12b887ebeb7a5a101dd57ef1577154"
+    },
+    "call_b279b3cc409a47b4babfeea2ab3d287d": {
+      "output_line": 1082,
+      "command_exit_zero_recorded": true,
+      "output_sha256": "94f83fd050ff2d050872c04db875541e71b1467e891cbcdb704e810fa7ef8c4a"
+    },
+    "call_293223defb3d411388dbd2ee0d77e0c8": {
+      "output_line": 1090,
+      "command_exit_zero_recorded": false,
+      "output_sha256": "5e39bbbe4534cefaf686b8718a9bcff6894827f10fa9b9ca84e9077fc84419ed",
+      "later_command_completion": {
+        "source_line": 1092,
+        "command_execution_id": "exec-d7b960bc-0d0b-4a7b-aef4-aa8ed9973996",
+        "process_id": "19294",
+        "status": "completed",
+        "exit_code": 0,
+        "note": "Initial tool response yielded a live process; later structured execution record confirms completion. This is historical command evidence, not a fresh generation or source verification claim."
+      }
+    }
+  },
+  "recovery_verification": {
+    "all_extracted_file_hashes_match": true,
+    "historical_tool_results_found": 3,
+    "recovery_date": "2026-10-25",
+    "runtime_tests_executed": false
+  }
+}

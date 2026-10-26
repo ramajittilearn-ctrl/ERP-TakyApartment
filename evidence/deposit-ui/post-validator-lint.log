@@ -1,0 +1,4 @@
+
+> taky-apartment-erp@0.1.0 lint
+> eslint src tests prisma scripts operations *.ts *.mjs --no-warn-ignored --max-warnings 0
+

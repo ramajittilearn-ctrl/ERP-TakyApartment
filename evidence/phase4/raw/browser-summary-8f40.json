@@ -1,0 +1,469 @@
+{
+  "runId": "8f40b1e18daa4bbab16f1f09",
+  "stats": {
+    "startTime": "2026-10-26T00:25:25.332Z",
+    "duration": 205780.83899999998,
+    "expected": 35,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "sourceReportSha256": "4db8c3037191ff05acb8a5f7948a33c160d5146380337992374d57f88fe2edc9",
+  "cases": [
+    {
+      "file": "phase2/billing-setup.spec.ts",
+      "title": "ADMIN completes a fictional monthly billing flow in the UI",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 22390
+        }
+      ]
+    },
+    {
+      "file": "phase2/deposit-persisted.spec.ts",
+      "title": "deposit persisted valid missing UUID pages render noindex not-found while APIs keep strict 404",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 3172
+        }
+      ]
+    },
+    {
+      "file": "phase2/deposit-persisted.spec.ts",
+      "title": "deposit persisted genuine upload zero and positive review all movements immutable document and full totals",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 14746
+        }
+      ]
+    },
+    {
+      "file": "phase2/deposit-persisted.spec.ts",
+      "title": "deposit persisted wrong lease evidence and download query reject while STAFF reads and cannot post",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 9553
+        }
+      ]
+    },
+    {
+      "file": "phase2/deposit-persisted.spec.ts",
+      "title": "deposit persisted lost financial response keeps exact key body actor and recovery inside reopened modal",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 6932
+        }
+      ]
+    },
+    {
+      "file": "phase2/deposit-persisted.spec.ts",
+      "title": "deposit persisted mobile native evidence selection keyboard focus and Axe keep genuine form accessible",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 6633
+        }
+      ]
+    },
+    {
+      "file": "phase2/expense-persisted.spec.ts",
+      "title": "expense persisted STAFF capture retains satang/date/history and server denies approval",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 3821
+        }
+      ]
+    },
+    {
+      "file": "phase2/expense-persisted.spec.ts",
+      "title": "expense persisted ADMIN category, post, cancel, reversal and correction preserve original history",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 4817
+        }
+      ]
+    },
+    {
+      "file": "phase2/expense-persisted.spec.ts",
+      "title": "expense persisted response loss survives navigation and exact replay without duplicate capture",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 3148
+        }
+      ]
+    },
+    {
+      "file": "phase2/expense-persisted.spec.ts",
+      "title": "expense persisted uncertain category replay remains protected after real ADMIN demotion and logout",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 3498
+        }
+      ]
+    },
+    {
+      "file": "phase2/expense-persisted.spec.ts",
+      "title": "expense persisted full paging and CSV cover 105 filtered records in a populated database",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 6529
+        }
+      ]
+    },
+    {
+      "file": "phase2/expense-persisted.spec.ts",
+      "title": "expense persisted mobile keyboard, validation retention, max precision and explicit demo separation",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 4422
+        }
+      ]
+    },
+    {
+      "file": "phase2/expense-persisted.spec.ts",
+      "title": "expense persisted uncertain command stays keyboard reachable in selected detail",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 2022
+        }
+      ]
+    },
+    {
+      "file": "phase2/expense-persisted.spec.ts",
+      "title": "expense persisted delayed filter and detail reads never overwrite a newer selection",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 2929
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted STAFF pending capture, Bangkok date, roles and reload",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 4387
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted ADMIN exact multi-invoice allocations, immutable receipt, reversal and pending cancellation",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 4950
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted lost create response survives Next navigation and exact replay",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 4130
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted cash duplicate review, explicit override and stale invoice rejection",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 6271
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted invalid precision, maximum amount, keyboard and narrow accessibility",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 3597
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted uncertain retry403 stays protected and logout never resurrects its command",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 3323
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted lost confirmation replay remains uncertain after real ADMIN demotion",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 2231
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted all-history allocations load the second balance page",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 24439
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted malformed list and receipt mismatch remain failures, stale detail never overwrites selection",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 2582
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted bank duplicate has no override and failed allocation paging cannot confirm",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 2285
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted genuine doubleclick settles original POST while the view is unmounted",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 1602
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted two ADMIN browser sessions race explicit allocations without overpayment",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 4794
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted list pages beyond fifty managed records without inventing a total",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 1819
+        }
+      ]
+    },
+    {
+      "file": "phase2/payment-persisted.spec.ts",
+      "title": "payment persisted keyboard-only dialogs complete pending capture and receipt confirmation without runtime errors",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 5133
+        }
+      ]
+    },
+    {
+      "file": "phase2/receipt-pdf.spec.ts",
+      "title": "receipt PDF persisted ADMIN opens inline, downloads real bytes and supports narrow keyboard actions",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 6201
+        }
+      ]
+    },
+    {
+      "file": "phase2/receipt-pdf.spec.ts",
+      "title": "receipt PDF persisted STAFF opens inline, downloads real bytes and supports narrow keyboard actions",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 4115
+        }
+      ]
+    },
+    {
+      "file": "phase2/receipt-pdf.spec.ts",
+      "title": "receipt PDF persisted cancellation remains original and revoked or disabled sessions cannot export",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 4558
+        }
+      ]
+    },
+    {
+      "file": "phase2/tenant-rent-persisted.spec.ts",
+      "title": "tenant contract rent survives room selection, save, reload and reselect",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 4660
+        }
+      ]
+    },
+    {
+      "file": "phase2/tenant-rent-persisted.spec.ts",
+      "title": "a tenant without a room assignment has no invented contract rent",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 3614
+        }
+      ]
+    },
+    {
+      "file": "phase2/tenant-rent-persisted.spec.ts",
+      "title": "room defaults fill untouched rent while explicit zero survives a room change and reload",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 6534
+        }
+      ]
+    },
+    {
+      "file": "phase2/tenant-rent-persisted.spec.ts",
+      "title": "tenant rent entered after room selection survives immediate save and reload",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 4330
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+
+> taky-apartment-erp@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.12 /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate
+
+
+ Test Files  32 passed (32)
+      Tests  409 passed (409)
+   Start at  22:49:19
+   Duration  5.53s (transform 2.24s, setup 0ms, import 10.62s, tests 7.56s, environment 3ms)
+

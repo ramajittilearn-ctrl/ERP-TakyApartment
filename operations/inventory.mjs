@@ -45,7 +45,15 @@ export const INVENTORY_TABLES_V4 = Object.freeze([
   ...INVENTORY_TABLES_V3,
   "ExpenseCommand",
 ]);
-export const INVENTORY_TABLES = INVENTORY_TABLES_V4;
+export const INVENTORY_TABLES_V5 = Object.freeze([
+  ...INVENTORY_TABLES_V4,
+  "DepositAccount",
+  "DepositEntry",
+  "DepositCommand",
+  "DepositEvidence",
+  "DepositDocumentCounter",
+]);
+export const INVENTORY_TABLES = INVENTORY_TABLES_V5;
 
 export const LEGACY_INVENTORY_SQL = `SELECT jsonb_build_object(
  'schema', (SELECT encode(sha256(convert_to(string_agg(table_name||':'||column_name||':'||data_type||':'||is_nullable,',' ORDER BY table_name,ordinal_position),'UTF8')),'hex') FROM information_schema.columns WHERE table_schema='public'),
@@ -70,12 +78,14 @@ function versionSql(version, registry) {
 export const INVENTORY_SQL_V2 = versionSql(2, INVENTORY_TABLES_V2);
 export const INVENTORY_SQL_V3 = versionSql(3, INVENTORY_TABLES_V3);
 export const INVENTORY_SQL_V4 = versionSql(4, INVENTORY_TABLES_V4);
-export const INVENTORY_SQL = INVENTORY_SQL_V4;
+export const INVENTORY_SQL_V5 = versionSql(5, INVENTORY_TABLES_V5);
+export const INVENTORY_SQL = INVENTORY_SQL_V5;
 export function inventorySql(version) {
   if (version === 1) return LEGACY_INVENTORY_SQL;
   if (version === 2) return INVENTORY_SQL_V2;
   if (version === 3) return INVENTORY_SQL_V3;
   if (version === 4) return INVENTORY_SQL_V4;
+  if (version === 5) return INVENTORY_SQL_V5;
   throw new Error("Unsupported inventory version");
 }
 
@@ -90,7 +100,8 @@ export function inventoryVersion(expected) {
   if (
     expected.version !== 2 &&
     expected.version !== 3 &&
-    expected.version !== 4
+    expected.version !== 4 &&
+    expected.version !== 5
   )
     throw new Error("Unsupported inventory version");
   const registry =
@@ -98,7 +109,9 @@ export function inventoryVersion(expected) {
       ? INVENTORY_TABLES_V2
       : expected.version === 3
         ? INVENTORY_TABLES_V3
-        : INVENTORY_TABLES_V4;
+        : expected.version === 4
+          ? INVENTORY_TABLES_V4
+          : INVENTORY_TABLES_V5;
   const tables = expected.tables;
   if (
     !tables ||

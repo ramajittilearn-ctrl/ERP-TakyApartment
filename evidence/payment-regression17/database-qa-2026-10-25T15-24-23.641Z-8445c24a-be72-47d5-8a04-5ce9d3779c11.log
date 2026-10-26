@@ -1,0 +1,102 @@
+{"mode":"integration","source":{"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","project":"taky-phase4-recovery-20261025","host":"127.0.0.1","port":55489},"targets":{"integration":"taky_payment_test_2b5214bd52_integrated17","rehearsal":"taky_payment_test_2b5214bd52_finite_rehearsal2","blocker":"taky_payment_test_2b5214bd52_finite_blocker2","allocBlocker":"taky_payment_test_2b5214bd52_finite_alloc_blocker2"},"planValidated":true}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_integrated17","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.12 [39m[90m/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate[39m
+
+(node:67959) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ [31m❯[39m tests/integration/payments.test.ts [2m([22m[2m22 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 9593[2mms[22m[39m
+     [33m[2m✓[22m[39m confirms partial and full settlements, preserves pending balance, then reverses and voids immutable history [33m 822[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps same-key replay stable after transition and rejects changed bodies or operations [33m 474[2mms[22m[39m
+     [32m✓[39m rejects STAFF transitions, disabled actors, stale versions and demo leases[32m 285[2mms[22m[39m
+     [33m[2m✓[22m[39m enforces exact allocation sums, same lease and simultaneous invoice caps [33m 638[2mms[22m[39m
+     [33m[2m✓[22m[39m requires audited cash duplicate review and releases cancelled bank reference [33m 810[2mms[22m[39m
+     [33m[2m✓[22m[39m serializes pending cancellation versus confirmation and receipts across leases [33m 716[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects direct mutation, scope toggles, orphan children and incomplete final confirmation [33m 309[2mms[22m[39m
+     [33m[2m✓[22m[39m settles multiple invoices on one lease with explicit amounts [33m 399[2mms[22m[39m
+     [32m✓[39m rolls back all financial rows and numbering after-allocation[32m 224[2mms[22m[39m
+     [32m✓[39m rolls back all financial rows and numbering after-receipt[32m 259[2mms[22m[39m
+     [33m[2m✓[22m[39m rolls back all financial rows and numbering after-audit [33m 317[2mms[22m[39m
+     [33m[2m✓[22m[39m rolls back all financial rows and numbering after-command [33m 522[2mms[22m[39m
+     [32m✓[39m rejects a correctly hashed receipt with false tenant/allocation content at commit[32m 278[2mms[22m[39m
+     [32m✓[39m prevents direct SQL concurrent confirmations exceeding an invoice cap[32m 274[2mms[22m[39m
+     [32m✓[39m keeps direct SQL confirmation versus direct VOID mutually exclusive[32m 220[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects confirmation after void or revision won first without losing pending draft [33m 455[2mms[22m[39m
+     [32m✓[39m rejects receipt suffix 0000 and matches SQL canonical SHA for Thai text[32m 217[2mms[22m[39m
+[31m     [31m×[31m preserves legacy rows as read-only and excludes their amounts from managed reads[39m[32m 4[2mms[22m[39m
+     [33m[2m✓[22m[39m retains receipt issuer display name after rename and reversal [33m 422[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects standalone orphan receipt and mismatched cancellation links [33m 1191[2mms[22m[39m
+     [33m[2m✓[22m[39m fails monthly sequence exhaustion without changing payment or allocations [33m 450[2mms[22m[39m
+     [32m✓[39m proves global managed-payment invariants with live database queries[32m 32[2mms[22m[39m
+(node:67996) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ [32m✓[39m tests/integration/payment-routes.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 1455[2mms[22m[39m
+     [33m[2m✓[22m[39m performs partial settlement, historical replay, receipt reads and full reversal through HTTP wrappers [33m 458[2mms[22m[39m
+(node:68000) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ [32m✓[39m tests/integration/receipt-pdf.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 2662[2mms[22m[39m
+     [33m[2m✓[22m[39m exports frozen receipt facts and separately appends reversal cancellation without read mutations [33m 888[2mms[22m[39m
+     [33m[2m✓[22m[39m enforces real session expiry and disabled user, while an ADMIN demoted to STAFF retains allowed read access [33m 447[2mms[22m[39m
+ [31m❯[39m tests/integration/payment-finite.test.ts [2m([22m[2m9 tests[22m[2m | [22m[33m9 skipped[39m[2m)[22m[32m 98[2mms[22m[39m
+     [2m[90m↓[39m[22m retains finite pending amount 0.01
+     [2m[90m↓[39m[22m retains finite pending amount 100.00
+     [2m[90m↓[39m[22m retains finite pending amount 999999999999.99
+     [2m[90m↓[39m[22m rejects NaN at the named payment constraint
+     [2m[90m↓[39m[22m retains the numeric typmod rejection of Infinity
+     [2m[90m↓[39m[22m retains the numeric typmod rejection of -Infinity
+     [2m[90m↓[39m[22m rejects NaN allocation for an otherwise eligible managed invoice and payment
+     [2m[90m↓[39m[22m preserves a real finite confirmation, receipt and explicit allocation
+     [2m[90m↓[39m[22m keeps both checks validated and all trigger states origin-enabled
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/integration/payment-finite.test.ts[2m [ tests/integration/payment-finite.test.ts ][22m
+[31m[1mAssertionError[22m: expected [ '202610160001_foundation', …(16) ] to have a length of 16 but got 17[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 16[39m
+[31m+ 17[39m
+
+[36m [2m❯[22m tests/integration/payment-finite.test.ts:[2m147:22[22m[39m
+    [90m145|[39m     )
+    [90m146|[39m   )[33m.[39mrows[33m.[39m[34mmap[39m((row) [33m=>[39m row[33m.[39mmigration_name)[33m;[39m
+    [90m147|[39m   [34mexpect[39m(migrations)[33m.[39m[34mtoHaveLength[39m([34m16[39m)[33m;[39m
+    [90m   |[39m                      [31m^[39m
+    [90m148|[39m   expect(migrations.at(-1)).toBe("202610240002_payment_finite_amounts"…
+    [90m149|[39m   fixture [33m=[39m [35mawait[39m [34mcreateFixture[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/integration/payments.test.ts[2m > [22mStage 3D managed payment lifecycle[2m > [22mpreserves legacy rows as read-only and excludes their amounts from managed reads
+[31m[1mAssertionError[22m: expected [] to have a length of 3 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 3[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/integration/payments.test.ts:[2m893:24[22m[39m
+    [90m891|[39m       where[33m:[39m { legacyUnmapped[33m:[39m [35mtrue[39m }[33m,[39m
+    [90m892|[39m     })[33m;[39m
+    [90m893|[39m     [34mexpect[39m(historical)[33m.[39m[34mtoHaveLength[39m([34m3[39m)[33m;[39m
+    [90m   |[39m                        [31m^[39m
+    [90m894|[39m     [35mfor[39m ([35mconst[39m row [35mof[39m historical) {
+    [90m895|[39m       [34mexpect[39m(row[33m.[39mmethod)[33m.[39m[34mtoBe[39m([32m"historical-cheque"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m29 passed[39m[22m[2m | [22m[33m9 skipped[39m[90m (39)[39m
+[2m   Start at [22m 22:24:24
+[2m   Duration [22m 16.49s[2m (transform 572ms, setup 0ms, import 2.05s, tests 13.81s, environment 0ms)[22m
+
+Child exit: 1; signal: none; timeout: false; outputLimit: false
+QA outcome: 1

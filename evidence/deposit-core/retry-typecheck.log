@@ -1,0 +1,4 @@
+tests/integration/deposit-retry-probe.test.ts(19,29): error TS7053: Element implicitly has an 'any' type because expression of type '"code" | "name" | "originalCode" | "kind" | "sqlState" | "sqlstate"' can't be used to index type '{}'.
+  Property 'code' does not exist on type '{}'.
+tests/integration/deposit-retry-probe.test.ts(25,52): error TS7053: Element implicitly has an 'any' type because expression of type '"driverAdapterError" | "cause" | "meta"' can't be used to index type '{}'.
+  Property 'driverAdapterError' does not exist on type '{}'.

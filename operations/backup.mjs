@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { randomUUID, createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { withAttachmentPublicationSession } from "./publication.mjs";
 import {
   encrypt,
   filesUnder,
@@ -131,62 +132,92 @@ export async function createBackup(kind = "manual") {
       const set = path.join(directory, "set");
       await fs.mkdir(set, { mode: 0o700 });
       const attachmentRoot = process.env.ATTACHMENT_DIR || "/attachments";
-      stage = "attachment inventory";
-      const before = await filesUnder(attachmentRoot);
-      stage = "database snapshot";
-      const snapshot = await exportSnapshot();
-      try {
-        stage = "database dump";
-        const dump = path.join(set, "database.dump");
-        await run("pg_dump", [
-          "--format=custom",
-          "--no-owner",
-          "--no-privileges",
-          `--snapshot=${snapshot.snapshot}`,
-          `--file=${dump}`,
-        ]);
-        stage = "attachment copy";
-        await copyFiles(attachmentRoot, path.join(set, "attachments"), before);
-        assert.deepEqual(
-          await filesUnder(attachmentRoot),
-          before,
-          "Attachments changed during backup; retry required",
-        );
-        assert.deepEqual(
-          await filesUnder(path.join(set, "attachments")),
-          before,
-          "Attachment copy differs",
-        );
-        for (const item of snapshot.inventory.attachments) {
-          const actual = before.find((f) => f.path === item.path);
-          if (
-            !actual ||
-            actual.sha256 !== item.sha256 ||
-            actual.bytes !== item.bytes
-          )
-            throw new Error(
-              "Database attachment metadata differs from private files",
-            );
+      stage = "attachment publication admission";
+      await withAttachmentPublicationSession(async (publication) => {
+        stage = "attachment inventory";
+        await publication.assertAlive();
+        const before = await filesUnder(attachmentRoot, "", {
+          signal: publication.signal,
+        });
+        stage = "database snapshot";
+        await publication.assertAlive();
+        const snapshot = await exportSnapshot(5, {
+          signal: publication.signal,
+        });
+        try {
+          stage = "database dump";
+          const dump = path.join(set, "database.dump");
+          await run(
+            "pg_dump",
+            [
+              "--format=custom",
+              "--no-owner",
+              "--no-privileges",
+              `--snapshot=${snapshot.snapshot}`,
+              `--file=${dump}`,
+            ],
+            { signal: publication.signal },
+          );
+          await publication.assertAlive();
+          stage = "attachment copy";
+          await copyFiles(
+            attachmentRoot,
+            path.join(set, "attachments"),
+            before,
+            { signal: publication.signal },
+          );
+          assert.deepEqual(
+            await filesUnder(attachmentRoot, "", {
+              signal: publication.signal,
+            }),
+            before,
+            "Attachments changed during backup; retry required",
+          );
+          assert.deepEqual(
+            await filesUnder(path.join(set, "attachments"), "", {
+              signal: publication.signal,
+            }),
+            before,
+            "Attachment copy differs",
+          );
+          for (const item of snapshot.inventory.attachments) {
+            const actual = before.find((f) => f.path === item.path);
+            if (
+              !actual ||
+              actual.sha256 !== item.sha256 ||
+              actual.bytes !== item.bytes
+            )
+              throw new Error(
+                "Database attachment metadata differs from private files",
+              );
+          }
+          const manifest = {
+            version: 1,
+            id,
+            createdAt,
+            kind,
+            timezone: "Asia/Bangkok",
+            postgresMajor: 17,
+            keyId: createHash("sha256").update(key).digest("hex").slice(0, 16),
+            inventory: snapshot.inventory,
+            database: {
+              sha256: await sha256(dump, { signal: publication.signal }),
+              bytes: (await fs.stat(dump)).size,
+            },
+            attachments: before,
+            retainedFilesWithoutMetadata: before.filter(
+              (file) =>
+                !snapshot.inventory.attachments.some(
+                  (item) => item.path === file.path,
+                ),
+            ),
+          };
+          await publication.assertAlive();
+          await atomicJson(path.join(set, "manifest.json"), manifest);
+        } finally {
+          await snapshot.close();
         }
-        const manifest = {
-          version: 1,
-          id,
-          createdAt,
-          kind,
-          timezone: "Asia/Bangkok",
-          postgresMajor: 17,
-          keyId: createHash("sha256").update(key).digest("hex").slice(0, 16),
-          inventory: snapshot.inventory,
-          database: {
-            sha256: await sha256(dump),
-            bytes: (await fs.stat(dump)).size,
-          },
-          attachments: before,
-        };
-        await atomicJson(path.join(set, "manifest.json"), manifest);
-      } finally {
-        snapshot.close();
-      }
+      });
       stage = "archive encryption";
       const tar = path.join(directory, "set.tar.gz");
       await run("tar", [

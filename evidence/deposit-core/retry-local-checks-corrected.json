@@ -1,0 +1,49 @@
+[
+  {
+    "check": "retry-typecheck",
+    "command": [
+      "node",
+      "node_modules/typescript/bin/tsc",
+      "--noEmit"
+    ],
+    "exitCode": 0
+  },
+  {
+    "check": "retry-unit",
+    "command": [
+      "node",
+      "node_modules/vitest/vitest.mjs",
+      "run",
+      "tests/deposits.test.ts",
+      "tests/deposit-retry.test.ts"
+    ],
+    "exitCode": 0
+  },
+  {
+    "check": "retry-lint",
+    "command": [
+      "node",
+      "node_modules/eslint/bin/eslint.js",
+      "src/server/deposits",
+      "tests/helpers/deposit-core.ts",
+      "tests/deposits.test.ts",
+      "tests/deposit-retry.test.ts",
+      "tests/integration/deposits.test.ts",
+      "tests/integration/deposit-integrity.test.ts",
+      "tests/integration/deposit-races.test.ts",
+      "tests/integration/deposit-retry-probe.test.ts",
+      "--max-warnings",
+      "0"
+    ],
+    "exitCode": 0
+  },
+  {
+    "check": "retry-whitespace",
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exitCode": 0
+  }
+]

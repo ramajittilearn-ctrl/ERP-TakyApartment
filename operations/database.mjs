@@ -21,7 +21,7 @@ export function sql(query, env = process.env, version = 1) {
     },
   });
 }
-export async function inventory(env = process.env, version = 4) {
+export async function inventory(env = process.env, version = 5) {
   const query = inventorySql(version);
   return JSON.parse(await sql(query, env, version));
 }
@@ -33,7 +33,8 @@ export async function assertInventory(expected, env = process.env) {
     "Restored database inventory differs from snapshot",
   );
 }
-export async function exportSnapshot(version = 4) {
+export async function exportSnapshot(version = 5, { signal } = {}) {
+  signal?.throwIfAborted();
   const query = inventorySql(version);
   const child = spawn("psql", ["-X", "-v", "ON_ERROR_STOP=1", "-At"], {
     env: {
@@ -44,9 +45,30 @@ export async function exportSnapshot(version = 4) {
           : "-c timezone=UTC",
     },
     stdio: ["pipe", "pipe", "pipe"],
+    signal,
   });
   child.stderr.resume();
+  child.stdin.on("error", () => {});
+  let failure;
+  child.on("error", (error) => {
+    failure = error;
+    lines.close();
+  });
+  const closed = new Promise((resolve) => child.once("close", resolve));
   const lines = createInterface({ input: child.stdout });
+  async function closeSnapshot(rollback = true) {
+    if (child.exitCode === null && child.signalCode === null) {
+      if (rollback) child.stdin.end("ROLLBACK;\n");
+      else child.kill("SIGTERM");
+    }
+    const deadline = setTimeout(() => child.kill("SIGKILL"), 2000);
+    try {
+      await closed;
+    } finally {
+      clearTimeout(deadline);
+      lines.close();
+    }
+  }
   const iterator = lines[Symbol.asyncIterator]();
   child.stdin.write(
     `BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSELECT pg_export_snapshot();\n${query}\n`,
@@ -61,17 +83,16 @@ export async function exportSnapshot(version = 4) {
     if (values.length !== 2 || !/^[0-9A-F-]+$/i.test(values[0]))
       throw new Error("Could not acquire PostgreSQL snapshot");
     clearTimeout(timeout);
+    signal?.throwIfAborted();
+    if (failure) throw failure;
     return {
       snapshot: values[0],
       inventory: JSON.parse(values[1]),
-      close: () => {
-        child.stdin.end("ROLLBACK;\n");
-        lines.close();
-      },
+      close: () => closeSnapshot(),
     };
   } catch (error) {
     clearTimeout(timeout);
-    child.kill("SIGTERM");
+    await closeSnapshot(false);
     throw error;
   }
 }

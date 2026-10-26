@@ -5,10 +5,12 @@ import path from "node:path";
 import assert from "node:assert/strict";
 import { run } from "./archive.mjs";
 import { createHash } from "node:crypto";
+import { verifyPublicationProtocol } from "./verify-publication-isolated.mjs";
 import {
   INVENTORY_TABLES_V2 as INVENTORY_TABLES,
   INVENTORY_TABLES_V3,
   INVENTORY_TABLES_V4,
+  INVENTORY_TABLES_V5,
 } from "./inventory.mjs";
 import {
   inventory,
@@ -149,13 +151,13 @@ await withTemp("inventory-acceptance", async (directory) => {
         dump,
       ]);
     } finally {
-      snapshot.close();
+      await snapshot.close();
     }
     await verifyDatabase(dump, snapshot.inventory);
     console.info(
       "PASS real pg_dump exported-snapshot consistency and private-socket pg_restore inventory comparison",
     );
-    for (const version of [null, 1, 5, "2"])
+    for (const version of [null, 1, 6, "2"])
       await assert.rejects(
         assertInventory({ ...twoRows, version }),
         /Unsupported inventory version/,
@@ -181,11 +183,13 @@ async function migratedCompatibility(directory) {
     .sort();
   assert.equal(
     names.length,
-    15,
+    17,
     "Review migration baseline before updating this harness",
   );
-  assert.equal(names.at(-2), "202610230001_phase3d_payments");
-  assert.equal(names.at(-1), "202610240001_phase4_expenses");
+  assert.equal(names[13], "202610230001_phase3d_payments");
+  assert.equal(names[14], "202610240001_phase4_expenses");
+  assert.equal(names[15], "202610240002_payment_finite_amounts");
+  assert.equal(names[16], "202610240003_phase3e_deposits");
   await sql("CREATE DATABASE inventory_migrated");
   process.env.PGDATABASE = "inventory_migrated";
   await sql(
@@ -200,7 +204,7 @@ async function migratedCompatibility(directory) {
       `INSERT INTO "_prisma_migrations" VALUES ('${name}', '${checksum}', now())`,
     );
   }
-  for (const name of names.slice(0, -2)) await migrate(name);
+  for (const name of names.slice(0, 13)) await migrate(name);
   const id = (number) =>
     `00000000-0000-4000-8000-${String(number).padStart(12, "0")}`;
   await sql(`
@@ -234,7 +238,7 @@ async function migratedCompatibility(directory) {
   console.info(
     "PASS actual historical33 unversioned legacy pg_dump/pg_restore",
   );
-  await migrate(names.at(-2));
+  await migrate(names[13]);
   assert.equal(
     await sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'"),
     "39",
@@ -264,7 +268,7 @@ async function migratedCompatibility(directory) {
       `SELECT jsonb_build_object('expense',(SELECT to_jsonb(t) FROM "Expense" t),'category',(SELECT to_jsonb(t) FROM "ExpenseCategory" t))`,
     ),
   );
-  await migrate(names.at(-1));
+  await migrate(names[14]);
   assert.equal(
     await sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'"),
     "40",
@@ -288,14 +292,59 @@ async function migratedCompatibility(directory) {
     INSERT INTO "ExpenseCommand" (id,"actorId","commandKey",operation,"requestFingerprint",result) VALUES ('${id(15)}','${id(6)}','synthetic-expense-inventory','expense.create',repeat('c',64),'{"synthetic":true}');
   `);
   await assertTriggers(true);
-  const newest = await inventory();
+  const newest = await inventory(process.env, 4);
   assert.equal(newest.version, 4);
   assert.equal(Object.keys(newest.tables).length, 39);
   await assertInventory(newest);
   await roundTrip(4, "migrated39", directory);
   console.info(
-    "PASS all15 actual migrations; v4 default captures all39 tables and added expense columns",
+    "PASS all15 actual migrations; frozen v4 captures all39 tables and added expense columns",
   );
+  await migrate(names[15]);
+  assert.equal(
+    await sql(
+      `SELECT count(*) FROM pg_constraint WHERE conname IN ('Payment_managed_amount_finite','Allocation_amount_finite') AND convalidated`,
+    ),
+    "2",
+  );
+  await roundTrip(4, "finite39", directory);
+  console.info(
+    "PASS all16 actual migrations; finite payment checks preserve v4 compatibility",
+  );
+  await assertLateDepositRollback(names[16], directory);
+  await migrate(names[16]);
+  assert.equal(
+    await sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'"),
+    "45",
+  );
+  // These private inventory-only rows exercise full-row restore fingerprints.
+  // They bypass lifecycle triggers only in this disposable transaction and do
+  // not establish real evidence acceptance or deposit financial correctness.
+  const retainedBytes = Buffer.from("inventory-proof\n");
+  const retainedSha256 = createHash("sha256")
+    .update(retainedBytes)
+    .digest("hex");
+  await sql(`BEGIN; SET LOCAL session_replication_role=replica;
+    INSERT INTO "Attachment" (id,"leaseId","uploadedById","storageKey","originalName","mimeType",bytes,sha256,"updatedAt") VALUES ('${id(16)}','${id(5)}','${id(6)}','synthetic/retained-proof','Synthetic retained proof','application/pdf',${retainedBytes.length},'${retainedSha256}',now());
+    INSERT INTO "DepositEvidence" (id,"leaseId","attachmentId","uploadedById") VALUES ('${id(17)}','${id(5)}','${id(16)}','${id(6)}');
+    INSERT INTO "DepositAccount" ("leaseId",version,"reviewState","reviewedById","reviewedAt","legacyDigest","reviewReason","evidenceId","openingAmount") VALUES ('${id(5)}',2,'REVIEWED','${id(6)}',now(),repeat('e',64),'Synthetic inventory-only review','${id(17)}',0);
+    INSERT INTO "DepositEntry" (id,"leaseId",sequence,kind,amount,"occurredAt","postedById",reason,"evidenceId",method,"documentNumber","documentSnapshot","snapshotSha256") VALUES ('${id(18)}','${id(5)}',1,'RECEIPT',0.01,now(),'${id(6)}','Synthetic inventory-only deposit','${id(17)}','CASH','DEP-202610-000001','{"synthetic":true}',repeat('f',64));
+    INSERT INTO "DepositCommand" (id,"actorId","commandKey",operation,"requestFingerprint",result) VALUES ('${id(19)}','${id(6)}','synthetic-deposit-inventory','deposit.receipt',repeat('a',64),'{"synthetic":true}');
+    INSERT INTO "DepositDocumentCounter" (month,"nextValue") VALUES ('202610',2);
+    COMMIT;`);
+  await assertTriggers(true);
+  const latest = await inventory();
+  assert.equal(latest.version, 5);
+  assert.equal(Object.keys(latest.tables).length, 44);
+  await assertInventory(latest);
+  await roundTrip(5, "deposit44", directory);
+  console.info(
+    "PASS all17 actual migrations; default v5 captures44 tables including inventory-only deposit representation",
+  );
+  await verifyPublicationProtocol({
+    database: "inventory_migrated",
+    directory,
+  });
 }
 async function assertTriggers(expenses = false) {
   const disabled = await sql(
@@ -323,15 +372,73 @@ async function assertTriggers(expenses = false) {
       "All expense integrity triggers remain installed",
     );
 }
+async function assertLateDepositRollback(name, directory) {
+  assert.equal(name, "202610240003_phase3e_deposits");
+  const before = await inventory(process.env, 4);
+  const guardsBefore = await guardDocument();
+  const source = await fs.readFile(
+    new URL(`../prisma/migrations/${name}/migration.sql`, import.meta.url),
+    "utf8",
+  );
+  assert.equal((source.match(/\$deposit_migration\$/g) ?? []).length, 2);
+  const closing = /END\s+\$deposit_migration\$;\s*$/;
+  assert(closing.test(source));
+  const injected = source.replace(
+    closing,
+    "RAISE EXCEPTION 'TAKY_SYNTHETIC_DEPOSIT_LATE_FAILURE' USING ERRCODE='P0001';\nEND\n$deposit_migration$;\n",
+  );
+  const file = path.join(directory, "deposit-late-failure.sql");
+  await fs.writeFile(file, injected, { flag: "wx", mode: 0o600 });
+  await assert.rejects(
+    run("psql", [
+      "-X",
+      "-v",
+      "ON_ERROR_STOP=1",
+      "--set=VERBOSITY=verbose",
+      "-f",
+      file,
+    ]),
+    (error) => {
+      const output = String(error.cause?.stderr ?? "");
+      return (
+        output.includes("P0001") &&
+        output.includes("TAKY_SYNTHETIC_DEPOSIT_LATE_FAILURE")
+      );
+    },
+  );
+  await assertInventory(before);
+  assert.deepEqual(await guardDocument(), guardsBefore);
+  assert.equal(
+    await sql(
+      `SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('DepositAccount','DepositEntry','DepositCommand','DepositEvidence','DepositDocumentCounter')`,
+    ),
+    "0",
+  );
+  assert.equal(
+    await sql(
+      "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname LIKE 'deposit_%'",
+    ),
+    "0",
+  );
+  console.info(
+    "PASS forced P0001 at final deposit003 DDL rolls back all new tables, functions, guards and old-data changes before unchanged migration is applied",
+  );
+}
 async function roundTrip(version, label, directory) {
   const originalDatabase = process.env.PGDATABASE;
+  if (version === 5) await assertCheckCanonicalization();
+  const originalGuards = version === 5 ? await guardFingerprint() : undefined;
+  const originalGuardDocument =
+    version === 5 ? await guardDocument() : undefined;
   const registry =
     version === 2
       ? INVENTORY_TABLES
       : version === 3
         ? INVENTORY_TABLES_V3
-        : INVENTORY_TABLES_V4;
-  const snapshot = await (version === 4
+        : version === 4
+          ? INVENTORY_TABLES_V4
+          : INVENTORY_TABLES_V5;
+  const snapshot = await (version === 5
     ? exportSnapshot()
     : exportSnapshot(version));
   assert.equal(snapshot.inventory.version, version);
@@ -364,7 +471,7 @@ async function roundTrip(version, label, directory) {
       dump,
     ]);
   } finally {
-    snapshot.close();
+    await snapshot.close();
   }
   await verifyDatabase(dump, snapshot.inventory);
   const restored = `inventory_${label}_restore`;
@@ -379,9 +486,28 @@ async function roundTrip(version, label, directory) {
       dump,
     ]);
     await assertInventory(snapshot.inventory);
+    if (version === 5) {
+      const restoredGuards = await guardFingerprint();
+      if (restoredGuards !== originalGuards) {
+        console.info(
+          "TAKY_GUARD_DIFF " +
+            JSON.stringify(
+              guardDifference(originalGuardDocument, await guardDocument()),
+            ),
+        );
+      }
+      assert.equal(
+        restoredGuards,
+        originalGuards,
+        "Restored constraints, indexes, trigger states and functions must match",
+      );
+      console.info(
+        "PASS v5 restore preserves normalized public constraints, indexes, trigger definitions/states and function definitions",
+      );
+    }
     if (version >= 3) {
       let expected = snapshot.inventory;
-      await assertTriggers(version === 4);
+      await assertTriggers(version >= 4);
       for (const [table, column, expression] of [
         ["PaymentReversal", "reason", "reason || ' mutated'"],
         ["Receipt", "snapshot", `snapshot || '{"mutation":true}'::jsonb`],
@@ -407,7 +533,7 @@ async function roundTrip(version, label, directory) {
         console.info(`PASS v${version} restored equal-count mutation ${table}`);
         expected = after;
       }
-      if (version === 4) {
+      if (version >= 4) {
         for (const [table, column, expression, predicate] of [
           [
             "ExpenseCommand",
@@ -438,8 +564,40 @@ async function roundTrip(version, label, directory) {
           );
         }
       }
+      if (version === 5) {
+        let expected = await inventory(process.env, 5);
+        for (const [table, column, expression] of [
+          ["DepositAccount", "reviewReason", `"reviewReason" || ' mutated'`],
+          ["DepositEntry", "reason", "reason || ' mutated'"],
+          ["DepositCommand", "result", `result || '{"mutation":true}'::jsonb`],
+          [
+            "DepositEvidence",
+            "acceptedAt",
+            `"acceptedAt" + interval '1 millisecond'`,
+          ],
+          ["DepositDocumentCounter", "nextValue", '"nextValue"+1'],
+        ]) {
+          assert.equal(expected.tables[table].count, "1");
+          await sql(
+            `BEGIN; SET LOCAL session_replication_role=replica; UPDATE "${table}" SET "${column}"=${expression}; COMMIT;`,
+          );
+          await assert.rejects(assertInventory(expected), /inventory differs/);
+          const after = await inventory(process.env, 5);
+          assert.equal(after.tables[table].count, "1");
+          assert.notEqual(
+            after.tables[table].sha256,
+            expected.tables[table].sha256,
+          );
+          for (const other of registry.filter((name) => name !== table))
+            assert.deepEqual(after.tables[other], expected.tables[other]);
+          expected = after;
+          console.info(
+            `PASS v5 restored equal-count mutation ${table}.${column}`,
+          );
+        }
+      }
       assert.equal(await sql("SHOW session_replication_role"), "origin");
-      await assertTriggers(version === 4);
+      await assertTriggers(version >= 4);
     }
     console.info(
       `PASS actual ${label} v${version} ${registry.length}-table exported snapshot pg_dump/pg_restore (database=${restored})`,
@@ -447,4 +605,135 @@ async function roundTrip(version, label, directory) {
   } finally {
     process.env.PGDATABASE = originalDatabase;
   }
+}
+
+function guardDocumentExpression(canonicalChecks = false) {
+  const check = canonicalChecks
+    ? "CASE WHEN x.contype='c' THEN pg_temp._taky_canonical_check(x.conrelid::regclass,pg_get_constraintdef(x.oid)) ELSE pg_get_constraintdef(x.oid) END"
+    : "pg_get_constraintdef(x.oid)";
+  return `jsonb_build_object(
+    'constraints',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',x.conname,'definition',${check},'type',x.contype,'validated',x.convalidated,'noInherit',x.connoinherit) ORDER BY c.relname,x.conname),'[]') FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'),
+    'indexes',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',i.relname,'definition',pg_get_indexdef(x.indexrelid)) ORDER BY c.relname,i.relname),'[]') FROM pg_index x JOIN pg_class c ON c.oid=x.indrelid JOIN pg_class i ON i.oid=x.indexrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'),
+    'triggers',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',t.tgname,'definition',pg_get_triggerdef(t.oid),'enabled',t.tgenabled) ORDER BY c.relname,t.tgname),'[]') FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND NOT t.tgisinternal),
+    'functions',(SELECT coalesce(jsonb_agg(jsonb_build_object('identity',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid)) ORDER BY p.oid::regprocedure::text),'[]') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind='f')
+  )`;
+}
+async function guardFingerprint() {
+  return canonicalCheckQuery(
+    `SELECT encode(sha256(convert_to(${guardDocumentExpression(true)}::text,'UTF8')),'hex')`,
+  );
+}
+async function guardDocument() {
+  return JSON.parse(await sql(`SELECT ${guardDocumentExpression()}`));
+}
+
+async function canonicalCheckQuery(query) {
+  const setup = `BEGIN;
+    CREATE TEMP TABLE _taky_guard_session (unused boolean) ON COMMIT DROP;
+    CREATE FUNCTION pg_temp._taky_canonical_check(source_relation regclass,input_definition text)
+    RETURNS text LANGUAGE plpgsql VOLATILE AS $canonical$
+    DECLARE current_definition text:=input_definition; normalized text; pass_number integer;
+    BEGIN
+      EXECUTE format('CREATE TEMP TABLE _taky_guard_check_copy (LIKE %s INCLUDING GENERATED) ON COMMIT DROP',source_relation);
+      FOR pass_number IN 1..4 LOOP
+        EXECUTE format('ALTER TABLE pg_temp._taky_guard_check_copy ADD CONSTRAINT _taky_guard_check_constraint %s',current_definition);
+        SELECT pg_get_constraintdef(oid) INTO STRICT normalized FROM pg_constraint WHERE conrelid=to_regclass('pg_temp._taky_guard_check_copy') AND conname='_taky_guard_check_constraint';
+        IF normalized=current_definition THEN
+          DROP TABLE pg_temp._taky_guard_check_copy;
+          RETURN normalized;
+        END IF;
+        current_definition:=normalized;
+        ALTER TABLE pg_temp._taky_guard_check_copy DROP CONSTRAINT _taky_guard_check_constraint;
+      END LOOP;
+      RAISE EXCEPTION 'CHECK canonicalization did not stabilize for %',source_relation;
+    END
+    $canonical$;
+  `;
+  return run(
+    "psql",
+    [
+      "-X",
+      "-q",
+      "-v",
+      "ON_ERROR_STOP=1",
+      "-Atc",
+      `${setup}\n${query};\nROLLBACK;`,
+    ],
+    {
+      env: {
+        ...process.env,
+        PGOPTIONS: "-c timezone=UTC -c datestyle=ISO,YMD",
+      },
+    },
+  );
+}
+async function assertCheckCanonicalization() {
+  const cases = {
+    strict: "CHECK (amount > 0 AND amount <> 'NaN'::numeric)",
+    zeroAllowed: "CHECK (amount >= 0 AND amount <> 'NaN'::numeric)",
+    nanAllowed: "CHECK (amount > 0)",
+    leftGrouped: "CHECK ((amount > 0 AND kind='RECEIPT') OR kind='REFUND')",
+    rightGrouped: "CHECK (amount > 0 AND (kind='RECEIPT' OR kind='REFUND'))",
+    nestedAnd:
+      "CHECK ((amount > 0 AND amount <> 'NaN'::numeric) AND kind='RECEIPT')",
+    flatAnd:
+      "CHECK (amount > 0 AND amount <> 'NaN'::numeric AND kind='RECEIPT')",
+    noInherit: "CHECK (amount > 0) NO INHERIT",
+    arrayCast:
+      "CHECK ((kind)::text = ANY ((ARRAY['RECEIPT'::varchar,'REFUND'::varchar])::text[]))",
+    elementCast:
+      "CHECK ((kind)::text = ANY (ARRAY[('RECEIPT'::varchar)::text,('REFUND'::varchar)::text]))",
+    changedArray:
+      "CHECK ((kind)::text = ANY (ARRAY[('RECEIPT'::varchar)::text,('DEDUCTION'::varchar)::text]))",
+  };
+  const expressions = Object.entries(cases)
+    .map(
+      ([key, value]) =>
+        `${literal(key)},pg_temp._taky_canonical_check('"DepositEntry"'::regclass,${literal(value)})`,
+    )
+    .join(",");
+  const values = JSON.parse(
+    await canonicalCheckQuery(`SELECT jsonb_build_object(${expressions})`),
+  );
+  assert.notEqual(values.strict, values.zeroAllowed);
+  assert.notEqual(values.strict, values.nanAllowed);
+  assert.notEqual(values.leftGrouped, values.rightGrouped);
+  assert.notEqual(values.nanAllowed, values.noInherit);
+  assert.equal(values.nestedAnd, values.flatAnd);
+  assert.equal(values.arrayCast, values.elementCast);
+  assert.notEqual(values.elementCast, values.changedArray);
+  console.info(
+    "PASS native typed CHECK canonicalization preserves zero/NaN limits, AND/OR precedence and NO INHERIT while stabilizing observed array casts and associative AND formatting",
+  );
+}
+function guardDifference(before, after) {
+  const result = {};
+  for (const category of ["constraints", "indexes", "triggers", "functions"]) {
+    const key = (entry) =>
+      `${entry.table ?? ""}:${entry.name ?? entry.identity}`;
+    const old = new Map(before[category].map((entry) => [key(entry), entry]));
+    const latest = new Map(after[category].map((entry) => [key(entry), entry]));
+    assert.equal(old.size, before[category].length);
+    assert.equal(latest.size, after[category].length);
+    result[category] = {
+      missing: [...old]
+        .filter(([id]) => !latest.has(id))
+        .map(([, entry]) => entry),
+      added: [...latest]
+        .filter(([id]) => !old.has(id))
+        .map(([, entry]) => entry),
+      changed: [...old]
+        .filter(
+          ([id, entry]) =>
+            latest.has(id) &&
+            JSON.stringify(entry) !== JSON.stringify(latest.get(id)),
+        )
+        .map(([id, entry]) => ({
+          identity: id,
+          before: entry,
+          after: latest.get(id),
+        })),
+    };
+  }
+  return result;
 }

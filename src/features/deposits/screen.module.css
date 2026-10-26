@@ -1,0 +1,41 @@
+.screen {
+  display: grid;
+  gap: 20px;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.amount {
+  font-size: 1.45rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.screen td {
+  vertical-align: top;
+}
+.form {
+  display: grid;
+  gap: 16px;
+}
+.assertion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #d8e3dc;
+  border-radius: 10px;
+  background: #f5faf7;
+  line-height: 1.65;
+}
+.assertion input {
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+@media (max-width: 850px) {
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+}

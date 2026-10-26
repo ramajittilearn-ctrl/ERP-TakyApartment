@@ -1,0 +1,18 @@
+[
+  {
+    "event": "database_attested"
+  },
+  {
+    "event": "login",
+    "status": 200
+  },
+  {
+    "event": "receipt_pdf",
+    "status": 200,
+    "bytes": 37120
+  },
+  {
+    "event": "own_server_stopped",
+    "stopped": true
+  }
+]

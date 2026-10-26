@@ -1,0 +1,178 @@
+TAP version 13
+# Subtest: rejects missing configuration and invalid deadlines
+ok 1 - rejects missing configuration and invalid deadlines
+  ---
+  duration_ms: 0.910458
+  type: 'test'
+  ...
+# Subtest: authentication, duplicate credentials and route rejection do no parser or file work
+ok 2 - authentication, duplicate credentials and route rejection do no parser or file work
+  ---
+  duration_ms: 41.47875
+  type: 'test'
+  ...
+# Subtest: two active operations reject a third immediately and release after cleanup
+ok 3 - two active operations reject a third immediately and release after cleanup
+  ---
+  duration_ms: 24.649042
+  type: 'test'
+  ...
+# Subtest: declared and streamed size limits reject without acceptance and remove inputs
+ok 4 - declared and streamed size limits reject without acceptance and remove inputs
+  ---
+  duration_ms: 23.505125
+  type: 'test'
+  ...
+# Subtest: parser failure is generic and releases its admission and temporary input
+ok 5 - parser failure is generic and releases its admission and temporary input
+  ---
+  duration_ms: 19.750542
+  type: 'test'
+  ...
+# Subtest: deadline aborts parser work and frees its permit after the parser settles
+ok 6 - deadline aborts parser work and frees its permit after the parser settles
+  ---
+  duration_ms: 68.007916
+  type: 'test'
+  ...
+# Subtest: disconnect aborts parser work and never leaks the staged file
+ok 7 - disconnect aborts parser work and never leaks the staged file
+  ---
+  duration_ms: 8.658541
+  type: 'test'
+  ...
+# Subtest: fully decodes genuine png and rejects truncation and appended payload
+ok 8 - fully decodes genuine png and rejects truncation and appended payload
+  ---
+  duration_ms: 10.396709
+  type: 'test'
+  ...
+# Subtest: fully decodes genuine jpeg and rejects truncation and appended payload
+ok 9 - fully decodes genuine jpeg and rejects truncation and appended payload
+  ---
+  duration_ms: 5.138958
+  type: 'test'
+  ...
+# Subtest: forces raster decoder errors instead of accepting a structurally plausible corrupt image
+ok 10 - forces raster decoder errors instead of accepting a structurally plausible corrupt image
+  ---
+  duration_ms: 2.801958
+  type: 'test'
+  ...
+# Subtest: rejects a genuine raster exceeding eight million pixels before raw decoding
+ok 11 - rejects a genuine raster exceeding eight million pixels before raw decoding
+  ---
+  duration_ms: 9.371125
+  type: 'test'
+  ...
+# Subtest: checks PDF prefix and final marker without claiming that envelopes validate PDF structure
+ok 12 - checks PDF prefix and final marker without claiming that envelopes validate PDF structure
+  ---
+  duration_ms: 0.29175
+  type: 'test'
+  ...
+# Subtest: rejects empty, unsupported and oversized inputs
+ok 13 - rejects empty, unsupported and oversized inputs
+  ---
+  duration_ms: 0.086
+  type: 'test'
+  ...
+# Subtest: accepts only JSON version two qpdf graphs with no restricted actions
+ok 14 - accepts only JSON version two qpdf graphs with no restricted actions
+  ---
+  duration_ms: 0.353417
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /JavaScript as a key or value, including escaped spelling
+ok 15 - rejects restricted PDF name /JavaScript as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.127708
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /JS as a key or value, including escaped spelling
+ok 16 - rejects restricted PDF name /JS as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.259125
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /AA as a key or value, including escaped spelling
+ok 17 - rejects restricted PDF name /AA as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.3105
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /OpenAction as a key or value, including escaped spelling
+ok 18 - rejects restricted PDF name /OpenAction as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.125125
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /Launch as a key or value, including escaped spelling
+ok 19 - rejects restricted PDF name /Launch as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.06975
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /SubmitForm as a key or value, including escaped spelling
+ok 20 - rejects restricted PDF name /SubmitForm as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.063166
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /ImportData as a key or value, including escaped spelling
+ok 21 - rejects restricted PDF name /ImportData as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.060166
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /RichMedia as a key or value, including escaped spelling
+ok 22 - rejects restricted PDF name /RichMedia as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.059333
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /EmbeddedFiles as a key or value, including escaped spelling
+ok 23 - rejects restricted PDF name /EmbeddedFiles as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.059792
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /EmbeddedFile as a key or value, including escaped spelling
+ok 24 - rejects restricted PDF name /EmbeddedFile as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.061
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /Filespec as a key or value, including escaped spelling
+ok 25 - rejects restricted PDF name /Filespec as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.475167
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /XFA as a key or value, including escaped spelling
+ok 26 - rejects restricted PDF name /XFA as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.057583
+  type: 'test'
+  ...
+# Subtest: bounds qpdf graph nesting and object count
+ok 27 - bounds qpdf graph nesting and object count
+  ---
+  duration_ms: 44.282584
+  type: 'test'
+  ...
+# Subtest: an aborted parser process is awaited and rejected without diagnostics
+ok 28 - an aborted parser process is awaited and rejected without diagnostics
+  ---
+  duration_ms: 5.584167
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 367.727167

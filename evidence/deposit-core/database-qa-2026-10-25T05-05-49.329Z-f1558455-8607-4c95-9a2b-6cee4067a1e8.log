@@ -1,0 +1,69 @@
+{"mode":"setup","source":{"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","project":"taky-phase4-recovery-20261025","host":"127.0.0.1","port":55489},"targets":{"integration":"taky_deposit_test_20261025_core2","rehearsal":"taky_payment_test_2b5214bd52_finite_rehearsal2","blocker":"taky_payment_test_2b5214bd52_finite_blocker2","allocBlocker":"taky_payment_test_2b5214bd52_finite_alloc_blocker2"},"planValidated":true}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+{"attested":true,"database":"taky_deposit_test_20261025_core2","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "taky_deposit_test_20261025_core2", schema "public" at "127.0.0.1:55489"
+
+17 migrations found in prisma/migrations
+
+Applying migration `202610160001_foundation`
+Applying migration `202610160002_constraints`
+Applying migration `202610170001_backup_operations`
+Applying migration `202610170002_room_reserved`
+Applying migration `202610170003_occupancy_integrity`
+Applying migration `202610180001_phase3a_financial_foundation`
+Applying migration `202610180002_phase3b_meter_reading`
+Applying migration `202610190001_phase3c2_billing_inputs`
+Applying migration `202610200001_phase3c2_approval_sources`
+Applying migration `202610200002_phase3c2_lease_allocations`
+Applying migration `202610210001_phase3c3_invoice_lifecycle`
+Applying migration `202610210002_phase3c3_reference_capacity`
+Applying migration `202610210003_phase3c3_legacy_month_barrier`
+Applying migration `202610230001_phase3d_payments`
+Applying migration `202610240001_phase4_expenses`
+Applying migration `202610240002_payment_finite_amounts`
+Applying migration `202610240003_phase3e_deposits`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 202610160001_foundation/
+    └─ migration.sql
+  └─ 202610160002_constraints/
+    └─ migration.sql
+  └─ 202610170001_backup_operations/
+    └─ migration.sql
+  └─ 202610170002_room_reserved/
+    └─ migration.sql
+  └─ 202610170003_occupancy_integrity/
+    └─ migration.sql
+  └─ 202610180001_phase3a_financial_foundation/
+    └─ migration.sql
+  └─ 202610180002_phase3b_meter_reading/
+    └─ migration.sql
+  └─ 202610190001_phase3c2_billing_inputs/
+    └─ migration.sql
+  └─ 202610200001_phase3c2_approval_sources/
+    └─ migration.sql
+  └─ 202610200002_phase3c2_lease_allocations/
+    └─ migration.sql
+  └─ 202610210001_phase3c3_invoice_lifecycle/
+    └─ migration.sql
+  └─ 202610210002_phase3c3_reference_capacity/
+    └─ migration.sql
+  └─ 202610210003_phase3c3_legacy_month_barrier/
+    └─ migration.sql
+  └─ 202610230001_phase3d_payments/
+    └─ migration.sql
+  └─ 202610240001_phase4_expenses/
+    └─ migration.sql
+  └─ 202610240002_payment_finite_amounts/
+    └─ migration.sql
+  └─ 202610240003_phase3e_deposits/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+Child exit: 0; signal: none; timeout: false; outputLimit: false
+QA outcome: 0

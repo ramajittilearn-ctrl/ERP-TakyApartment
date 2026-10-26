@@ -1,0 +1,150 @@
+TAP version 13
+# Subtest: frozen registry covers every current Prisma model exactly once
+ok 1 - frozen registry covers every current Prisma model exactly once
+  ---
+  duration_ms: 4.800458
+  type: 'test'
+  ...
+# Subtest: v2 registry stays frozen at the exact historical 33 models
+ok 2 - v2 registry stays frozen at the exact historical 33 models
+  ---
+  duration_ms: 0.111
+  type: 'test'
+  ...
+# Subtest: v3 stays frozen at 38 models and v4 appends only ExpenseCommand
+ok 3 - v3 stays frozen at 38 models and v4 appends only ExpenseCommand
+  ---
+  duration_ms: 0.06775
+  type: 'test'
+  ...
+# Subtest: v5 appends exactly the five deposit models to the frozen v4 registry
+ok 4 - v5 appends exactly the five deposit models to the frozen v4 registry
+  ---
+  duration_ms: 0.099542
+  type: 'test'
+  ...
+# Subtest: legacy and v2 through v4 SQL bytes remain identical to accepted baselines
+ok 5 - legacy and v2 through v4 SQL bytes remain identical to accepted baselines
+  ---
+  duration_ms: 0.300458
+  type: 'test'
+  ...
+# Subtest: v2 hashes all full rows with its fixed registry
+ok 6 - v2 hashes all full rows with its fixed registry
+  ---
+  duration_ms: 0.18225
+  type: 'test'
+  ...
+# Subtest: v3 hashes all full rows with its fixed registry
+ok 7 - v3 hashes all full rows with its fixed registry
+  ---
+  duration_ms: 0.149791
+  type: 'test'
+  ...
+# Subtest: v4 hashes all full rows with its fixed registry
+ok 8 - v4 hashes all full rows with its fixed registry
+  ---
+  duration_ms: 0.09175
+  type: 'test'
+  ...
+# Subtest: v5 hashes all full rows with its fixed registry
+ok 9 - v5 hashes all full rows with its fixed registry
+  ---
+  duration_ms: 0.293333
+  type: 'test'
+  ...
+# Subtest: absent version selects legacy, explicit unknown versions fail closed
+ok 10 - absent version selects legacy, explicit unknown versions fail closed
+  ---
+  duration_ms: 1.178584
+  type: 'test'
+  ...
+# Subtest: v2 requires exact canonical fingerprints before any DB access
+ok 11 - v2 requires exact canonical fingerprints before any DB access
+  ---
+  duration_ms: 0.720083
+  type: 'test'
+  ...
+# Subtest: v3 requires exact canonical fingerprints before any DB access
+ok 12 - v3 requires exact canonical fingerprints before any DB access
+  ---
+  duration_ms: 0.633208
+  type: 'test'
+  ...
+# Subtest: v4 requires exact canonical fingerprints before any DB access
+ok 13 - v4 requires exact canonical fingerprints before any DB access
+  ---
+  duration_ms: 0.717084
+  type: 'test'
+  ...
+# Subtest: v5 requires exact canonical fingerprints before any DB access
+ok 14 - v5 requires exact canonical fingerprints before any DB access
+  ---
+  duration_ms: 0.537334
+  type: 'test'
+  ...
+# Subtest: arbitrarily large counts remain strings without Number rounding
+ok 15 - arbitrarily large counts remain strings without Number rounding
+  ---
+  duration_ms: 0.078125
+  type: 'test'
+  ...
+# Subtest: verifyDatabase rejects malformed inventory before filesystem or database setup
+ok 16 - verifyDatabase rejects malformed inventory before filesystem or database setup
+  ---
+  duration_ms: 0.153333
+  type: 'test'
+  ...
+# Subtest: archive verification and both restore routes reject unsupported inventory before database commands
+ok 17 - archive verification and both restore routes reject unsupported inventory before database commands
+  ---
+  duration_ms: 63.272833
+  type: 'test'
+  ...
+# Subtest: callback starts only after a session lock acknowledgment and closes after final ownership round trip
+ok 18 - callback starts only after a session lock acknowledgment and closes after final ownership round trip
+  ---
+  duration_ms: 2.520041
+  type: 'test'
+  ...
+# Subtest: acquisition has a bounded failure and never invokes protected work
+ok 19 - acquisition has a bounded failure and never invokes protected work
+  ---
+  duration_ms: 42.171209
+  type: 'test'
+  ...
+# Subtest: protected callback failure still releases its dedicated session
+ok 20 - protected callback failure still releases its dedicated session
+  ---
+  duration_ms: 0.62775
+  type: 'test'
+  ...
+# Subtest: unexpected lock-owner loss aborts protected work and cannot return a successful set
+ok 21 - unexpected lock-owner loss aborts protected work and cannot return a successful set
+  ---
+  duration_ms: 0.35825
+  type: 'test'
+  ...
+# Subtest: a silent or replaced backend fails a real ownership round trip
+ok 22 - a silent or replaced backend fails a real ownership round trip
+  ---
+  duration_ms: 41.143333
+  type: 'test'
+  ...
+# Subtest: all retained regular orphans and destination partials are copied without inventing metadata or deleting source bytes
+ok 23 - all retained regular orphans and destination partials are copied without inventing metadata or deleting source bytes
+  ---
+  duration_ms: 42.460875
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 175.604333
+
+exitCode=0

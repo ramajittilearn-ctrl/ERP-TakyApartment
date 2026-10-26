@@ -1,0 +1,11 @@
+# Compare PostgreSQL CHECK semantics through its own parser
+
+Actual attempt2 diagnosed exactly five changed CHECK renderings and no missing/extra constraint, index, trigger or function. PostgreSQL distributed a varchar-array-to-text-array cast into element casts, and flattened associative AND expression trees when restoring deparsed definitions. Raw failed logs and TAKY_GUARD_DIFF remain preserved. This is the observed reason for the guard-text mismatch; no guessed OID or database-name removal is used.
+
+The QA harness now canonicalizes only CHECK definitions through PostgreSQL itself. In a dedicated rolled-back session it creates an empty temporary LIKE copy with exact column types, collations and generated-column semantics, excluding source CHECKs/defaults/indexes. It adds the exact deparsed CHECK to that empty copy, deparses and reparses until stable, and fails closed if four passes do not stabilize. It never edits a source table or constraint. No expression, cast, literal or parenthesis is stripped by JavaScript or regex.
+
+Constraint table, name, type, convalidated, connoinherit and count remain explicit comparison inputs. All non-CHECK definitions and all index/trigger/function definitions and trigger states remain exact. The canonical fingerprint must agree across the actual V5 dump/restore. The raw guard document remains available for detailed mismatch output and the separate late-DDL rollback proof.
+
+Main’s actual native controls must establish: strict > differs from >=; deleting the explicit NaN check differs; AND/OR precedence differs; NO INHERIT differs; nested associative AND stabilizes; the actual observed array-cast and element-cast forms stabilize to the same definition; changing an array member still differs. These controls retain semantic rejection coverage while accepting PostgreSQL’s own equivalent emitted forms.
+
+Syntax/format/scoped lint and source whitespace checks are local gates only. No PostgreSQL or Docker call was executed by the implementation owner. Main must rebuild the same isolated image and run a distinct attempt3 container; the late migration003 failure probe runs before the unchanged17 migration, then all V5/role/publication/backup proofs still run. Earlier failed attempts remain failed evidence.

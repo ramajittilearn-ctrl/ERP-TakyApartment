@@ -1,0 +1,136 @@
+TAP version 13
+# Subtest: fully decodes genuine png and rejects truncation and appended payload
+ok 1 - fully decodes genuine png and rejects truncation and appended payload
+  ---
+  duration_ms: 11.273667
+  type: 'test'
+  ...
+# Subtest: fully decodes genuine jpeg and rejects truncation and appended payload
+ok 2 - fully decodes genuine jpeg and rejects truncation and appended payload
+  ---
+  duration_ms: 4.938875
+  type: 'test'
+  ...
+# Subtest: forces raster decoder errors instead of accepting a structurally plausible corrupt image
+ok 3 - forces raster decoder errors instead of accepting a structurally plausible corrupt image
+  ---
+  duration_ms: 2.315959
+  type: 'test'
+  ...
+# Subtest: rejects a genuine raster exceeding eight million pixels before raw decoding
+ok 4 - rejects a genuine raster exceeding eight million pixels before raw decoding
+  ---
+  duration_ms: 9.513334
+  type: 'test'
+  ...
+# Subtest: checks PDF prefix and final marker without claiming that envelopes validate PDF structure
+ok 5 - checks PDF prefix and final marker without claiming that envelopes validate PDF structure
+  ---
+  duration_ms: 0.264167
+  type: 'test'
+  ...
+# Subtest: rejects empty, unsupported and oversized inputs
+ok 6 - rejects empty, unsupported and oversized inputs
+  ---
+  duration_ms: 0.07975
+  type: 'test'
+  ...
+# Subtest: accepts only JSON version two qpdf graphs with no restricted actions
+ok 7 - accepts only JSON version two qpdf graphs with no restricted actions
+  ---
+  duration_ms: 0.317334
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /JavaScript as a key or value, including escaped spelling
+ok 8 - rejects restricted PDF name /JavaScript as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.121125
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /JS as a key or value, including escaped spelling
+ok 9 - rejects restricted PDF name /JS as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.248959
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /AA as a key or value, including escaped spelling
+ok 10 - rejects restricted PDF name /AA as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.3055
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /OpenAction as a key or value, including escaped spelling
+ok 11 - rejects restricted PDF name /OpenAction as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.123583
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /Launch as a key or value, including escaped spelling
+ok 12 - rejects restricted PDF name /Launch as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.070166
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /SubmitForm as a key or value, including escaped spelling
+ok 13 - rejects restricted PDF name /SubmitForm as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.059917
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /ImportData as a key or value, including escaped spelling
+ok 14 - rejects restricted PDF name /ImportData as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.057375
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /RichMedia as a key or value, including escaped spelling
+ok 15 - rejects restricted PDF name /RichMedia as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.056458
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /EmbeddedFiles as a key or value, including escaped spelling
+ok 16 - rejects restricted PDF name /EmbeddedFiles as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.056375
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /EmbeddedFile as a key or value, including escaped spelling
+ok 17 - rejects restricted PDF name /EmbeddedFile as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.064458
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /Filespec as a key or value, including escaped spelling
+ok 18 - rejects restricted PDF name /Filespec as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.056792
+  type: 'test'
+  ...
+# Subtest: rejects restricted PDF name /XFA as a key or value, including escaped spelling
+ok 19 - rejects restricted PDF name /XFA as a key or value, including escaped spelling
+  ---
+  duration_ms: 0.055125
+  type: 'test'
+  ...
+# Subtest: bounds qpdf graph nesting and object count
+ok 20 - bounds qpdf graph nesting and object count
+  ---
+  duration_ms: 57.963375
+  type: 'test'
+  ...
+# Subtest: an aborted parser process is awaited and rejected without diagnostics
+ok 21 - an aborted parser process is awaited and rejected without diagnostics
+  ---
+  duration_ms: 8.329708
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 301.793792

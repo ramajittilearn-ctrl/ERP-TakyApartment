@@ -1,0 +1,14 @@
+
+> taky-apartment-erp@0.1.0 lint
+> eslint src tests prisma scripts operations *.ts *.mjs --no-warn-ignored --max-warnings 0
+
+
+/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/operations/evidence-validator/server.mjs
+  157:28  error  'AbortController' is not defined  no-undef
+
+/Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/operations/evidence-validator/tests/validate.test.mjs
+   35:7   error  Unexpected newline between object and [ of property access  no-unexpected-multiline
+  180:28  error  'AbortController' is not defined                            no-undef
+
+✖ 3 problems (3 errors, 0 warnings)
+

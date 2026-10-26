@@ -1,0 +1,11 @@
+{"started":"2026-10-26T00:17:38.823Z","command":"/Users/ramajittipasutanavin/.hermes/node/bin/node node_modules/@playwright/test/cli.js test tests/phase2/deposit-keyboard-probe.spec.ts --grep deposit keyboard diagnostic --reporter=list,json --output /Users/ramajittipasutanavin/Documents/ปลูกหอพัก/ERP/.local/worktrees/deposit-qa-candidate/evidence/remediation/704fa285e6e344d5955c4e93-keyboard-probe-a71a4ed6-149e-4040-943c-6b78ed717b42/test-results","runId":"704fa285e6e344d5955c4e93","app":"http://127.0.0.1:3820","database":{"host":"127.0.0.1","port":"55452","name":"/taky_phase2_test","role":"e2e_704fa285e6e344d5955c4e93"}}
+
+Running 1 test using 1 worker
+
+{"verifiedBrowserTarget":"http://127.0.0.1:3820","runId":"704fa285e6e344d5955c4e93","database":"taky_phase2_test","role":"e2e_704fa285e6e344d5955c4e93","proxy":"http://127.0.0.1:3822"}
+{"diagnosticOnly":true,"runId":"704fa285e6e344d5955c4e93","records":[{"actor":"app","protocol":"original","samples":46,"final":{"phase":"after-protocol","active":"app","app":{"value":"","index":0,"options":2,"disabled":false},"reference":{"value":"","index":0,"options":2,"disabled":false},"reactiveDownload":true,"event":null}},{"actor":"app","protocol":"explicit-open-commit","samples":57,"final":{"phase":"after-protocol","active":"app","app":{"value":"","index":0,"options":2,"disabled":false},"reference":{"value":"","index":0,"options":2,"disabled":false},"reactiveDownload":true,"event":null}},{"actor":"reference","protocol":"original","samples":79,"final":{"phase":"after-protocol","active":"reference","app":{"value":"","index":0,"options":2,"disabled":false},"reference":{"value":"","index":0,"options":2,"disabled":false},"reactiveDownload":true,"event":null}},{"actor":"reference","protocol":"explicit-open-commit","samples":95,"final":{"phase":"next-frame","active":"reference","app":{"value":"","index":0,"options":2,"disabled":false},"reference":{"value":"","index":0,"options":2,"disabled":false},"reactiveDownload":true,"event":{"type":"keyup","target":"reference","key":"Enter","trusted":true,"prevented":false}}}]}
+  ✓  1 tests/phase2/deposit-keyboard-probe.spec.ts:33:5 › deposit keyboard diagnostic retained704 native versus controlled select census (3.7s)
+
+  1 passed (7.0s)
+
+{"finished":"2026-10-26T00:17:46.260Z","exitCode":0}

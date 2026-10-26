@@ -1,0 +1,25 @@
+{"mode":"setup","source":{"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","project":"taky-phase4-recovery-20261025","host":"127.0.0.1","port":55489},"targets":{"integration":"taky_payment_test_2b5214bd52_integrated17_history","rehearsal":"taky_payment_test_2b5214bd52_finite_rehearsal2","blocker":"taky_payment_test_2b5214bd52_finite_blocker2","allocBlocker":"taky_payment_test_2b5214bd52_finite_alloc_blocker2"},"planValidated":true}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_routes1","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+{"attested":true,"database":"taky_payment_test_2b5214bd52_integrated17_history","role":"taky_qa_2b5214bd52","host":"127.0.0.1","port":55489}
+Loaded Prisma config from evidence/payments/migration-staging/d04638e6-ed97-436f-8093-835a8eedefde/prisma.config.ts.
+
+Prisma schema loaded from evidence/payments/migration-staging/d04638e6-ed97-436f-8093-835a8eedefde/schema.prisma.
+┌─────────────────────────────────────────────────────────┐
+│  Update available 7.10.1 -> 8.0.0-rc.27                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+Loaded Prisma config from evidence/payments/migration-staging/d04638e6-ed97-436f-8093-835a8eedefde/prisma.config.ts.
+
+Prisma schema loaded from evidence/payments/migration-staging/d04638e6-ed97-436f-8093-835a8eedefde/schema.prisma.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Legacy migration rehearsal PASS: 3 payments, 3 allocations, 7 original constraints preserved.
+Child exit: 0; signal: none; timeout: false; outputLimit: false
+QA outcome: 0
