@@ -14,7 +14,13 @@ Accept adding only the two exact noto-sans-thai Thai/Latin400 WOFF assets to the
 
 The proposed reusable artifact check must require both assets in each exact route.js.nft.json, then compare source and standalone regular-file byte lengths and SHA256 values. Missing files, omitted per-route membership, changed bytes and symlink replacement must fail. This proves the two assets that the runtime loader needs are present; it does not prove general standalone portability or every PDFKit dynamic import.
 
-Final source review and actual fresh build, artifact check, genuine HTTP PDFs and browser behavior remain pending. Design approval does not close those gates.
+## Frozen source review
+
+Independently accepted3d49f25106d20962ef8c8e2139b25672150402aa in deposit-ui-candidate. The three-file change implements the agreed narrow config includes, reusable scripts/verify-pdf-assets.mjs and tests/ops/pdf-assets.test.mjs. Each route's NFT entries are resolved relative to that exact trace and must include both expected project-root font files. Both source and standalone copies must be regular files; source bytes must be nonempty and exactly equal to the standalone bytes. Returned evidence includes only asset name, byte count and SHA256. No financial/authentication/rendering source or package externalization changed.
+
+Fresh independent command `node --test tests/ops/pdf-assets.test.mjs` passed4/4, exit0. It exercises valid traces/copies, per-route omission, changed/missing copied bytes and same-byte symlink rejection. git diff --check passed. These synthetic fixtures prove the artifact checker detects those defects; they do not establish that the current actual build has been fixed.
+
+Main may rebuild this frozen source. Actual fresh build, actual artifact check, genuine HTTP PDFs and browser behavior remain pending. Source acceptance does not close those gates or establish general PDFKit standalone portability.
 
 ## Separate evidence acceptance reconciliation
 
