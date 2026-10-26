@@ -134,3 +134,27 @@ UI e8f8d16 was integrated only in the QA candidate329edca, not Main. Fresh406/40
 Validator declaration-size transportfixture7b3840e now reads413 before sending any oversizedbody; actualchunkedoverflowtest unchanged. Main freshnative28/28PASS. Image native12/12 remainsaccepted.
 
 Ops Mainactualfull64/64PASS. Imagebuildpassed, first17/V5actualrestorefailedguardfingerprint. Diagnosticd0dcd42 actualattempt2 provesonlyfiveCHECK deparse differences, no missing/addedguard and noindex/trigger/functionchange. NativePostgreSQL canonical CHECK reparse comparison withbounded4passfailclosed andsemanticnegativecontrols approveddesign; implementation andindependentreviewpending. Broaderactualpublication/backuporphanproof notyetreached. Requiredlate003atomicityprobe stillpending. Do notreplacefailedlogsorclaimrestorepass.
+
+## Production Go-Live continuation checkpoint — 2026-10-26
+
+This checkpoint supersedes the older Phase 4 stop-boundary note above. The owner later authorized preparing Go-Live for `phase4-2026-10-26-rc1` and directed automated Agent UAT in place of manual Owner UAT. No new approval is being requested for routine preparation. Production cutover remains NO-GO because the target and required recovery/network gates are not technically reconciled.
+
+### Verified baseline and completed work
+
+- Release source baseline: `89a15a1aa88e8bc1ac42ce38f653448b1a32a645`. Remote `release/phase4` points to that commit and annotated tag `phase4-2026-10-26-rc1` peels to the same commit. The draft GitHub release remains unchanged.
+- Automated RC image Agent UAT: **85/85 passed**, zero failed/skipped/flaky, on a new PostgreSQL 17 synthetic database and run-specific database role. The app and evidence-validator ran from the local RC images; the Playwright target HMAC/role guard passed. Coverage included rent persistence, billing, meters, payments/receipts, deposits/evidence, expenses/CSV, responsive accessibility and target safety. The release operations image separately backed up that synthetic database and restored it into an isolated Compose project; all six attachment hashes verified.
+- Database migration rehearsal: restored clone moved from 3 to 17 migrations with no seed. All 17 database checksums match release SQL, all are finished and none are rolled back. Exact checksums and postflight aggregate counts are in private evidence.
+- Current local stack: a fresh encrypted local backup and isolated restore passed. This does not prove off-device recovery for the intended Production target. A target-shaped local runtime smoke passed health/login/unauthenticated-denial checks.
+- Independent reviewers: finance/UAT report PASS, backup/restore PASS for local current-stack and synthetic RC exercises, final readiness report-accuracy PASS. Their combined verdict remains NO-GO for Production cutover.
+- Public-safe report is `docs/project-execution/phase4-rc1-image-uat.md`. It was added in commit `1ee44a3`; the documentation PR branch `codex/phase4-production-prep` now points to `2b91b6c`, with PR #1 open against `release/phase4`. The release branch/tag and application source were not changed.
+- Detailed raw browser traces, PDFs, credentials for synthetic users, keys, encrypted backup archive, host/network metadata and readiness evidence remain private under the ignored `.local/phase4-prep/` directory. Test containers were stopped and their volumes retained. The original `taky-erp` services and volumes were left running/unchanged.
+
+### Open cutover gates
+
+1. Identify the intended Production host/context/project/database/attachment-volume mapping and reconcile the checked-out versus running app/Caddy configuration and network binding. Private endpoint details are kept out of this public checkpoint.
+2. Configure an authorized off-device encrypted backup location, escrow the recovery key separately, and prove download plus restore/rollback on a second device.
+3. Publish immutable images to the selected registry and pull/run them on the intended host/architecture; local Docker image IDs are not registry manifest digests.
+4. Prepare and verify UID/GID 1000, mode 0700 attachment permissions on the intended target and confirm owner-device trust for its HTTPS certificate.
+5. Re-run target-bound checks and independent final audit after those gates pass, then execute cutover and post-deployment verification. Do not treat the local RC UAT as Production acceptance.
+
+Private release evidence `STATUS.md` is the detailed live status. Current verdict: **NO-GO; no Production migration, restart, cutover or deployment occurred.**
