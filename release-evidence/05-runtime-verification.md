@@ -1,6 +1,12 @@
 # Phase 4 RC Runtime Verification
 
-**Status:** RC1 runtime PASS for its frozen baseline. The current PR head also passed the exact-source Stage 5 billing/PDF runtime in run `40398283420`; production-target runtime remains unverified.
+**Status:** RC1 runtime PASS for its frozen baseline. The latest PR head `87c3ec827da110afb3cf547398708b408556fff6` passed the Stage 5 billing/PDF runtime in run `40401983977`, attempt 2; production-target runtime remains unverified.
+
+## Latest exact-head Stage 5 runtime — run 40401983977
+
+[Run 40401983977](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977) passed all four required checks on PR head `87c3ec827da110afb3cf547398708b408556fff6`. The Stage 5 artifact is [12694192757](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977/artifacts/12694192757). Its run summary binds the test to merge checkout `df63cab9244bf4464156e9aa1afe6159bd372e8a`, tree `092bdbb13586302381edf8a8d78ab91ee441b316`; the 17 migration names/checksums were compared on a fresh isolated PostgreSQL database.
+
+The 51 recorded checks passed with no failures. The synthetic flow retained entered rent `1000.00`, calculated final total `1050.01`, issued one invoice, allocated and confirmed the matching payment, and issued one receipt. The invoice PDF visibly lists rent `฿1,000.00`, water `฿20.01`, electricity `฿30.01`, and rounding adjustment `-฿0.01`, reconciling to `฿1,050.01`. Rendered-page inspection showed separated adjustment label/amount and readable Thai/baht glyphs. Invoice and receipt snapshots remained unchanged after live source edits; unauthorized receipt PDF access returned 401; isolated runtime resources were removed. These are synthetic CI checks, not production-target or Owner acceptance.
 
 ## Latest exact-head Stage 5 runtime — run 40398283420
 

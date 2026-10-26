@@ -1,6 +1,12 @@
 # Container security remediation — 2026-10-26
 
-## Latest four-image hosted scan — run 40398283420
+## Latest four-image hosted scan — run 40401983977
+
+The [scan artifact 12692629579](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977/artifacts/12692629579) is from the docs-only exact-head rerun. It scanned the local app, validator, and operations images plus the exact pinned PostgreSQL image declared by the checkout, on `linux/amd64`; no registry image was published. PR head: `87c3ec827da110afb3cf547398708b408556fff6`; source checkout: `df63cab9244bf4464156e9aa1afe6159bd372e8a`, tree `092bdbb13586302381edf8a8d78ab91ee441b316`. Trivy `0.76.1`; DB schema `2`, updated `2026-10-26T19:14:50.196574068Z`, downloaded `2026-10-26T22:16:53.014568093Z`, file-content SHA-256 `f6435dc19b17290dc50e74823f4da086ee99662076febdd134aede5779b0f6fe`. Findings match the prior scan: app and validator each 8 High; operations 1 Critical and 16 High; PostgreSQL 2 Critical and 40 High. Each image sidecar records its image ID and the same DB hash.
+
+The prior code-source scan is retained below as historical evidence.
+
+## Prior four-image hosted scan — run 40398283420
 
 The [scan artifact 12688330999](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420/artifacts/12688330999) was inspected from the current PR run. It scanned the local app, validator, and operations images plus the exact pinned PostgreSQL image declared by the checkout, on `linux/amd64`; no registry image was published. PR head: `cec582fa73f3e57f92eca422cb9c2bb7ee6940b4`. The scan source checkout is merge commit `e9e8864e6f7a289eae8224790e2390ded453cf70`, tree `faf5e5cdf2515dac44cd8b10bef0d685b32533e2`. Trivy version `0.76.1`; DB schema `2`, updated `2026-10-26T19:14:50.196574068Z`, downloaded `2026-10-26T20:50:00.833627481Z`, file-content SHA-256 `f6435dc19b17290dc50e74823f4da086ee99662076febdd134aede5779b0f6fe`. Each image sidecar records the corresponding local image ID and the same DB hash.
 

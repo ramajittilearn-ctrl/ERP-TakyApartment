@@ -1,13 +1,13 @@
 # Agent-run Phase 4 UAT
 
-**Latest code validation:** PASS on PR head `cec582fa73f3e57f92eca422cb9c2bb7ee6940b4` in [run 40398283420](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420). All four required checks passed. Agent UAT artifact [12687878698](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420/artifacts/12687878698) reports 90 passed, zero failed, skipped, or flaky on merge checkout `e9e8864e6f7a289eae8224790e2390ded453cf70` (browser run `3dcac3817e71da17cac86cf2`). This synthetic run is not Owner acceptance or production verification.
+**Latest code validation:** PASS on application/test source unchanged at PR head `87c3ec827da110afb3cf547398708b408556fff6` in [run 40401983977, attempt 2](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977). All four required checks passed. Agent UAT artifact [12692774142](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977/artifacts/12692774142) reports 90 passed, zero failed, skipped, or flaky on merge checkout `df63cab9244bf4464156e9aa1afe6159bd372e8a` (browser run `96c9e04dd766d9072c80a0da`). This synthetic run is not Owner acceptance or production verification.
 
 **Owner UAT:** Not performed. The Owner delegated UAT execution and requested a report.
 
 ## Latest PR CI run
 
-- Workflow: [Phase 4 CI run 40398283420](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420); PR head `cec582fa73f3e57f92eca422cb9c2bb7ee6940b4`; merge checkout `e9e8864e6f7a289eae8224790e2390ded453cf70`.
-- Result: `required-quality`, `container-verification`, `stage5-runtime-verification`, and `agent-uat` all passed. Agent UAT artifact [12687878698](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420/artifacts/12687878698) records 90 passed, 0 failed, 0 skipped, 0 flaky (browser run `3dcac3817e71da17cac86cf2`). The scenario `tenant rent entered after room selection survives immediate save and reload` passed.
+- Workflow: [Phase 4 CI run 40401983977, attempt 2](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977); PR head `87c3ec827da110afb3cf547398708b408556fff6`; merge checkout `df63cab9244bf4464156e9aa1afe6159bd372e8a`.
+- Result: `required-quality`, `container-verification`, `stage5-runtime-verification`, and `agent-uat` all passed. Agent UAT artifact [12692774142](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977/artifacts/12692774142) records 90 passed, 0 failed, 0 skipped, 0 flaky (browser run `96c9e04dd766d9072c80a0da`). The scenario `tenant rent entered after room selection survives immediate save and reload` passed.
 - This is synthetic agent-run UAT, not Owner acceptance or production verification.
 
 - Workflow: [Phase 4 CI run 40365071119](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40365071119); PR head `54ecf19a89f03b403c46466e2f3247c14d2cf22c`; merge checkout `b4a9edc18aac982bf5d01f800236dc90b9e1f871`.

@@ -3,15 +3,15 @@
 > **Current-state pointer:** authoritative current state is in the latest dated checkpoint immediately below. Older checkpoints are historical snapshots; their pending/complete statements are superseded by that checkpoint.
 
 
-# Current continuation checkpoint — 2026-10-27
+# Current continuation checkpoint — 2026-10-27 (after docs-only CI rerun)
 
 ## Integration baseline and verified status
 
-- Candidate branch: `codex/phase4-current-source-20261026`, PR #2 to protected `release/phase4`; application/test source head `cec582fa73f3e57f92eca422cb9c2bb7ee6940b4`. PR remains OPEN/Draft. This checkpoint and linked status/evidence refresh are documentation-only follow-up changes. No merge, registry publication, deployment, Owner UAT acceptance, or production mutation occurred.
-- Run `40398283420` passed all four required GitHub checks: `required-quality`, `container-verification`, `stage5-runtime-verification`, and `agent-uat`. Exact artifacts: Stage 5 `12689470944`, Agent UAT `12687878698`, four-image Trivy `12688330999`.
+- Candidate branch: `codex/phase4-current-source-20261026`, PR #2 to protected `release/phase4`; latest PR head `87c3ec827da110afb3cf547398708b408556fff6`. PR remains OPEN/Draft. Run `40401983977`, attempt 2, passed all four required GitHub checks on this exact PR head. The prior application/test source was unchanged; this head adds only documentation. No merge, registry publication, deployment, Owner UAT acceptance, or production mutation occurred.
+- Run `40401983977` artifacts: Stage 5 `12694192757`, Agent UAT `12692774142`, four-image Trivy `12692629579`. Stage 5 source-bound artifact records PR head `87c3ec8`, merge checkout `df63cab9244bf4464156e9aa1afe6159bd372e8a`, tree `092bdbb13586302381edf8a8d78ab91ee441b316`.
 - Stage 5: 51 checks passed on fresh isolated PostgreSQL with all 17 migration checksums; synthetic billing, immutable invoice/receipt, exact payment allocation, access denial, TLS and Thai PDF checks passed. Invoice line display reconciles to the frozen `฿1,050.01` total through a visible `-฿0.01` row.
 - Agent UAT: 90 passed, zero failed/skipped/flaky. It includes `tenant rent entered after room selection survives immediate save and reload`. This is synthetic agent-run UAT, not Owner acceptance.
-- Container scan: app, validator, operations and pinned PostgreSQL images were scanned. It found report-only Critical/High items; the gosu Go-stdlib alert is supported as a scanner false positive by upstream evidence, while libxml2 `CVE-2026-6653` remains unresolved.
+- Container scan: app, validator, operations and pinned PostgreSQL images were scanned. The counts match the prior scan (app/validator 8 High each; operations 1 Critical/16 High; PostgreSQL 2 Critical/40 High). The gosu Go-stdlib alert is supported as a scanner false positive by upstream evidence, while libxml2 `CVE-2026-6653` remains unresolved.
 - `release/phase4` requires those four strict status contexts and one approving review. No approval is recorded.
 
 ## Open gates and next executable work
@@ -20,7 +20,7 @@
 2. Establish the actual production host, origin, access and service ownership from an authoritative project source. Current inspected environment is not verified as the target.
 3. For the designated target, complete a safe clone/backup, restore, migration and rollback rehearsal; verify existing data/volume compatibility, certificate trust, and off-device backup/key recovery without modifying existing UAT or production.
 4. Resolve or explicitly disposition the remaining libxml2 security finding; publish and pull source-matched images only after the appropriate release decision.
-5. After any documentation commit, wait for all four required checks on the new exact PR head and update this checkpoint with the new SHA/run/artifacts.
+5. Keep this checkpoint aligned with the exact CI head; the current documentation commit's four checks passed in run `40401983977`.
 
 ## Agents used in this continuation
 
