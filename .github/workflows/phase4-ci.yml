@@ -75,3 +75,116 @@ jobs:
 
       - name: Build pinned images and verify isolated runtime
         run: bash scripts/ci/verify-container-images.sh
+
+  agent-uat:
+    name: agent-uat
+    runs-on: ubuntu-24.04
+    needs: container-verification
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Install isolated Chromium runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Build source for browser Agent UAT
+        run: npm run build
+
+      - name: Run isolated synthetic browser Agent UAT
+        id: agent-uat-run
+        shell: bash
+        run: |
+          set +e
+          node scripts/run-remediation-browser.mjs 2>&1 | tee "$RUNNER_TEMP/agent-uat.log"
+          pipeline_status=("${PIPESTATUS[@]}")
+          uat_status=${pipeline_status[0]}
+          tee_status=${pipeline_status[1]}
+          if [[ "$uat_status" == 0 && "$tee_status" != 0 ]]; then uat_status=$tee_status; fi
+          run_id="$(sed -nE 's/.*"runId":"([a-f0-9]{24})".*/\1/p' "$RUNNER_TEMP/agent-uat.log" | tail -n 1)"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          exit "$uat_status"
+
+      - name: Record source-bound Agent UAT report
+        if: always()
+        env:
+          AGENT_UAT_RUN_ID: ${{ steps.agent-uat-run.outputs.run_id }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFile, readFile, writeFile } from 'node:fs/promises';
+          import { execFileSync } from 'node:child_process';
+          import { join } from 'node:path';
+
+          const runId = process.env.AGENT_UAT_RUN_ID;
+          const sourceCommit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          const dir = runId && /^[a-f0-9]{24}$/.test(runId)
+            ? join('evidence/remediation', `browser-${runId}`)
+            : undefined;
+          let execution;
+          let stats;
+          if (dir) {
+            try {
+              execution = JSON.parse(await readFile(join(dir, 'execution.json'), 'utf8'));
+              stats = JSON.parse(await readFile(join(dir, 'results.json'), 'utf8')).stats;
+            } catch {}
+          }
+          let lines = [
+            '# Agent UAT',
+            '',
+            `- Checkout commit: \`${sourceCommit}\``,
+            `- PR head commit: \`${process.env.PR_HEAD_SHA}\``,
+            '- Mode: synthetic browser UAT on an isolated Ubuntu runner; no Owner UAT or production data.',
+            '- Runtime scope: source-built standalone app; pinned container images are covered by the separate container-verification job.',
+          ];
+          let reportPass = false;
+          if (execution && stats && execution.runId === runId) {
+            const passed = stats.expected;
+            const minimumExpected = 89;
+            const validStats = ['expected', 'unexpected', 'skipped', 'flaky']
+              .every((key) => Number.isSafeInteger(stats[key]) && stats[key] >= 0);
+            const result = execution.succeeded === true && execution.browserStarted === true && validStats && passed >= minimumExpected && stats.unexpected === 0 && stats.skipped === 0 && stats.flaky === 0 ? 'PASS' : 'FAIL';
+            reportPass = result === 'PASS';
+            lines.push(
+              `- Result: ${result}`,
+              `- Passed: ${passed} (minimum required: ${minimumExpected}); failed: ${stats.unexpected}; skipped: ${stats.skipped}; flaky: ${stats.flaky}`,
+              `- Run: \`${runId}\``,
+            );
+          } else {
+            lines.push('- Result: INCOMPLETE; no unambiguous run report was produced. Inspect the UAT step logs.');
+          }
+          const report = `${lines.join('\n')}\n`;
+          await appendFile(process.env.GITHUB_STEP_SUMMARY, report);
+          if (dir) await writeFile(join(dir, 'agent-uat-report.md'), report);
+          if (!reportPass) process.exitCode = 1;
+          NODE
+
+      - name: Upload sanitized Agent UAT report
+        if: always() && steps.agent-uat-run.outputs.run_id != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: agent-uat-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            evidence/remediation/browser-${{ steps.agent-uat-run.outputs.run_id }}/agent-uat-report.md
+            evidence/remediation/browser-${{ steps.agent-uat-run.outputs.run_id }}/results.json
+            evidence/remediation/browser-${{ steps.agent-uat-run.outputs.run_id }}/execution.json
+          if-no-files-found: warn
+          retention-days: 30
