@@ -45,22 +45,22 @@ cleanup() {
 trap cleanup EXIT
 
 build_image() {
-  local image="$1" dockerfile="$2" actual_revision actual_tree
+  local image="$1" dockerfile="$2" context="$3" actual_revision actual_tree
   docker build --pull --platform linux/amd64 \
     --label "org.opencontainers.image.revision=$revision" \
     --label "org.opencontainers.image.tree=$tree" \
-    --tag "$image" --file "$dockerfile" .
+    --tag "$image" --file "$dockerfile" "$context"
   actual_revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")"
   actual_tree="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.tree"}}' "$image")"
   [[ "$actual_revision" == "$revision" && "$actual_tree" == "$tree" ]]
 }
 
 echo "Building app image for $revision ($tree)"
-build_image "$app_image" Dockerfile
+build_image "$app_image" Dockerfile .
 echo "Building evidence validator image"
-build_image "$validator_image" operations/evidence-validator/Dockerfile
+build_image "$validator_image" operations/evidence-validator/Dockerfile operations/evidence-validator
 echo "Building operations image"
-build_image "$operations_image" operations/Dockerfile
+build_image "$operations_image" operations/Dockerfile .
 
 docker run --rm --platform linux/amd64 --entrypoint sh "$app_image" -ec '
   ! command -v npm >/dev/null
