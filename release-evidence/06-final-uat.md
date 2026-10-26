@@ -1,15 +1,20 @@
 # Agent-run Phase 4 UAT
 
-**Latest attempt:** FAIL on PR head `6e2b56ce7506fd38b99e55a46a82285bc72d04a6`: 89 passed and one report-month selection test failed. The three-job run had passing quality and container verification; Agent UAT did not pass. A test-only hydration wait is now in the worktree, independently reviewed with no blocking findings, and awaits hosted rerun.
+**Latest attempt:** PASS on PR head `d607b6cf720931d684aed2c9ebabef4a19364b36`. Run [40335249346](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40335249346) completed successfully with all three jobs, including Agent UAT. The workflow's report gate requires at least 89 expected tests and zero unexpected, skipped, or flaky tests. Its artifact is listed on GitHub, but could not be retrieved in this session because GitHub's artifact API returned HTTP 403 rate-limit errors; therefore the exact test count and source merge-checkout hash are not recorded here. The preceding failed run and test-only timing correction are retained below.
 **Owner UAT:** Not performed. The Owner delegated UAT execution and requested a report.
 
 ## Latest PR CI run
 
-- Workflow: [Phase 4 CI run 40333071309](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40333071309): `required-quality` and `container-verification` passed; `agent-uat` failed.
-- PR head: `6e2b56ce7506fd38b99e55a46a82285bc72d04a6`. Agent UAT checked out merge commit `374fbaca6407c3bc9c492928c9d11c4c0febea86`.
-- Result: 89 passed, 1 failed, 0 skipped, 0 flaky. Failing test: `reports can select and load a month beyond the preset range`; the month input stayed `2026-10` after Playwright filled `2027-03`, so no matching API request occurred. The same case passed in the preceding full-green run. Review found a likely SSR hydration race: the test checked the server-rendered value but did not wait for the client effect. This is not evidence of a confirmed product defect.
-- Report, `results.json`, and `execution.json`: [Agent UAT artifact 12657011314](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40333071309/artifacts/12657011314).
-- A test-only correction now waits for the initial successful monthly-report API response and verifies its month matches the input before changing it; independent review found no blocking issue. Hosted rerun is pending. The other 89 passing cases include tenant rent persistence/reload and the report-export limits below.
+- Workflow: [Phase 4 CI run 40335249346](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40335249346), status Success; all three jobs (`required-quality`, `container-verification`, and `agent-uat`) completed successfully.
+- PR head: `d607b6cf720931d684aed2c9ebabef4a19364b36`.
+- Agent UAT succeeded after the test began waiting for the initial monthly-report API response before editing the month. Workflow success requires the suite threshold (at least 89) and zero unexpected, skipped, or flaky tests. Exact artifact report unavailable during this session due GitHub API rate limiting.
+- This is synthetic agent-run UAT, not Owner acceptance or production verification.
+
+### Prior UAT attempt and correction
+
+- Run [40333071309](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40333071309) passed quality and container verification but failed Agent UAT 89/90: the month input remained `2026-10` after filling `2027-03`. Independent review found this likely a test timing race against Client Component hydration, not a confirmed product defect.
+- The test now waits for a successful initial monthly-report response and verifies its month matches the input before changing it. The cross-review found no blocking issues. Run `40335249346` then passed all three workflow jobs.
+- Report from the failed attempt: [Agent UAT artifact 12657011314](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40333071309/artifacts/12657011314).
 
 ### Prior fully green exact-head run
 
