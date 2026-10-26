@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-if [[ "$#" -ne 6 ]]; then
-  echo "Usage: scan-container-images.sh APP_IMAGE VALIDATOR_IMAGE OPERATIONS_IMAGE REVISION TREE OUTPUT_DIR" >&2
+if [[ "$#" -ne 7 ]]; then
+  echo "Usage: scan-container-images.sh APP_IMAGE VALIDATOR_IMAGE OPERATIONS_IMAGE DATABASE_IMAGE REVISION TREE OUTPUT_DIR" >&2
   exit 2
 fi
 
 app_image="$1"
 validator_image="$2"
 operations_image="$3"
-revision="$4"
-tree="$5"
-output_dir="$6"
+database_image="$4"
+revision="$5"
+tree="$6"
+output_dir="$7"
 trivy_version="0.76.1"
 trivy_sha256="c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0"
 platform="linux/amd64"
@@ -23,7 +24,11 @@ if [[ ! "$revision" =~ ^[a-f0-9]{40}$ || ! "$tree" =~ ^[a-f0-9]{40}$ ]]; then
   echo "Image scan requires full source revision and tree hashes" >&2
   exit 1
 fi
-for image in "$app_image" "$validator_image" "$operations_image"; do
+if [[ ! "$database_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
+  echo "Database image scan requires an exact sha256 digest reference" >&2
+  exit 1
+fi
+for image in "$app_image" "$validator_image" "$operations_image" "$database_image"; do
   if [[ -z "$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null)" ]]; then
     echo "Required local image is missing: $image" >&2
     exit 1
@@ -111,6 +116,7 @@ scan_image() {
 scan_image app "$app_image"
 scan_image validator "$validator_image"
 scan_image operations "$operations_image"
+scan_image database "$database_image"
 database_sha256_after="$(sha256sum "$database_file" | awk '{print $1}')"
 if [[ "$database_sha256_after" != "$database_sha256" ]]; then
   echo "Trivy vulnerability database changed during the image scans" >&2
@@ -129,7 +135,7 @@ cat > "${output_dir}/README.md" <<EOF
 - Vulnerability DB download time: \`${database_downloaded_at}\`
 - Vulnerability DB next update time: \`${database_next_update}\`
 - Vulnerability DB file-content SHA-256: \`${database_sha256}\` (metadata file: \`trivy-db-metadata.json\`; this is not an OCI digest)
-- Scope: local app, validator, and operations images built from the source checkout; vulnerability scanner only
+- Scope: local app, validator, and operations images built from the source checkout plus the exact pinned PostgreSQL image declared by the checkout's \`docker-compose.yml\`; vulnerability scanner only
 - Policy: findings are reported and are not assigned a blocking severity threshold
 - Image metadata sidecars record local image IDs (config digests), tags, source identity, and scan time
 

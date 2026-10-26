@@ -249,5 +249,5 @@ docker exec "$probe" node -e \
 echo "Validator rejects an invalid token with HTTP 401."
 
 bash scripts/ci/scan-container-images.sh \
-  "$app_image" "$validator_image" "$operations_image" \
+  "$app_image" "$validator_image" "$operations_image" "$db_image" \
   "$revision" "$tree" "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"

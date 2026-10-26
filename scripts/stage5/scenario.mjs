@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 
 const runId = process.env.STAGE5_RUN_ID;
@@ -462,6 +463,80 @@ const invoicePdf = await downloadPdf(
   staffSession.cookie,
   `Invoice_${invoice.number}.pdf`,
   "invoice.pdf",
+);
+const invoicePdfText = execFileSync(
+  "pdftotext",
+  [join(artifactDir, invoicePdf.file), "-"],
+  { encoding: "utf8" },
+);
+const invoicePdfLayout = execFileSync(
+  "pdftotext",
+  ["-bbox-layout", join(artifactDir, invoicePdf.file), "-"],
+  { encoding: "utf8" },
+);
+assert.match(
+  invoicePdfText,
+  /ส่วนต่างการปัดเศษ \/ Rounding adjustment\s+-฿0\.01/,
+);
+assert.match(invoicePdfText, /ยอดชำระรวม \/ TOTAL PAYABLE\s+฿1,050\.01/);
+for (const visibleAmount of ["฿1,000.00", "฿20.01", "฿30.01", "-฿0.01"])
+  assert.ok(
+    invoicePdfText.includes(visibleAmount),
+    `invoice PDF is missing displayed amount ${visibleAmount}`,
+  );
+const signedMoneyCents = (value) => {
+  const negative = value.startsWith("-");
+  const absolute = negative ? value.slice(1) : value;
+  const cents = moneyCents(absolute);
+  return negative ? -cents : cents;
+};
+const reconciledLineCents =
+  invoice.snapshot.lines.reduce(
+    (sum, line) => sum + moneyCents(line.displayAmount),
+    0n,
+  ) + signedMoneyCents(invoice.snapshot.totals.reconciliationDelta);
+assert.equal(reconciledLineCents, moneyCents(invoice.finalTotal));
+const bboxWords = [
+  ...invoicePdfLayout.matchAll(
+    /<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="[\d.]+">([^<]*)<\/word>/g,
+  ),
+].map((match) => ({
+  xMin: Number(match[1]),
+  yMin: Number(match[2]),
+  xMax: Number(match[3]),
+  text: match[4],
+}));
+const adjustmentLabel = bboxWords.find((word) =>
+  word.text.includes("ส่วนต่าง"),
+);
+assert.ok(
+  adjustmentLabel,
+  "rounding adjustment label is absent from PDF layout",
+);
+const adjustmentLabelRight = Math.max(
+  ...bboxWords
+    .filter(
+      (word) =>
+        Math.abs(word.yMin - adjustmentLabel.yMin) < 3 &&
+        word.xMin >= adjustmentLabel.xMin &&
+        word.xMin < 400,
+    )
+    .map((word) => word.xMax),
+);
+const adjustmentAmount = bboxWords.find(
+  (word) =>
+    Math.abs(word.yMin - adjustmentLabel.yMin) < 3 &&
+    word.xMin > adjustmentLabelRight &&
+    word.text.includes("0.01"),
+);
+assert.ok(
+  adjustmentAmount,
+  "rounding adjustment amount is missing or overlaps its label",
+);
+check(
+  "invoice PDF reconciles displayed line amounts with the frozen final total and keeps the adjustment row separated",
+  true,
+  "visible lines ฿1,000.00 + ฿20.01 + ฿30.01 - ฿0.01 equal final ฿1,050.01; layout bounding boxes separate the row label and amount",
 );
 
 const paymentBody = {

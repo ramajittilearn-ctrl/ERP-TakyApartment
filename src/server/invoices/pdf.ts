@@ -18,6 +18,7 @@ export type InvoicePdfDocument = {
     rate: string | null;
     amount: string;
   }>;
+  reconciliationDelta: string;
   total: string;
   voidedAt: string | null;
   voidReason: string | null;
@@ -61,6 +62,18 @@ function labelFor(kind: InvoicePdfDocument["lines"][number]["kind"]): string {
   if (kind === "RENT") return "ค่าเช่าห้อง / Room rent";
   if (kind === "WATER") return "ค่าน้ำ / Water";
   return "ค่าไฟฟ้า / Electricity";
+}
+
+export function invoicePdfRoundingAdjustment(
+  reconciliationDelta: string,
+): { label: string; amount: string } | null {
+  if (reconciliationDelta === "0.00") return null;
+  return {
+    label: "ส่วนต่างการปัดเศษ / Rounding adjustment",
+    amount: reconciliationDelta.startsWith("-")
+      ? amountText(reconciliationDelta)
+      : `+${amountText(reconciliationDelta)}`,
+  };
 }
 
 export function invoicePdfFilename(invoiceNumber: string): string {
@@ -272,6 +285,19 @@ export async function renderInvoicePdf(
     for (let i = 0; i < detailLines.length; i++)
       writeLine(detailLines[i], left + 274, y + 8 + i * 12, 8, "#526174");
     writeLine(amountText(line.amount), right - 106, y + 8, 9);
+    y += rowHeight;
+    doc.moveTo(left, y).lineTo(right, y).strokeColor("#e5eaf0").stroke();
+  }
+  const roundingAdjustment = invoicePdfRoundingAdjustment(
+    invoice.reconciliationDelta,
+  );
+  if (roundingAdjustment) {
+    const adjustmentLines = wrap(roundingAdjustment.label, 245, 9);
+    const rowHeight = Math.max(30, adjustmentLines.length * 13);
+    ensureSpace(rowHeight + 15);
+    for (let index = 0; index < adjustmentLines.length; index++)
+      writeLine(adjustmentLines[index], left + 9, y + 8 + index * 13, 9);
+    writeLine(roundingAdjustment.amount, right - 106, y + 8, 9, "#526174");
     y += rowHeight;
     doc.moveTo(left, y).lineTo(right, y).strokeColor("#e5eaf0").stroke();
   }

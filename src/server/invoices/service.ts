@@ -1240,6 +1240,7 @@ export async function getInvoicePdfDocument(
       leaseReference: invoice.labels.leaseNumber ?? null,
     },
     lines,
+    reconciliationDelta: snapshot.totals.reconciliationDelta,
     total: snapshot.totals.finalTotal,
     voidedAt: invoice.voidedAt?.slice(0, 10) ?? null,
     voidReason: invoice.voidReason,
