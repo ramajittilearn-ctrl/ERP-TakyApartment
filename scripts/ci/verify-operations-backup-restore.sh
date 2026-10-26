@@ -362,7 +362,25 @@ run_operations() {
   "${args[@]}" "$operations_image" "$@"
 }
 
-backup_json="$(run_operations "${project}-backup" "" node operations/cli.mjs backup)"
+report_backup_failure() {
+  docker run --rm --platform linux/amd64 --label "$ownership_label=$project" \
+    --network none \
+    --mount "type=volume,source=$backup_volume,target=/backups,readonly" \
+    --entrypoint node "$operations_image" -e '
+      const fs = require("node:fs");
+      if (!fs.existsSync("/backups/records")) process.exit(0);
+      for (const name of fs.readdirSync("/backups/records").filter((value) => /^[a-f0-9-]{36}\.json$/.test(value))) {
+        const record = JSON.parse(fs.readFileSync(`/backups/records/${name}`, "utf8"));
+        if (record.status === "FAILED")
+          process.stdout.write(JSON.stringify({ id: record.id, status: record.status, error: record.error }) + "\n");
+      }
+    ' >&2 || true
+}
+
+if ! backup_json="$(run_operations "${project}-backup" "" node operations/cli.mjs backup)"; then
+  report_backup_failure
+  exit 1
+fi
 backup_file="$(node -e 'const x=JSON.parse(process.argv[1]);if(x.status!=="SUCCEEDED"||!/^taky-\d{8}T\d{6}Z-[a-f0-9-]{36}\.taky\.enc$/.test(x.file)||!/^[a-f0-9]{64}$/.test(x.checksum)||!x.verifiedAt)process.exit(1);process.stdout.write(x.file)' "$backup_json")"
 echo "Exact operations image created and locally verified synthetic backup: $backup_file"
 
