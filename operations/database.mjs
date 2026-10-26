@@ -4,7 +4,7 @@ import os from "node:os";
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import assert from "node:assert/strict";
-import { run, copyFiles, filesUnder, unpack } from "./archive.mjs";
+import { run, copyFiles, chownTree, filesUnder, unpack } from "./archive.mjs";
 
 import { inventoryVersion, inventorySql } from "./inventory.mjs";
 export { INVENTORY_SQL, LEGACY_INVENTORY_SQL } from "./inventory.mjs";
@@ -225,6 +225,7 @@ export async function restoreIsolated(file, key, attachmentTarget) {
       attachmentTarget,
       set.manifest.attachments,
     );
+    await chownTree(attachmentTarget);
     await assertInventory(set.manifest.inventory);
     assert.deepEqual(
       await filesUnder(attachmentTarget),

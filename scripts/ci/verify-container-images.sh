@@ -39,7 +39,7 @@ resource_label() {
   esac
   local status=$?
   if [[ "$status" != 0 ]]; then
-    if [[ "$output" == *"No such"* || "$output" == *"no such"* ]]; then return 0; fi
+    if [[ "$output" == *"No such"* || "$output" == *"no such"* || "$output" == *"not found"* ]]; then return 0; fi
     echo "Could not inspect $kind during cleanup ($name): $output" >&2
     return 1
   fi
