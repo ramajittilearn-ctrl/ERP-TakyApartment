@@ -30,7 +30,7 @@ Fresh installations seed exactly 15 rooms: 101–105, 201–205 and 301–305, a
 - Validated property/floor CRUD APIs and ADMIN account-creation API.
 - Docker app/database with health checks, restart policies, private attachment storage and persistent database volume. PostgreSQL has no published port.
 
-Dashboard, billing, payments, expenses, reports, maintenance and settings retain explicitly labeled Phase 1 demonstrations. They are separate from live tenant/lease records; their figures are not operational accounting. Full billing/payment workflows, file upload, account-management UI and password recovery are deferred. Backup/status/recovery are operator commands, not a redesigned settings screen.
+The application also includes persisted workflows for billing periods, utility rates and readings, invoices, payments and receipts, deposits, OPEX/CAPEX expenses, dashboard summaries, and monthly financial reports. Dashboard and reports are read-only. Maintenance and Settings remain explicitly labeled demonstrations; their figures and actions are not live operational records. Backup/status/recovery are operator commands, not a Settings screen. An ADMIN account-creation API exists, but there is no account-management UI or password-recovery flow.
 
 ## Environment and LAN access
 

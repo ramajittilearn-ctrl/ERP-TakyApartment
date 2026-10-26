@@ -244,3 +244,7 @@ echo "App health passed; fresh database migrated and seeded $room_count rooms."
 docker exec "$probe" node -e \
   "fetch('http://evidence-validator:3835/validate',{method:'POST',headers:{'X-Taky-Validator-Token':'${validator_token:0:63}b'},body:'x'}).then(r=>process.exit(r.status===401?0:1)).catch(()=>process.exit(2))"
 echo "Validator rejects an invalid token with HTTP 401."
+
+bash scripts/ci/scan-container-images.sh \
+  "$app_image" "$validator_image" "$operations_image" \
+  "$revision" "$tree" "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
