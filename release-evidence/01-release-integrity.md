@@ -14,7 +14,7 @@
 
 ## Updated release-branch protection — 2026-10-26
 
-After the independent audit identified that the branch previously required zero PR approvals and only `required-quality`, protection for `release/phase4` was strengthened. It now requires strict/up-to-date `required-quality`, `container-verification`, and `agent-uat` checks plus one approving review; approving reviews are dismissed on new commits. Admin enforcement, conversation resolution, and blocks on force-push and deletion remain enabled. PR #1 and PR #2 were not merged or modified by this settings change. PR #2 head `aa171b8` passed all three required checks in run `40362968827`, including Agent UAT 90/90.
+After the independent audit identified that the branch previously required zero PR approvals and only `required-quality`, protection for `release/phase4` was strengthened. It now requires strict/up-to-date `required-quality`, `container-verification`, and `agent-uat` checks plus one approving review; approving reviews are dismissed on new commits. Admin enforcement, conversation resolution, and blocks on force-push and deletion remain enabled. PR #1 and PR #2 were not merged or modified by this settings change. PR #2 head `54ecf19` passed all three required checks in run `40365071119`, including Agent UAT 90/90.
 
 ## Limits
 

@@ -1,6 +1,6 @@
 # Stage 7 — Independent Release Audit
 
-**Audit status:** The detailed audit body below is historical and assessed PR source commit `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966`. Current evidence addenda for runs `40356454371`, `40360707470`, and `40362968827` follow and were independently cross-reviewed; they do not replace or extend the old detailed code-level audit findings beyond the evidence listed in those addenda.
+**Audit status:** The detailed audit body below is historical and assessed PR source commit `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966`. Current evidence addenda for runs `40356454371`, `40360707470`, `40362968827`, and `40365071119` follow and were independently cross-reviewed; they do not replace or extend the old detailed code-level audit findings beyond the evidence listed in those addenda.
 
 ## Current evidence addendum — run 40356454371
 
@@ -109,3 +109,8 @@ Run [40360707470](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actio
 ## Follow-up run on evidence head `aa171b8`
 
 Run [40362968827](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40362968827) passed all three checks on PR head `aa171b8e0273e86e77212bf56972d0a2bab89b6e`. Agent UAT artifact [12668289110](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40362968827/artifacts/12668289110) reports 90/90 on merge checkout `08eaa89ed5258b1c1c22a80f649db882afe574aa`. The latest scan artifact is `12669796308`; findings and database provenance match the report in `08-container-security-remediation.md`. PR #2 remains OPEN/Draft pending the required approving review. Production remains NO-GO.
+
+
+## Follow-up run on evidence head `54ecf19`
+
+Run [40365071119](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40365071119) passed all three checks on PR head `54ecf19a89f03b403c46466e2f3247c14d2cf22c`. Agent UAT artifact [12671305690](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40365071119/artifacts/12671305690) reports 90/90 on merge checkout `b4a9edc18aac982bf5d01f800236dc90b9e1f871`. Scan artifact [12670017880](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40365071119/artifacts/12670017880) was inspected; source/tree, counts, and DB provenance are recorded in `08-container-security-remediation.md`. PR #2 remains OPEN/Draft pending approval; production remains NO-GO.
