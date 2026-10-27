@@ -2,25 +2,31 @@
 set -Eeuo pipefail
 
 usage() {
-  echo "Usage: $0 <gosu-binary> <database-image-reference> <database-image-id> <report-path>" >&2
+  echo "Usage: $0 <gosu-binary> <database-image-reference> <database-image-id> <database-base-image-reference> <report-path>" >&2
   exit 2
 }
-[[ $# == 4 ]] || usage
+[[ $# == 5 ]] || usage
 
 gosu_binary="$1"
 database_image="$2"
 database_image_id="$3"
-report_path="$4"
+database_base_image="$4"
+report_path="$5"
 mkdir -p "$(dirname "$report_path")"
 : > "$report_path"
 exec > >(tee -a "$report_path") 2>&1
 
 [[ -s "$gosu_binary" ]] || { echo "Extracted gosu binary is missing or empty" >&2; exit 1; }
-[[ "$database_image" =~ @sha256:[a-f0-9]{64}$ ]] || { echo "Database image reference must be digest-pinned" >&2; exit 1; }
+[[ "$database_base_image" =~ @sha256:[a-f0-9]{64}$ ]] || { echo "Database base image reference must be digest-pinned" >&2; exit 1; }
 [[ "$database_image_id" =~ ^sha256:[a-f0-9]{64}$ ]] || { echo "Database image ID must be a SHA-256 digest" >&2; exit 1; }
 current_database_image_id="$(docker image inspect --format '{{.Id}}' "$database_image")"
 [[ "$current_database_image_id" == "$database_image_id" ]] || {
   echo "Database image changed after the gosu binary was extracted" >&2
+  exit 1
+}
+actual_database_base_image="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.base.name"}}' "$database_image")"
+[[ "$actual_database_base_image" == "$database_base_image" ]] || {
+  echo "Database image base label does not match the pinned base image" >&2
   exit 1
 }
 
@@ -51,6 +57,7 @@ printf '%s  %s\n' "$wrapper_sha256" "$wrapper_path" | sha256sum --check --status
 
 printf 'Database image: %s\n' "$database_image"
 printf 'Database image ID: %s\n' "$database_image_id"
+printf 'Pinned database base image: %s\n' "$database_base_image"
 printf 'Go toolchain: %s\n' "$go_version"
 printf 'govulncheck module build info:\n%s\n' "$govulncheck_build"
 printf 'Upstream wrapper: %s\n' "$wrapper_url"

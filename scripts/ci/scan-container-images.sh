@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-if [[ "$#" -ne 7 ]]; then
-  echo "Usage: scan-container-images.sh APP_IMAGE VALIDATOR_IMAGE OPERATIONS_IMAGE DATABASE_IMAGE REVISION TREE OUTPUT_DIR" >&2
+if [[ "$#" -ne 8 ]]; then
+  echo "Usage: scan-container-images.sh APP_IMAGE VALIDATOR_IMAGE OPERATIONS_IMAGE OPERATIONAL_DATABASE_IMAGE ALPINE_DATABASE_IMAGE REVISION TREE OUTPUT_DIR" >&2
   exit 2
 fi
 
 app_image="$1"
 validator_image="$2"
 operations_image="$3"
-database_image="$4"
-revision="$5"
-tree="$6"
-output_dir="$7"
+operational_database_image="$4"
+database_image="$5"
+revision="$6"
+tree="$7"
+output_dir="$8"
 trivy_version="0.76.1"
 trivy_sha256="c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0"
 platform="linux/amd64"
@@ -24,11 +25,7 @@ if [[ ! "$revision" =~ ^[a-f0-9]{40}$ || ! "$tree" =~ ^[a-f0-9]{40}$ ]]; then
   echo "Image scan requires full source revision and tree hashes" >&2
   exit 1
 fi
-if [[ ! "$database_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
-  echo "Database image scan requires an exact sha256 digest reference" >&2
-  exit 1
-fi
-for image in "$app_image" "$validator_image" "$operations_image" "$database_image"; do
+for image in "$app_image" "$validator_image" "$operations_image" "$operational_database_image" "$database_image"; do
   if [[ -z "$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null)" ]]; then
     echo "Required local image is missing: $image" >&2
     exit 1
@@ -117,32 +114,43 @@ scan_image() {
 scan_image app "$app_image"
 scan_image validator "$validator_image"
 scan_image operations "$operations_image"
+scan_image operational-database "$operational_database_image"
 scan_image database "$database_image"
-for image_name in operations database; do
+for image_name in operations operational-database database; do
   report="${output_dir}/${image_name}.trivy.json"
-  if [[ "$image_name" == operations ]]; then image="$operations_image"; else image="$database_image"; fi
+  case "$image_name" in
+    operations) image="$operations_image" ;;
+    operational-database) image="$operational_database_image" ;;
+    database) image="$database_image" ;;
+  esac
   image_id="$(jq -r '.imageId' "${output_dir}/${image_name}.metadata.json")"
   current_image_id="$(docker image inspect --format '{{.Id}}' "$image")"
   if [[ "$image_id" != "$current_image_id" ]]; then
     echo "Scanned $image_name image changed after Trivy inspection" >&2
     exit 1
   fi
-  if ! jq -e --arg image_id "$image_id" '
-    .Metadata.ImageID == $image_id and
-    .Metadata.OS.Family == "alpine" and
-    (.Metadata.OS.Name | startswith("3.24")) and
-    any(.Results[]; .Class == "os-pkgs" and .Type == "alpine" and any(.Packages[]?; .Name == "libxml2"))
-  ' "$report" >/dev/null; then
-    echo "The Trivy $image_name report does not prove the exact Alpine libxml2 package was scanned" >&2
+  if ! jq -e --arg image_id "$image_id" '.Metadata.ImageID == $image_id' "$report" >/dev/null; then
+    echo "The Trivy $image_name report does not match the exact inspected image" >&2
     exit 1
   fi
   if ! jq -e 'all(.Results[]; (.Vulnerabilities == null or (.Vulnerabilities | type == "array")))' "$report" >/dev/null; then
     echo "The Trivy $image_name report has a malformed vulnerability list" >&2
     exit 1
   fi
-  if ! jq -e '[.Results[] | .Vulnerabilities[]? | select(.VulnerabilityID == "CVE-2026-6653")] | length == 0' "$report" >/dev/null; then
-    echo "CVE-2026-6653 remains in the Alpine $image_name image" >&2
-    exit 1
+  if [[ "$image_name" != operational-database ]]; then
+    if ! jq -e --arg image_id "$image_id" '
+      .Metadata.ImageID == $image_id and
+      .Metadata.OS.Family == "alpine" and
+      (.Metadata.OS.Name | startswith("3.24")) and
+      any(.Results[]; .Class == "os-pkgs" and .Type == "alpine" and any(.Packages[]?; .Name == "libxml2"))
+    ' "$report" >/dev/null; then
+      echo "The Trivy $image_name report does not prove the exact Alpine libxml2 package was scanned" >&2
+      exit 1
+    fi
+    if ! jq -e '[.Results[] | .Vulnerabilities[]? | select(.VulnerabilityID == "CVE-2026-6653")] | length == 0' "$report" >/dev/null; then
+      echo "CVE-2026-6653 remains in the Alpine $image_name image" >&2
+      exit 1
+    fi
   fi
 done
 {
@@ -176,7 +184,7 @@ cat > "${output_dir}/README.md" <<EOF
 - Vulnerability DB download time: \`${database_downloaded_at}\`
 - Vulnerability DB next update time: \`${database_next_update}\`
 - Vulnerability DB file-content SHA-256: \`${database_sha256}\` (metadata file: \`trivy-db-metadata.json\`; this is not an OCI digest)
-- Scope: local app, validator, and operations images built from the source checkout plus the exact pinned PostgreSQL image from the isolated \`docker-compose.alpine-candidate.yml\`; vulnerability scanner only
+- Scope: local app, validator, operations, and source-built Trixie/Alpine PostgreSQL images from this checkout; PostgreSQL derivatives use digest-pinned official image bases and replace gosu with source-built gosu using moby/sys/user v0.4.1. The isolated Alpine candidate is defined by \`docker-compose.alpine-candidate.yml\`.
 - Policy: findings are reported without a general severity threshold; CVE-2026-6653 is a targeted release gate for the Alpine operations/database images
 - Image metadata sidecars record local image IDs (config digests), tags, source identity, and scan time
 - The CI scan fails if CVE-2026-6653 appears in either Alpine image; installed libxml2 versions come from each image-ID-bound Trivy package inventory in \`alpine-libxml2-versions.txt\`

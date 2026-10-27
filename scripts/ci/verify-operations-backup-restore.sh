@@ -13,16 +13,22 @@ revision="$(git rev-parse HEAD)"
 tree="$(git rev-parse 'HEAD^{tree}')"
 target_db_image="$3"
 source_db_image="${4:-$target_db_image}"
-if [[ ! "$target_db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
-  echo "The restore target database image must be pinned by digest" >&2
-  exit 1
-fi
 if [[ ! "$source_db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
   echo "The source database image must be pinned by digest" >&2
   exit 1
 fi
 if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
   echo "Operations backup/restore verification requires a clean source checkout" >&2
+  exit 1
+fi
+if ! docker image inspect "$target_db_image" >/dev/null 2>&1; then
+  echo "The source-built patched restore target image is unavailable: $target_db_image" >&2
+  exit 1
+fi
+target_image_revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$target_db_image")"
+target_image_tree="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.tree"}}' "$target_db_image")"
+if [[ "$target_image_revision" != "$revision" || "$target_image_tree" != "$tree" ]]; then
+  echo "The restore target image does not match the clean checkout: $target_db_image" >&2
   exit 1
 fi
 

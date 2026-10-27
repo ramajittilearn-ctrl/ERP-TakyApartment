@@ -3,17 +3,6 @@ set -Eeuo pipefail
 
 revision="$(git rev-parse HEAD)"
 tree="$(git rev-parse 'HEAD^{tree}')"
-db_image="$(awk '$1 == "db:" { in_db = 1; next } in_db && $1 == "app:" { exit } in_db && $1 == "image:" { print $2; exit }' docker-compose.yml)"
-candidate_db_image="$(awk '$1 == "db:" { in_db = 1; next } in_db && $1 == "image:" { print $2; exit }' docker-compose.alpine-candidate.yml)"
-if [[ ! "$db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
-  echo "The development database image must be pinned by digest" >&2
-  exit 1
-fi
-if [[ ! "$candidate_db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
-  echo "The isolated Alpine candidate image must be pinned by digest" >&2
-  exit 1
-fi
-
 project="taky-ci-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-${RANDOM}"
 ownership_label="com.taky.ci.run"
 network="${project}-private"
@@ -26,7 +15,8 @@ attachments_volume="${project}-attachments"
 app_image="taky-ci-app:${project}"
 validator_image="taky-ci-validator:${project}"
 operations_image="taky-ci-operations:${project}"
-gosu_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-gosu"
+gosu_operational_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-operational-gosu"
+gosu_alpine_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-alpine-gosu"
 validator_token="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 database_password="ci_synthetic_password_only"
 
@@ -37,8 +27,17 @@ fi
 
 main_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic SESSION_SECRET=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa DATABASE_URL=postgresql://ci:synthetic@db:5432/ci APP_ORIGIN=http://127.0.0.1:3000 docker compose -f docker-compose.yml config --format json)"
 candidate_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic docker compose -f docker-compose.alpine-candidate.yml config --format json)"
+db_image="$(MAIN_COMPOSE_CONFIG="$main_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.MAIN_COMPOSE_CONFIG).services.db.image)')"
+candidate_db_image="$(CANDIDATE_COMPOSE_CONFIG="$candidate_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.image)')"
+db_base_image="$(MAIN_COMPOSE_CONFIG="$main_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.MAIN_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
+candidate_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$candidate_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
+if [[ ! "$db_base_image" =~ @sha256:[a-f0-9]{64}$ || ! "$candidate_db_base_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
+  echo "Both PostgreSQL base images must be pinned by digest" >&2
+  exit 1
+fi
 MAIN_COMPOSE_CONFIG="$main_compose_config" CANDIDATE_COMPOSE_CONFIG="$candidate_compose_config" \
   MAIN_DB_IMAGE="$db_image" CANDIDATE_DB_IMAGE="$candidate_db_image" \
+  MAIN_DB_BASE_IMAGE="$db_base_image" CANDIDATE_DB_BASE_IMAGE="$candidate_db_base_image" \
   node -e '
     const main = JSON.parse(process.env.MAIN_COMPOSE_CONFIG);
     const candidate = JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG);
@@ -48,11 +47,11 @@ MAIN_COMPOSE_CONFIG="$main_compose_config" CANDIDATE_COMPOSE_CONFIG="$candidate_
       candidateProject: "taky-erp-alpine-candidate",
       candidateVolume: "taky-erp-alpine-candidate-database",
     };
-    if (main.name !== expected.mainProject || main.services.db.image !== process.env.MAIN_DB_IMAGE || main.volumes.database.name !== expected.mainVolume) {
-      throw new Error(`Operational Compose identity changed: ${JSON.stringify({name: main.name, image: main.services.db.image, volume: main.volumes.database.name})}`);
+    if (main.name !== expected.mainProject || main.services.db.image !== process.env.MAIN_DB_IMAGE || main.services.db.build.args.POSTGRES_BASE_IMAGE !== process.env.MAIN_DB_BASE_IMAGE || main.volumes.database.name !== expected.mainVolume) {
+      throw new Error(`Operational Compose identity changed: ${JSON.stringify({name: main.name, image: main.services.db.image, baseImage: main.services.db.build.args.POSTGRES_BASE_IMAGE, volume: main.volumes.database.name})}`);
     }
-    if (candidate.name !== expected.candidateProject || candidate.services.db.image !== process.env.CANDIDATE_DB_IMAGE || candidate.volumes.database.name !== expected.candidateVolume || candidate.volumes.database.name === main.volumes.database.name) {
-      throw new Error(`Alpine candidate Compose isolation changed: ${JSON.stringify({name: candidate.name, image: candidate.services.db.image, volume: candidate.volumes.database.name})}`);
+    if (candidate.name !== expected.candidateProject || candidate.services.db.image !== process.env.CANDIDATE_DB_IMAGE || candidate.services.db.build.args.POSTGRES_BASE_IMAGE !== process.env.CANDIDATE_DB_BASE_IMAGE || candidate.volumes.database.name !== expected.candidateVolume || candidate.volumes.database.name === main.volumes.database.name) {
+      throw new Error(`Alpine candidate Compose isolation changed: ${JSON.stringify({name: candidate.name, image: candidate.services.db.image, baseImage: candidate.services.db.build.args.POSTGRES_BASE_IMAGE, volume: candidate.volumes.database.name})}`);
     }
     console.log("Operational and Alpine candidate Compose projects and database volumes are isolated.");
   '
@@ -93,7 +92,7 @@ cleanup() {
   local exit_status=$? cleanup_failed=0 name
   trap - EXIT
   set +e
-  rm -f -- "$gosu_binary"
+  rm -f -- "$gosu_operational_binary" "$gosu_alpine_binary"
   for name in "$app" "$validator" "$database" "$probe"; do
     remove_owned_resource container "$name" || cleanup_failed=1
   done
@@ -126,6 +125,21 @@ echo "Building evidence validator image"
 build_image "$validator_image" operations/evidence-validator/Dockerfile operations/evidence-validator
 echo "Building operations image"
 build_image "$operations_image" operations/Dockerfile .
+build_postgres_image() {
+  local image="$1" base_image="$2" actual_revision actual_tree
+  docker build --pull --platform linux/amd64 \
+    --build-arg "POSTGRES_BASE_IMAGE=$base_image" \
+    --label "org.opencontainers.image.revision=$revision" \
+    --label "org.opencontainers.image.tree=$tree" \
+    --tag "$image" --file docker/postgres/Dockerfile .
+  actual_revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")"
+  actual_tree="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.tree"}}' "$image")"
+  [[ "$actual_revision" == "$revision" && "$actual_tree" == "$tree" ]]
+}
+echo "Building pinned operational PostgreSQL derivative"
+build_postgres_image "$db_image" "$db_base_image"
+echo "Building isolated Alpine PostgreSQL candidate derivative"
+build_postgres_image "$candidate_db_image" "$candidate_db_base_image"
 legacy_trixie_db_image="postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
 legacy_bookworm_db_image="postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27"
 bash scripts/ci/verify-operations-backup-restore.sh "$operations_image" "$app_image" "$candidate_db_image" "$legacy_trixie_db_image"
@@ -281,16 +295,20 @@ docker exec "$probe" node -e \
 echo "Validator rejects an invalid token with HTTP 401."
 
 bash scripts/ci/scan-container-images.sh \
-  "$app_image" "$validator_image" "$operations_image" "$candidate_db_image" \
+  "$app_image" "$validator_image" "$operations_image" "$db_image" "$candidate_db_image" \
   "$revision" "$tree" "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
 
-gosu_database_image_id="$(docker image inspect --format '{{.Id}}' "$candidate_db_image")"
-docker run --rm --platform linux/amd64 --entrypoint sh "$candidate_db_image" -ec \
-  'cat /usr/local/bin/gosu' > "$gosu_binary"
-[[ "$(docker image inspect --format '{{.Id}}' "$candidate_db_image")" == "$gosu_database_image_id" ]]
 gosu_report_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
-printf 'Extracted gosu from image %s (%s)\n' "$candidate_db_image" "$gosu_database_image_id"
-printf '%s\n' '- Separate exact-binary Go reachability analysis is recorded in `gosu-govulncheck.txt`; it does not modify or suppress the raw Trivy reports.' >> "$gosu_report_dir/README.md"
-bash scripts/ci/check-gosu-binary-vulnerabilities.sh \
-  "$gosu_binary" "$candidate_db_image" "$gosu_database_image_id" \
-  "$gosu_report_dir/gosu-govulncheck.txt"
+check_gosu_image() {
+  local image="$1" base_image="$2" binary="$3" report_name="$4" image_id
+  image_id="$(docker image inspect --format '{{.Id}}' "$image")"
+  docker run --rm --platform linux/amd64 --entrypoint sh "$image" -ec \
+    'cat /usr/local/bin/gosu' > "$binary"
+  [[ "$(docker image inspect --format '{{.Id}}' "$image")" == "$image_id" ]]
+  printf 'Extracted gosu from image %s (%s)\n' "$image" "$image_id"
+  bash scripts/ci/check-gosu-binary-vulnerabilities.sh \
+    "$binary" "$image" "$image_id" "$base_image" "$gosu_report_dir/$report_name"
+}
+printf '%s\n' '- Separate exact-binary Go reachability analyses cover both operational Trixie and candidate Alpine PostgreSQL images; they do not modify or suppress the raw Trivy reports.' >> "$gosu_report_dir/README.md"
+check_gosu_image "$db_image" "$db_base_image" "$gosu_operational_binary" gosu-operational-govulncheck.txt
+check_gosu_image "$candidate_db_image" "$candidate_db_base_image" "$gosu_alpine_binary" gosu-alpine-govulncheck.txt
