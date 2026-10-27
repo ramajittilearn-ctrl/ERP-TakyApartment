@@ -8,6 +8,8 @@ The candidate changes only the app and evidence-validator images to the already 
 
 Independent static review found no tag/digest or obvious package omission, but did not approve the candidate without exact-head runtime evidence. The container verifier now exercises native Argon2 in the app image, and sends synthetic PDF and PNG inputs through the validator's bounded HTTP service to exercise qpdf, Sharp, and temporary-file cleanup. The exact candidate still requires hosted container build/runtime/scan, Stage 5, restore, and Agent UAT checks before it can be considered verified. The verifier does not yet prove app-to-validator evidence-upload authorization or app-side image optimization; these limitations remain explicit.
 
+The first exact candidate attempt (`fcba27d`, PR run `40438853107`) built both Alpine images, verified Prisma's musl engine, started and migrated/seeded the app database with 15 rooms, and exercised the app's native Argon2 module. It then failed when `docker cp` tried writing the PDF fixture into the validator's read-only root filesystem. This was a verifier fixture-transfer error, not a parser result. The transfer now streams through `docker exec` into the validator's writable `/tmp` tmpfs; exact-head CI must rerun before the candidate can be accepted.
+
 This is an isolated candidate. It is not a production risk disposition or deployment authorization. Keep the Trixie base and existing volumes unchanged until exact-head checks pass and the remaining security findings have an accepted disposition.
 
 ## Latest exact-source verification — 2026-10-27

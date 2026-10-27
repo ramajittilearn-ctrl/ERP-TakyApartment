@@ -344,7 +344,7 @@ parts.append(
 )
 output.write_bytes(b"".join(parts))
 PY
-docker cp "$validator_pdf" "$validator:/tmp/phase4-ci-valid.pdf" >/dev/null
+docker exec -i "$validator" sh -ec 'cat > /tmp/phase4-ci-valid.pdf' < "$validator_pdf"
 docker exec "$validator" node --input-type=module -e '
   import { readFile } from "node:fs/promises";
   import sharp from "sharp";
