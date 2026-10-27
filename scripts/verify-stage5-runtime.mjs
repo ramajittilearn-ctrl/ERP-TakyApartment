@@ -99,6 +99,8 @@ function compose(args, options = {}) {
       "-f",
       "docker-compose.yml",
       "-f",
+      "docker-compose.stage5-candidate-db.yml",
+      "-f",
       "docker-compose.stage5-runtime.yml",
       "-f",
       "docker-compose.stage5-runtime-networks.yml",
