@@ -1,5 +1,18 @@
 # Current continuation checkpoint — 2026-10-27 (latest container gate and scan evidence)
 
+## Current candidate implementation — local commit 32727aa; hosted verification pending
+
+- The Bookworm package-remediation experiment is isolated in a dedicated candidate Dockerfile selected only by docker-compose.debian-bookworm-candidate.yml. Operational docker/postgres/Dockerfile, docker-compose.yml, and the Trixie candidate Compose are unchanged.
+- The candidate pins Debian main and Bookworm security snapshots to 20261027T000000Z, and requests same-suite openssl/libssl3 3.0.22-1~deb12u2 and tzdata 2026e-0+deb12u1. Debian's tracker lists OpenSSL 3.0.22-1~deb12u2 and tzdata 2026e-0+deb12u1 as fixed Bookworm-security versions; static checks confirmed these pinned archive URLs and package files resolve. [OpenSSL tracker](https://security-tracker.debian.org/tracker/CVE-2026-84782), [tzdata tracker](https://security-tracker.debian.org/tracker/source-package/tzdata), [Debian snapshot instructions](https://snapshot.debian.org/).
+- The image verifies the Debian signing keyring and exact package origin/version; captures full before/after dpkg manifests; fails on any package delta outside OpenSSL, libssl3 and tzdata; and fails if PostgreSQL 17.11, pg_config, or PostgreSQL package versions change. The Bookworm-to-Bookworm restore route also compares server, pg_config, and available-extension versions. CI exports the package/apt/compatibility evidence bound to image ID, source tree, platform, and Trivy database hash.
+- Independent Pstack design and code reviews passed static scope/isolation checks. Local Bash syntax, Compose rendering, workflow YAML, git diff --check, and allowed-vs-unexpected dpkg-delta checks passed. No local image build was run because this host is low on disk; hosted Dockerfile build, package resolution, all four restore routes and refreshed raw scans remain pending.
+- Commit 32727aa is local only at this checkpoint; PR remote is still b9db3ed. No security findings are accepted and production remains NO-GO.
+
+## Latest completed hosted CI before candidate refresh — docs commit b9db3ed
+
+- Push run [40461557545](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40461557545) and PR run [40461562660](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40461562660) completed successfully across all four required jobs. Agent UAT artifacts [12714853094](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40461557545/artifacts/12714853094) and [12715246791](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40461562660/artifacts/12715246791) each report 90/90 with no failures, skips or flakes; Stage 5 also passed.
+- These runs verified the prior Debian candidate image and matrix at commit b9db3ed, not the new Bookworm package-refresh candidate in 32727aa. Candidate build, package resolution, matrix and scan still require a fresh hosted run.
+
 ## Latest exact-head state — commit ecc73a7
 
 - PR #2 head `ecc73a79007e0d818ab467d5c0949210ccbcf732` is OPEN/Draft into protected `release/phase4`, with `REVIEW_REQUIRED`. Validated application/test source remains `70ae6569c136d1b93f9f56bdcf92db823832471a`.
