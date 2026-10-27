@@ -2,6 +2,24 @@
 
 > **Current-state pointer:** authoritative current state is in the latest dated checkpoint immediately below. Older checkpoints are historical snapshots; their pending/complete statements are superseded by that checkpoint.
 
+# Current continuation checkpoint — 2026-10-27 (Alpine image isolation)
+
+## Exact integration state
+
+- PR #2 head `4e40d57a08716006ffdcb5af2f9bda12542dafde` is OPEN/Draft into protected `release/phase4`. Run `40425118804` passed all four jobs: required-quality, Stage 5, container verification, and Agent UAT. Earlier run attempts on the intermediate head were canceled when the follow-up commit arrived; they are not failures of the current head.
+- Agent UAT artifact `12699856922`: 90 passed, zero failed/skipped/flaky on synthetic data. Stage 5 artifact `12699184680` passed on a randomized isolated Compose project with all source-bound checks.
+- Container verification and scan artifact `12699886115` passed. The default operational Compose DB image is restored to pinned Trixie with its original `taky-erp_database` volume identity. Alpine candidate testing uses a separate named Compose project and volume. Both Trixie and Bookworm synthetic sources restored into fresh Alpine targets.
+- The targeted `CVE-2026-6653` is absent in operations and candidate database images. The candidate database scan still has one Critical and 24 High unique findings; production risk disposition remains open. No image publication, merge, production deployment, or production data mutation occurred.
+
+## Remaining release gates
+
+1. Resolve or formally disposition remaining image findings and complete the independent required GitHub approval.
+2. Establish the actual production host, origin, access, and service ownership.
+3. Complete a target-specific isolated backup/restore, migration, rollback, and off-device backup/key recovery rehearsal.
+4. Publish and pull source-matched images, then carry out the authorized cutover only after target-specific gates pass.
+
+The PR is technically verified for this candidate fix, but the project remains **NO-GO for production**.
+
 
 # Current continuation checkpoint — 2026-10-27 (after docs-only CI rerun)
 
