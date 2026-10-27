@@ -1,6 +1,13 @@
 # Phase 4 RC Runtime Verification
 
-## Latest exact-head Stage 5 runtime — PR run 40516323826
+## Latest exact-head Stage 5 runtime — PR run 40531195562
+
+PR head `d8506c97f4055981a662c712e34bf09ab4c815f9` passed Stage 5 in [run 40531195562](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40531195562); artifact [12745484520](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40531195562/artifacts/12745484520) records status `passed`, 52 checks, 17 migration checksums, and zero failures. The artifact identifies PR head `d8506c97f4055981a662c712e34bf09ab4c815f9`, merge checkout `baa8617c704eaccb0b93d84d7a98281aeb9414a9`, and tree `deaf8dd89694a4ebfdcedb96c5d3b36f50f960e9`. Synthetic billing preserves entered rent `1000.00`, calculates exact Decimal payable `1050.01`, verifies immutable invoice and receipt snapshots after source changes, reconciles the payment/receipt allocation, and denies anonymous receipt PDF access.
+
+The generated `bahtGlyphVisualConfirmation` field remains `pending` because the artifact generator does not perform human visual review. Two independent reviewers inspected all four rendered invoice/receipt pages (before and after source changes): Thai text and `฿` glyphs are legible, line amounts and totals are correct, and there is no clipping, overlap, or obscured content. This is synthetic Stage 5 and Agent UAT evidence; it is not Owner UAT or a production-target runtime rehearsal.
+
+
+## Historical exact-head Stage 5 runtime — PR run 40516323826
 
 This opening section records the latest Stage 5 PR run. All following runtime sections are historical snapshots; any “Current” or “Latest” wording in an older heading refers to that section's own run and commit.
 
