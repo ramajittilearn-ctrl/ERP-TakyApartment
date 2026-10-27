@@ -73,6 +73,8 @@ awk '$1 == "github.com/go-chi/chi/v5" && $2 == "v5.4.0" { found = 1 } END { exit
   echo "Patched rclone source does not require fixed chi v5.4.0" >&2
   exit 1
 }
+baseline_root="$temp_root/baseline-source"
+cp -a "$source_root" "$baseline_root"
 
 go_version="$(go version)"
 [[ "$go_version" == "go version go1.27.3 linux/amd64" ]] || {
@@ -86,6 +88,61 @@ awk '$1 == "mod" && $2 == "golang.org/x/vuln" && $3 == "v1.9.0" { vuln = 1 }
      $1 == "dep" && $2 == "golang.org/x/tools" && $3 == "v0.52.0" { tools = 1 }
      END { exit !(vuln && tools) }' <<<"$govulncheck_build" || {
   echo "Unexpected govulncheck module version" >&2
+  exit 1
+}
+
+# The public vuln.go.dev index can lag a newly published advisory. Preserve its
+# normal full-database scan below, and separately exercise these exact official
+# OSV records against the vulnerable baseline and the upgraded source tree.
+supplemental_db="$temp_root/x-net-advisory-overlay"
+supplemental_baseline_report="${report_path%.txt}-x-net-supplemental-baseline.txt"
+supplemental_source_report="${report_path%.txt}-x-net-supplemental-upgraded-source.txt"
+supplemental_binary_report="${report_path%.txt}-x-net-supplemental-unstripped-binary.txt"
+supplemental_overlay_artifact="${report_path%.txt}-x-net-overlay"
+sh scripts/ci/prepare-rclone-x-net-dependencies.sh advisory-db "$supplemental_db"
+mkdir -p "$supplemental_overlay_artifact"
+cp -R "$supplemental_db/." "$supplemental_overlay_artifact/"
+cp "$supplemental_db/retrieval-metadata.txt" "${report_path%.txt}-x-net-advisory-retrieval.txt"
+set +e
+(
+  cd "$baseline_root"
+  export GOFLAGS=-mod=vendor GOTOOLCHAIN=local GOWORK=off GOOS=linux GOARCH=amd64 CGO_ENABLED=0
+  govulncheck -db "file://$supplemental_db" -show traces .
+) > "$supplemental_baseline_report" 2>&1
+baseline_supplemental_status=$?
+set -e
+cat "$supplemental_baseline_report"
+[[ "$baseline_supplemental_status" == 3 ]] || {
+  echo "Baseline supplemental source scan must find the pinned advisory (exit=$baseline_supplemental_status)" >&2
+  exit 1
+}
+awk '/^Vulnerability #[0-9]+: / { count++; if ($NF != "GO-2026-6860") unexpected = 1 }
+     END { exit !(count == 1 && !unexpected) }' "$supplemental_baseline_report" || {
+  echo "Baseline supplemental scan did not find exactly GO-2026-6860" >&2
+  exit 1
+}
+grep -Fq 'Fixed in: golang.org/x/net@v0.62.0' "$supplemental_baseline_report" || {
+  echo "Baseline supplemental scan did not report the pinned x/net fixed version" >&2
+  exit 1
+}
+grep -Fq 'golang.org/x/net/html.Parse' "$supplemental_baseline_report" &&
+  grep -Fq 'github.com/rclone/rclone/backend/http/http.go' "$supplemental_baseline_report" || {
+  echo "Baseline supplemental source trace does not reach x/net/html.Parse through rclone backend/http" >&2
+  exit 1
+}
+
+sh scripts/ci/prepare-rclone-x-net-dependencies.sh prepare "$source_root"
+set +e
+(
+  cd "$source_root"
+  export GOFLAGS=-mod=vendor GOTOOLCHAIN=local GOWORK=off GOOS=linux GOARCH=amd64 CGO_ENABLED=0
+  govulncheck -db "file://$supplemental_db" -show traces .
+) > "$supplemental_source_report" 2>&1
+upgraded_supplemental_status=$?
+set -e
+cat "$supplemental_source_report"
+[[ "$upgraded_supplemental_status" == 0 ]] && grep -q 'No vulnerabilities found\.' "$supplemental_source_report" || {
+  echo "Upgraded supplemental source scan did not pass cleanly" >&2
   exit 1
 }
 
@@ -156,9 +213,10 @@ diagnostic_symbols_report="${report_path%.txt}-unstripped-symbols.txt"
 )
 go version -m "$diagnostic_binary" | tee "$temp_root/rclone-unstripped-build-info.txt"
 awk '$1 == "dep" && $2 == "github.com/go-chi/chi/v5" && $3 == "v5.4.0" { chi = 1 }
-     $1 == "dep" && $2 == "golang.org/x/crypto" && $3 == "v0.57.0" { crypto = 1 }
-     END { exit !(chi && crypto) }' "$temp_root/rclone-unstripped-build-info.txt" || {
-  echo "Unstripped diagnostic build does not embed the same Trivy-reported chi and x/crypto versions" >&2
+     $1 == "dep" && $2 == "golang.org/x/crypto" && $3 == "v0.58.0" { crypto = 1 }
+     $1 == "dep" && $2 == "golang.org/x/net" && $3 == "v0.62.0" { net = 1 }
+     END { exit !(chi && crypto && net) }' "$temp_root/rclone-unstripped-build-info.txt" || {
+  echo "Unstripped diagnostic build does not embed the fixed chi, x/crypto, and x/net versions" >&2
   exit 1
 }
 if ! go tool nm "$diagnostic_binary" > "$diagnostic_symbols" 2> "$temp_root/rclone-unstripped-nm-errors.txt"; then
@@ -197,4 +255,14 @@ if ! grep -q 'No vulnerabilities found\.' "$diagnostic_binary_report"; then
   echo "Unstripped diagnostic govulncheck did not provide a clean vulnerability result" >&2
   exit 1
 fi
+set +e
+govulncheck -db "file://$supplemental_db" -mode=binary "$diagnostic_binary" > "$supplemental_binary_report" 2>&1
+supplemental_binary_status=$?
+set -e
+cat "$supplemental_binary_report"
+[[ "$supplemental_binary_status" == 0 ]] && grep -q 'No vulnerabilities found\.' "$supplemental_binary_report" || {
+  echo "Upgraded supplemental exact-binary scan did not pass cleanly" >&2
+  exit 1
+}
+echo "Supplemental source baseline and upgraded-source/unstripped-binary traces retained beside the CI report."
 echo "The stripped production binary's GO-2026-5932 result is reconciled only by the same-source unstripped build, import graph, and source-mode analysis."

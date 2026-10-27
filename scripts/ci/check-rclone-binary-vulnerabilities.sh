@@ -75,8 +75,10 @@ awk '$1 == "dep" && $2 == "github.com/go-chi/chi/v5" && $3 == "v5.4.0" { found =
   echo "Extracted rclone binary does not embed fixed chi v5.4.0" >&2
   exit 1
 }
-awk '$1 == "dep" && $2 == "golang.org/x/crypto" && $3 == "v0.57.0" { found = 1 } END { exit !found }' <<<"$rclone_build_info" || {
-  echo "Extracted rclone binary does not embed the Trivy-reported x/crypto v0.57.0 dependency" >&2
+awk '$1 == "dep" && $2 == "golang.org/x/crypto" && $3 == "v0.58.0" { crypto = 1 }
+     $1 == "dep" && $2 == "golang.org/x/net" && $3 == "v0.62.0" { net = 1 }
+     END { exit !(crypto && net) }' <<<"$rclone_build_info" || {
+  echo "Extracted rclone binary does not embed fixed x/crypto v0.58.0 and x/net v0.62.0 dependencies" >&2
   exit 1
 }
 printf 'Rclone binary SHA-256: '
@@ -118,3 +120,22 @@ else
   echo "Exact-binary govulncheck failed without a vulnerability result (exit=$binary_status)." >&2
   exit "$binary_status"
 fi
+
+# The canonical database scan above remains the release gate. This separate,
+# explicitly scoped overlay verifies that the exact binary has neither of the
+# two recently published x/net html findings whose canonical index may lag.
+supplemental_db="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/taky-rclone-x-net-overlay.XXXXXX")"
+trap 'rm -rf -- "$supplemental_db"' EXIT
+supplemental_report_path="${report_path%.txt}-x-net-supplemental-binary.txt"
+sh scripts/ci/prepare-rclone-x-net-dependencies.sh advisory-db "$supplemental_db"
+cp "$supplemental_db/retrieval-metadata.txt" "${report_path%.txt}-x-net-advisory-retrieval.txt"
+set +e
+govulncheck -db "file://$supplemental_db" -mode=binary "$rclone_binary" > "$supplemental_report_path" 2>&1
+supplemental_status=$?
+set -e
+cat "$supplemental_report_path"
+[[ "$supplemental_status" == 0 ]] && grep -q 'No vulnerabilities found\.' "$supplemental_report_path" || {
+  echo "Supplemental exact-binary scan did not pass cleanly (exit=$supplemental_status)" >&2
+  exit 1
+}
+echo "Supplemental exact-binary scan passed; report and advisory retrieval metadata are retained beside the CI report."

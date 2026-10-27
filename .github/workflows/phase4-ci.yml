@@ -68,6 +68,9 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    outputs:
+      artifact_id: ${{ steps.upload-provenance.outputs.artifact-id }}
+      artifact_digest: ${{ steps.upload-provenance.outputs.artifact-digest }}
     env:
       PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
     steps:
@@ -80,11 +83,62 @@ jobs:
         run: bash scripts/ci/prepare-libxml2-source-provenance.sh "$RUNNER_TEMP/phase4-libxml2-provenance"
 
       - name: Upload libxml2 source provenance evidence
+        id: upload-provenance
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: libxml2-source-provenance-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/phase4-libxml2-provenance/
+          if-no-files-found: warn
+          retention-days: 30
+
+  libxml2-candidate:
+    name: libxml2-candidate
+    runs-on: ubuntu-24.04
+    needs: [required-quality, libxml2-source-provenance]
+    if: always()
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+    env:
+      PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+      PROVENANCE_RESULT: ${{ needs.libxml2-source-provenance.result }}
+      QUALITY_RESULT: ${{ needs.required-quality.result }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: Check consumer and candidate shell syntax
+        run: |
+          node --check scripts/ci/consume-libxml2-provenance.mjs
+          node --test scripts/ci/consume-libxml2-provenance.test.mjs
+          bash -n scripts/ci/build-libxml2-candidate.sh
+
+      - name: Materialize and verify same-run source artifact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_ARTIFACT_ID: ${{ needs.libxml2-source-provenance.outputs.artifact_id }}
+          SOURCE_ARTIFACT_DIGEST: ${{ needs.libxml2-source-provenance.outputs.artifact_digest }}
+          OUTPUT_DIR: ${{ runner.temp }}/phase4-libxml2-verified-inputs
+        run: node scripts/ci/consume-libxml2-provenance.mjs
+
+      - name: Build and verify isolated libxml2 candidate
+        run: bash scripts/ci/build-libxml2-candidate.sh "$RUNNER_TEMP/phase4-libxml2-verified-inputs"
+
+      - name: Upload candidate build, runtime and scan evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: libxml2-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/phase4-libxml2-candidate-evidence/
           if-no-files-found: warn
           retention-days: 30
 
