@@ -19,10 +19,13 @@ mkdir -p "$(dirname "$report_path")"
 exec > >(tee -a "$report_path") 2>&1
 
 rclone_version="1.75.2"
+chi_version="5.4.0"
 source_sha256="fa64537e7276196310dbb0bcea6330f03b40e5790197b88f14cce6a19f40eb67"
 vendor_sha256="69b356c0b1800052c33ce0e0e11f18df8717a721aab346b553dc1ab44c8caae8"
 source_url="https://github.com/rclone/rclone/releases/download/v${rclone_version}/rclone-v${rclone_version}.tar.gz"
 vendor_url="https://github.com/rclone/rclone/releases/download/v${rclone_version}/rclone-v${rclone_version}-vendor.tar.gz"
+chi_sha256="9ad4c02fc179b71081c86a7166bc871e0a816d5a803da5053ea9ed4cfd97422f"
+chi_url="https://proxy.golang.org/github.com/go-chi/chi/v5/@v/v${chi_version}.zip"
 
 grep -Fq "ADD --checksum=sha256:${source_sha256} ${source_url} " operations/Dockerfile || {
   echo "Rclone source archive checksum/URL differs from operations/Dockerfile" >&2
@@ -32,17 +35,24 @@ grep -Fq "ADD --checksum=sha256:${vendor_sha256} ${vendor_url} " operations/Dock
   echo "Rclone vendor archive checksum/URL differs from operations/Dockerfile" >&2
   exit 1
 }
+grep -Fq "ADD --checksum=sha256:${chi_sha256} ${chi_url} " operations/Dockerfile || {
+  echo "Pinned chi module archive checksum/URL differs from operations/Dockerfile" >&2
+  exit 1
+}
 
 temp_root="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/taky-rclone-source.XXXXXX")"
 trap 'rm -rf -- "$temp_root"' EXIT
 source_archive="$temp_root/rclone-source.tar.gz"
 vendor_archive="$temp_root/rclone-vendor.tar.gz"
+chi_archive="$temp_root/chi-v${chi_version}.zip"
 source_root="$temp_root/source"
 mkdir -p "$source_root"
 curl --fail --silent --show-error --location "$source_url" --output "$source_archive"
 curl --fail --silent --show-error --location "$vendor_url" --output "$vendor_archive"
+curl --fail --silent --show-error --location "$chi_url" --output "$chi_archive"
 printf '%s  %s\n' "$source_sha256" "$source_archive" | sha256sum --check --status
 printf '%s  %s\n' "$vendor_sha256" "$vendor_archive" | sha256sum --check --status
+printf '%s  %s\n' "$chi_sha256" "$chi_archive" | sha256sum --check --status
 tar -xzf "$source_archive" --strip-components=1 -C "$source_root"
 tar -xzf "$vendor_archive" -C "$source_root"
 
@@ -51,11 +61,16 @@ tar -xzf "$vendor_archive" -C "$source_root"
   exit 1
 }
 awk '$1 == "github.com/go-chi/chi/v5" && $2 == "v5.3.1" { found = 1 } END { exit !found }' "$source_root/go.mod" || {
-  echo "Expected chi v5.3.1 dependency was not found in pinned rclone source" >&2
+  echo "Expected upstream chi v5.3.1 dependency was not found in pinned rclone source" >&2
   exit 1
 }
 awk '$1 == "golang.org/x/crypto" && $2 == "v0.57.0" { found = 1 } END { exit !found }' "$source_root/go.mod" || {
   echo "Expected x/crypto v0.57.0 dependency was not found in pinned rclone source" >&2
+  exit 1
+}
+sh scripts/ci/prepare-rclone-chi-dependency.sh "$source_root" "$chi_archive"
+awk '$1 == "github.com/go-chi/chi/v5" && $2 == "v5.4.0" { found = 1 } END { exit !found }' "$source_root/go.mod" || {
+  echo "Patched rclone source does not require fixed chi v5.4.0" >&2
   exit 1
 }
 
@@ -140,7 +155,7 @@ diagnostic_symbols_report="${report_path%.txt}-unstripped-symbols.txt"
     -o "$diagnostic_binary" .
 )
 go version -m "$diagnostic_binary" | tee "$temp_root/rclone-unstripped-build-info.txt"
-awk '$1 == "dep" && $2 == "github.com/go-chi/chi/v5" && $3 == "v5.3.1" { chi = 1 }
+awk '$1 == "dep" && $2 == "github.com/go-chi/chi/v5" && $3 == "v5.4.0" { chi = 1 }
      $1 == "dep" && $2 == "golang.org/x/crypto" && $3 == "v0.57.0" { crypto = 1 }
      END { exit !(chi && crypto) }' "$temp_root/rclone-unstripped-build-info.txt" || {
   echo "Unstripped diagnostic build does not embed the same Trivy-reported chi and x/crypto versions" >&2

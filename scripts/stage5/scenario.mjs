@@ -626,6 +626,7 @@ const receiptPdf = await downloadPdf(
   "receipt.pdf",
 );
 const receiptPdfText = extractPdfText(receiptPdf);
+const receiptPdfLayout = extractPdfLayoutWithoutCreationDate(receiptPdf);
 
 const receiptLabels = globalThis.structuredClone(
   receipt.snapshot.invoices[0].labels,
@@ -740,6 +741,8 @@ const invoicePdfLayoutAfterSourceChange =
 const receiptPdfTextAfterSourceChange = extractPdfText(
   receiptPdfAfterSourceChange,
 );
+const receiptPdfLayoutAfterSourceChange =
+  extractPdfLayoutWithoutCreationDate(receiptPdfAfterSourceChange);
 assert.equal(
   invoicePdfTextAfterSourceChange,
   invoicePdfText,
@@ -755,10 +758,15 @@ assert.equal(
   receiptPdfText,
   "receipt PDF extracted text must remain stable after live-source changes",
 );
+assert.equal(
+  receiptPdfLayoutAfterSourceChange,
+  receiptPdfLayout,
+  "receipt PDF text layout must remain stable after live-source changes",
+);
 check(
   "post-issue invoice and receipt PDF content/layout remain stable after live-source changes",
   true,
-  "invoice text and layout plus receipt text match their pre-mutation output; PDF creation metadata is excluded",
+  "invoice and receipt text and layout match their pre-mutation output; PDF creation metadata is excluded",
 );
 check(
   "post-issue live tenant/property/room/lease changes preserve invoice and receipt snapshots, labels, and totals",

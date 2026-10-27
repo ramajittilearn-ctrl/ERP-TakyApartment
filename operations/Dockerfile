@@ -4,9 +4,12 @@ ARG TARGETOS
 ARG TARGETARCH
 ADD --checksum=sha256:fa64537e7276196310dbb0bcea6330f03b40e5790197b88f14cce6a19f40eb67 https://github.com/rclone/rclone/releases/download/v1.75.2/rclone-v1.75.2.tar.gz /tmp/rclone-source.tar.gz
 ADD --checksum=sha256:69b356c0b1800052c33ce0e0e11f18df8717a721aab346b553dc1ab44c8caae8 https://github.com/rclone/rclone/releases/download/v1.75.2/rclone-v1.75.2-vendor.tar.gz /tmp/rclone-vendor.tar.gz
+ADD --checksum=sha256:9ad4c02fc179b71081c86a7166bc871e0a816d5a803da5053ea9ed4cfd97422f https://proxy.golang.org/github.com/go-chi/chi/v5/@v/v5.4.0.zip /tmp/chi-v5.4.0.zip
+COPY scripts/ci/prepare-rclone-chi-dependency.sh /usr/local/bin/prepare-rclone-chi-dependency
 RUN mkdir -p /src /out && \
     tar -xzf /tmp/rclone-source.tar.gz --strip-components=1 -C /src && \
-    tar -xzf /tmp/rclone-vendor.tar.gz -C /src
+    tar -xzf /tmp/rclone-vendor.tar.gz -C /src && \
+    sh /usr/local/bin/prepare-rclone-chi-dependency /src /tmp/chi-v5.4.0.zip
 WORKDIR /src
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -mod=vendor -trimpath \

@@ -71,8 +71,8 @@ printf 'Operations image source revision/tree: %s/%s\n' "$image_revision" "$imag
 printf 'Rclone runtime version: %s\n' "$runtime_first_line"
 rclone_build_info="$(go version -m "$rclone_binary")"
 printf 'Rclone binary module build info:\n%s\n' "$rclone_build_info"
-awk '$1 == "dep" && $2 == "github.com/go-chi/chi/v5" && $3 == "v5.3.1" { found = 1 } END { exit !found }' <<<"$rclone_build_info" || {
-  echo "Extracted rclone binary does not embed the Trivy-reported chi v5.3.1 dependency" >&2
+awk '$1 == "dep" && $2 == "github.com/go-chi/chi/v5" && $3 == "v5.4.0" { found = 1 } END { exit !found }' <<<"$rclone_build_info" || {
+  echo "Extracted rclone binary does not embed fixed chi v5.4.0" >&2
   exit 1
 }
 awk '$1 == "dep" && $2 == "golang.org/x/crypto" && $3 == "v0.57.0" { found = 1 } END { exit !found }' <<<"$rclone_build_info" || {
