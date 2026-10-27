@@ -1,5 +1,22 @@
 # Production Go-Live continuation checkpoint — 2026-10-26
 
+# Current continuation checkpoint — 2026-10-27 (Gosu provenance and Alpine CVE follow-up)
+
+## Exact integration state
+
+- PR #2 remains OPEN/Draft from `codex/phase4-current-source-20261026` into protected `release/phase4`. Exact PR head `f3b357fec95dd1765e68e1b72410a718f1297efc`; PR workflow `40435165878` passed all four required jobs.
+- Container artifact `12704202063` is from merge checkout `8b6881be94f48630abd0595284d01ded87b17d53`, whose parents are the protected base and exact PR head. Image provenance labels, extracted Gosu `go version -m` metadata, and Trivy SBOM agree on pinned builder, Gosu commit, `moby/sys/user v0.4.1`, `x/sys v0.44.0`, and pinned DB bases. Both exact-binary `govulncheck` reports pass. Alpine DB has zero findings across all severities; Trixie DB retains 1 Critical, 16 High, and 1 Unknown (`CVE-2026-82560`). App/validator each have eight High IDs; operations has one Medium and one Unknown.
+- Stage 5 artifact `12704666397` passed 51 checks on isolated synthetic data with 17 migrations. Agent UAT artifact `12703927527` passed 90/90 with zero failures/skips/flakes, including rent persistence after room selection and reload. Owner UAT is not claimed.
+- No image publication, merge, production deployment, production data mutation, or existing UAT change occurred.
+
+## Remaining release gates
+
+1. Resolve or formally disposition Trixie, app, and validator findings; obtain the required independent GitHub approval.
+2. Establish the actual production host, canonical origin, access model, and service ownership.
+3. Complete target-specific backup/restore, migration, rollback, and off-device backup/key recovery; publish and pull source-matched images only after release gates pass.
+
+Production remains **NO-GO** for cutover.
+
 # Current continuation checkpoint — 2026-10-27 (patched Gosu verified)
 
 ## Exact integration state
