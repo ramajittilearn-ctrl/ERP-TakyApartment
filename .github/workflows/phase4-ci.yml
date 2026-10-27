@@ -61,6 +61,31 @@ jobs:
       - name: Build application
         run: npm run build
 
+  libxml2-source-provenance:
+    name: libxml2-source-provenance
+    runs-on: ubuntu-24.04
+    needs: required-quality
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify Debian and Ubuntu source provenance
+        run: bash scripts/ci/prepare-libxml2-source-provenance.sh "$RUNNER_TEMP/phase4-libxml2-provenance"
+
+      - name: Upload libxml2 source provenance evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: libxml2-source-provenance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/phase4-libxml2-provenance/
+          if-no-files-found: warn
+          retention-days: 30
+
   container-verification:
     name: container-verification
     runs-on: ubuntu-24.04
