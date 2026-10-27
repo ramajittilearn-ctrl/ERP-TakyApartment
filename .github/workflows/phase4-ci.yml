@@ -96,7 +96,7 @@ jobs:
     name: libxml2-candidate
     runs-on: ubuntu-24.04
     needs: [required-quality, libxml2-source-provenance]
-    if: always()
+    if: always() && needs.required-quality.result == 'success' && needs.libxml2-source-provenance.result == 'success'
     timeout-minutes: 60
     permissions:
       actions: read

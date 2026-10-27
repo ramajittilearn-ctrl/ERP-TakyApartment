@@ -65,7 +65,7 @@ function readUInt32(buffer, offset) {
 
 function decodeName(bytes) {
   try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    return new globalThis.TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch {
     fail('ZIP entry filename is not valid UTF-8');
   }
@@ -215,7 +215,7 @@ function validateSha256Sums(files, directory) {
   const records = new Map();
   for (const line of sums.toString('utf8').split(/\r?\n/)) {
     if (!line) continue;
-    const match = /^([a-f0-9]{64})  (libxml2_[A-Za-z0-9.+~_-]+)$/.exec(line);
+    const match = /^([a-f0-9]{64})\x20{2}(libxml2_[A-Za-z0-9.+~_-]+)$/.exec(line);
     if (!match || records.has(match[2])) fail('Malformed or duplicate SHA256SUMS line in ' + directory);
     records.set(match[2], match[1]);
   }
@@ -287,9 +287,9 @@ async function readResponseLimited(response, maxBytes, label) {
 
 async function fetchLimited(url, options, maxBytes, label) {
   let current = new URL(url);
-  const headers = new Headers(options.headers || {});
+  const headers = new globalThis.Headers(options.headers || {});
   for (let redirect = 0; redirect <= 5; redirect += 1) {
-    const response = await fetch(current, { method: 'GET', headers, redirect: 'manual', signal: AbortSignal.timeout(15000) });
+    const response = await fetch(current, { method: 'GET', headers, redirect: 'manual', signal: globalThis.AbortSignal.timeout(15000) });
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       if (redirect === 5) fail(label + ' redirected too many times');
       const location = response.headers.get('location');
