@@ -93,9 +93,15 @@ printf 'Rclone vendor SHA-256: %s\n' "$vendor_sha256"
 printf 'Go toolchain: %s\n' "$go_version"
 printf 'govulncheck build metadata:\n%s\n' "$govulncheck_build"
 printf 'Source-mode import graph artifact: %s\n' "$imports_artifact_path"
-if rg -q '^golang\.org/x/crypto/openpgp(/|$)' "$imports_report"; then
+if grep -Eq '^golang\.org/x/crypto/openpgp(/|$)' "$imports_report"; then
   echo "Pinned rclone source imports an affected golang.org/x/crypto/openpgp package" >&2
   exit 1
+else
+  grep_status=$?
+  if [[ "$grep_status" != 1 ]]; then
+    echo "Could not verify affected x/crypto/openpgp import absence (grep exit=$grep_status)" >&2
+    exit 1
+  fi
 fi
 if ! grep -Fxq 'github.com/ProtonMail/go-crypto/openpgp' "$imports_report"; then
   echo "Expected maintained ProtonMail OpenPGP implementation is absent from the main rclone build graph" >&2
@@ -114,3 +120,64 @@ printf 'Command: govulncheck -show traces . (GOOS=linux GOARCH=amd64 CGO_ENABLED
   export CGO_ENABLED=0
   govulncheck -show traces .
 )
+
+diagnostic_binary="$temp_root/rclone-unstripped"
+diagnostic_symbols="$temp_root/rclone-unstripped-symbols.txt"
+diagnostic_binary_report="${report_path%.txt}-unstripped-binary.txt"
+diagnostic_symbols_report="${report_path%.txt}-unstripped-symbols.txt"
+(
+  cd "$source_root"
+  export GOFLAGS=-mod=vendor
+  export GOTOOLCHAIN=local
+  export GOWORK=off
+  export GOOS=linux
+  export GOARCH=amd64
+  export CGO_ENABLED=0
+  go build -trimpath \
+    -ldflags='-X github.com/rclone/rclone/fs.Version=v1.75.2' \
+    -o "$diagnostic_binary" .
+)
+go version -m "$diagnostic_binary" | tee "$temp_root/rclone-unstripped-build-info.txt"
+awk '$1 == "dep" && $2 == "github.com/go-chi/chi/v5" && $3 == "v5.3.1" { chi = 1 }
+     $1 == "dep" && $2 == "golang.org/x/crypto" && $3 == "v0.57.0" { crypto = 1 }
+     END { exit !(chi && crypto) }' "$temp_root/rclone-unstripped-build-info.txt" || {
+  echo "Unstripped diagnostic build does not embed the same Trivy-reported chi and x/crypto versions" >&2
+  exit 1
+}
+if ! go tool nm "$diagnostic_binary" > "$diagnostic_symbols" 2> "$temp_root/rclone-unstripped-nm-errors.txt"; then
+  cat "$temp_root/rclone-unstripped-nm-errors.txt" >&2
+  echo "Could not inspect the same-source unstripped diagnostic binary symbols" >&2
+  exit 1
+fi
+if ! grep -E 'golang\.org/x/crypto/openpgp|github\.com/ProtonMail/go-crypto/openpgp|ClientIPFromXFF' \
+  "$diagnostic_symbols" > "$diagnostic_symbols_report"; then
+  echo "Unstripped diagnostic binary has no expected OpenPGP or ClientIPFromXFF symbols" >&2
+  exit 1
+fi
+cat "$diagnostic_symbols_report"
+if grep -Eq 'golang\.org/x/crypto/openpgp' "$diagnostic_symbols"; then
+  echo "Unstripped diagnostic binary contains symbols from affected x/crypto/openpgp packages" >&2
+  exit 1
+else
+  grep_status=$?
+  if [[ "$grep_status" != 1 ]]; then
+    echo "Could not verify affected x/crypto/openpgp symbol absence (grep exit=$grep_status)" >&2
+    exit 1
+  fi
+fi
+if ! grep -Eq 'github\.com/ProtonMail/go-crypto/openpgp' "$diagnostic_symbols"; then
+  echo "Unstripped diagnostic binary has no ProtonMail OpenPGP symbols to reconcile the stripped-binary result" >&2
+  exit 1
+fi
+echo "Unstripped diagnostic binary contains ProtonMail OpenPGP symbols and no affected x/crypto/openpgp symbols."
+if ! govulncheck -mode=binary "$diagnostic_binary" > "$diagnostic_binary_report" 2>&1; then
+  cat "$diagnostic_binary_report"
+  echo "Govulncheck found a vulnerability in the same-source unstripped diagnostic binary" >&2
+  exit 1
+fi
+cat "$diagnostic_binary_report"
+if ! grep -q 'No vulnerabilities found\.' "$diagnostic_binary_report"; then
+  echo "Unstripped diagnostic govulncheck did not provide a clean vulnerability result" >&2
+  exit 1
+fi
+echo "The stripped production binary's GO-2026-5932 result is reconciled only by the same-source unstripped build, import graph, and source-mode analysis."

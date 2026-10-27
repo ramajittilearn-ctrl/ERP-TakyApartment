@@ -106,7 +106,12 @@ cat "$binary_report_path"
 if [[ "$binary_status" == 0 ]]; then
   echo "Exact-binary govulncheck found no vulnerabilities."
 elif grep -q 'Your code is affected by' "$binary_report_path"; then
-  echo "Exact-binary govulncheck returned findings; source-mode analysis of the checksum-verified build inputs must reconcile them."
+  if ! awk '/^Vulnerability #[0-9]+: / { count++; if ($NF != "GO-2026-5932") unexpected = 1 }
+       END { exit !(count == 1 && !unexpected) }' "$binary_report_path"; then
+    echo "Exact-binary govulncheck returned an unexpected advisory set; only GO-2026-5932 can be reconciled by the pinned source analysis." >&2
+    exit 1
+  fi
+  echo "Exact-binary govulncheck returned only GO-2026-5932; the paired checksum-verified source/import-graph and unstripped diagnostic scans must reconcile it."
 else
   echo "Exact-binary govulncheck failed without a vulnerability result (exit=$binary_status)." >&2
   exit "$binary_status"
