@@ -1,4 +1,24 @@
-# Current continuation checkpoint — 2026-10-27 (Alpine app/validator candidate verified)
+# Current continuation checkpoint — 2026-10-27 (latest container gate and scan evidence)
+
+## Latest exact-head state — commit 5bcf9f9
+
+- PR #2 head `5bcf9f9ca12bc225f1e884d82519aee084e69111` is OPEN/Draft into protected `release/phase4`; validated application/test source remains `70ae6569c136d1b93f9f56bdcf92db823832471a`. Commit `5bcf9f9` changes only the CI verifier; app/test source is unchanged.
+- Push run [40456489750](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456489750) and PR run [40456493951](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456493951) both pass `required-quality`, Stage 5 and synthetic Agent UAT; both fail `container-verification` on the asserted default-collation incompatibility.
+- Both source probes ran: PostgreSQL Trixie (`en_US.utf8`, collation version 2.41) and Bookworm (2.36) produce different ordering from the Alpine restore candidate (no reported collation version). Do not use Alpine for either tested database restore route. Independent reviewers: `collation_gate_review`, `uat_scope_review`, `db_security_architecture`, and `db_collation_architecture`.
+- The deferred-failure wrapper completed isolated runtime checks and Gosu/rclone/Trivy scans, retained the nonzero container result, and uploaded scan artifacts [12712279779](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456489750/artifacts/12712279779) and [12713550028](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456493951/artifacts/12713550028). The push artifact binds to commit `5bcf9f9` / tree `3a21bc1408fc038af2581f9cfb49e0bc374f2e7f`; the PR artifact uses merge checkout `6c6773f8d56467ba20ada74bbb4f54f58064a6af` with the same tree and Trivy DB SHA `d434bbec40d2293b6b77e45a9c885bd87b1b923cfed0377b08aed21ab61a180c`.
+- Scan findings: app/validator/Alpine DB candidate 0; Alpine operations 1 Unknown (`GO-2026-5932`); operational Trixie DB 1 Critical, 16 High, 38 Medium, 61 Low, 1 Unknown. These are unaccepted findings; no image was published.
+- Stage 5 artifacts: push [12713425887](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456489750/artifacts/12713425887), PR [12713131601](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456493951/artifacts/12713131601). Agent UAT artifacts: push [12712334185](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456489750/artifacts/12712334185), PR [12713525754](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456493951/artifacts/12713525754). Push UAT was independently reviewed: 90 passed, 0 failed/skipped/flaky/retries, including tenant-rent persistence cases; synthetic data only, no Owner acceptance.
+- Read-only GitHub metadata on 2026-10-27 reports zero repository environments, variables, secrets and deployment records. This does not prove no external infrastructure exists. Exact production host/origin/project/database remain unattested.
+- Production remains NO-GO. Keep operational Compose and existing volumes unchanged. Next: evaluate an isolated, digest-pinned Debian database candidate with the expanded source/target collation matrix and scans; continue exact-target discovery; do not merge, publish, deploy or migrate until every release gate passes. PR approval remains required.
+
+## Current task queue
+
+- `SEC-IMG-CI-01`: exact-head quality, Stage 5, Agent UAT and vulnerability report retention pass; container acceptance remains open because Alpine collation probes fail.
+- `SEC-DB-COLLATION-01`: compare isolated Debian candidate(s) against Trixie and Bookworm source locales/order/index behavior without touching operational/UAT volumes; then validate against an exact target clone.
+- `SEC-IMG-01`: resolve or obtain an explicit risk disposition for Trixie findings and raw `GO-2026-5932`; no security finding is accepted by this work.
+- `PROD-TARGET-01`: bind the production host, canonical HTTPS origin, Compose/database/attachment/backup volumes and access owner; GitHub has no recorded environment or deployment record.
+- `PROD-RECOVERY-01`: target-specific backup/restore, no-seed migration, rollback, HTTPS/volume ownership, off-device backup and key recovery remain unverified.
+- `PR-REVIEW-01`: obtain the required independent approving review; keep PR #2 Draft and protected `release/phase4` untouched until it is approved and all required checks pass.
 
 ## Prior exact documentation-head CI — 2026-10-27
 

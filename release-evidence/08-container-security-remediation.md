@@ -1,5 +1,15 @@
 # Container security remediation — 2026-10-26
 
+## Latest exact-head collation probes and retained scan evidence — 2026-10-27
+
+PR #2 head `5bcf9f9ca12bc225f1e884d82519aee084e69111` passed `required-quality`, Stage 5 and synthetic Agent UAT in both push run [40456489750](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456489750) and PR run [40456493951](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456493951). Both runs correctly failed the required `container-verification` job. Its Trixie source (`en_US.utf8`, collation version 2.41) and Bookworm source (2.36) each produce a different default-collation order from the Alpine restore target, which reports no collation version. Both source probes ran despite the first failure.
+
+The verifier continued after the restore failures, completed isolated app/database/validator runtime checks and Gosu/rclone reachability scans, then exited nonzero. This preserves the required failed gate while retaining vulnerability evidence. Push scan artifact [12712279779](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456489750/artifacts/12712279779) binds to commit `5bcf9f9` and tree `3a21bc1408fc038af2581f9cfb49e0bc374f2e7f`. PR scan artifact [12713550028](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40456493951/artifacts/12713550028) uses merge checkout `6c6773f8d56467ba20ada74bbb4f54f58064a6af`, with the same source tree and Trivy DB SHA-256 `d434bbec40d2293b6b77e45a9c885bd87b1b923cfed0377b08aed21ab61a180c`.
+
+Both exact-tree reports show zero findings for Alpine app, validator and PostgreSQL candidate; Alpine operations retains one Unknown (`GO-2026-5932`); operational Trixie PostgreSQL retains one Critical (`CVE-2026-6653`), 16 High, 38 Medium, 61 Low and one Unknown unique IDs. The Trixie findings are not accepted. Raw Trivy reports remain unsuppressed. No image was published or deployed.
+
+Independent `collation_gate_review` verified both CI runs, source/tree-bound artifacts and that the wrapper preserved the container failure. `db_security_architecture` and `db_collation_architecture` recommend testing a separate digest-pinned Debian candidate in isolated volumes; that would not clear existing Trixie findings or substitute for an exact production-target rehearsal. Keep operational Compose, UAT and existing volumes unchanged. Production remains NO-GO.
+
 ## Cross-image default-collation incompatibility — 2026-10-27
 
 The exact-head 19-value synthetic probe in push run [40455012271](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40455012271) and PR run [40455018688](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40455018688) found different default-collation order between pinned PostgreSQL 17.11 Trixie source and the Alpine restore candidate. Both runs therefore failed required `container-verification`; `required-quality` and Stage 5 passed. The CI log records Trixie `en_US.utf8` collation version 2.41, while Alpine has no reported collation version. The comparison result is in `07-independent-audit.md`.

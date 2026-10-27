@@ -21,3 +21,7 @@ No existing UAT/production Compose project, database, or volume was modified. Th
 - Existing attachment volume ownership and permissions, secrets/config custody, backup encryption/off-device storage, and recovery-device access.
 
 The Phase 4 runbook explicitly says its previous synthetic configuration check did not contact or verify an actual target. The current `taky-erp` stack is an inspected local candidate target only; exact deployment host/origin and production designation remain unresolved. No service, schema, database, or volume was changed during this inspection.
+
+## GitHub deployment metadata check — 2026-10-27
+
+Read-only GitHub API inventory for repository `ramajittilearn-ctrl/ERP-TakyApartment` returned zero configured repository environments, zero Actions variables, zero Actions secrets, and zero deployment records. Secret values were not accessed. This means the repository currently has no recorded deployment environment or deployment history to bind the release to; it does not prove that external infrastructure or secrets do not exist. The production host, canonical origin, Compose project, access owner and target database remain unverified.
