@@ -39,7 +39,7 @@ source /etc/os-release
 command -v sudo >/dev/null || die 'sudo is required to install verified tooling'
 sudo apt-get update
 sudo apt-get install --yes --no-install-recommends \
-  ca-certificates curl dpkg-dev debian-keyring devscripts gnupg gpgv ubuntu-keyring xz-utils
+  ca-certificates curl dpkg-dev debian-archive-keyring debian-keyring devscripts gnupg gpgv ubuntu-keyring xz-utils
 
 for required in curl gpg gpgv dscverify apt-get sha256sum dpkg-query xzcat; do
   command -v "$required" >/dev/null || die "required command unavailable: $required"
@@ -212,6 +212,7 @@ export DEBIAN_SOURCES_INDEX_SHA256="$(awk '{print $1}' "$evidence_dir/debian-tri
 export UBUNTU_SOURCES_INDEX_SHA256="$(awk '{print $1}' "$evidence_dir/ubuntu-jammy-security.Sources.apt-cache.sha256")"
 export DEBIAN_DSC_SIGNER="$debian_dsc_fingerprints" UBUNTU_DSC_SIGNER="$ubuntu_dsc_fingerprints"
 export DEBIAN_KEYRING_VERSION="$(dpkg-query -W -f='${Version}' debian-keyring)"
+export DEBIAN_ARCHIVE_KEYRING_VERSION="$(dpkg-query -W -f='${Version}' debian-archive-keyring)"
 export UBUNTU_KEYRING_VERSION="$(dpkg-query -W -f='${Version}' ubuntu-keyring)"
 export GENERATED_AT_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -240,6 +241,7 @@ manifest = {
         "ubuntuUploaderFingerprintPinned": os.environ["UBUNTU_DSC_SIGNER"],
         "keyringPackages": {
             "debian-keyring": os.environ["DEBIAN_KEYRING_VERSION"],
+            "debian-archive-keyring": os.environ["DEBIAN_ARCHIVE_KEYRING_VERSION"],
             "ubuntu-keyring": os.environ["UBUNTU_KEYRING_VERSION"],
         },
     },
