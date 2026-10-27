@@ -85,3 +85,7 @@ The separate Stage 3 rehearsal restored a synthetic encrypted backup with the Ph
 - The suite used a local source build and synthetic data. It does not verify a production host, target schema, off-device key recovery, HTTPS certificate trust on owner devices, or post-deployment behavior.
 
 This report records delegated agent UAT and automated evidence. It does not claim Owner UAT acceptance, production deployment, or Go-Live.
+
+## Latest exact PR-head Agent UAT — run 40436826101
+
+Agent UAT artifact [12705320122](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101/artifacts/12705320122) is bound to PR head `8ba32bc3d2171b8d77536d6c748d56eca8e84693` and reports 90 passed, 0 failed, 0 skipped, and 0 flaky. It ran on isolated synthetic data and includes tenant rent persistence after save/reload. No Owner acceptance or production behavior is claimed.

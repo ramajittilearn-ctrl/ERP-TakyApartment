@@ -1,3 +1,25 @@
+# Current continuation checkpoint — 2026-10-27 (exact PR-head CI and independent scan review)
+
+## Integration baseline and verified state
+
+- PR #2 remains OPEN/Draft: `codex/phase4-current-source-20261026` → protected `release/phase4`, exact head `8ba32bc3d2171b8d77536d6c748d56eca8e84693`. PR CI run [40436826101](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101) passed all four jobs: required quality, Stage 5 runtime, container verification, and Agent UAT. The matching push run `40436820230` also passed all four jobs.
+- Exact-source Agent UAT artifact [12705320122](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101/artifacts/12705320122) reports 90 passed, 0 failed, 0 skipped, 0 flaky on isolated synthetic data. It includes retention of tenant rent `1000.00` after save/reload. No Owner acceptance is claimed.
+- Stage 5 artifact [12703609262](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101/artifacts/12703609262) passed 51 checks and all 17 migration validations. The synthetic billing total `1050.01`, immutable invoice/receipt snapshots, matching payment allocation, and Thai PDFs were verified.
+- Container artifact [12703944233](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101/artifacts/12703944233) is source-bound to merge checkout `038fd5b7dbb6fcf67ad1d57d33e5c3869ae6dd64`, tree `6daa44826ba1c7822563ef002e524d54bd79178b`, matching the exact PR tree. Trivy DB SHA is `d434bbec40d2293b6b77e45a9c885bd87b1b923cfed0377b08aed21ab61a180c`.
+- Independent `current_scan_review` verified no new Critical/High/Unknown IDs versus run `40435165878`: Alpine DB has zero findings; Trixie DB retains 1 Critical, 16 High, 1 Unknown; app and validator each retain 8 High plus the same Unknown; operations retains 1 Medium and 1 Unknown. Both exact Gosu binary reports pass, which does not disposition OS-package findings.
+- No image publication, merge, deployment, production-data mutation, or existing UAT change occurred.
+
+## Remaining release gates
+
+1. Resolve or formally disposition Trixie, app, and validator security findings; obtain the required independent GitHub PR approval.
+2. Establish the production host, canonical origin, access model, and service ownership from authoritative project evidence.
+3. Complete target-specific backup/restore, migration, rollback, and off-device backup/key recovery.
+4. Publish/pull source-matched images and cut over only after release gates are satisfied.
+
+Production remains **NO-GO** for cutover.
+
+---
+
 # Production Go-Live continuation checkpoint — 2026-10-26
 
 # Current continuation checkpoint — 2026-10-27 (Gosu provenance and Alpine CVE follow-up)
