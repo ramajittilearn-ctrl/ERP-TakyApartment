@@ -292,8 +292,18 @@ function verifyComposeConfig(config, env, revision, tree) {
   const db = config.services.db;
   assertRenderedEqual(
     db.image,
+    "taky-erp-postgres:17.11-alpine3.24-gosu-1.19-user-0.4.1",
+    "patched Alpine database image",
+  );
+  assertRenderedEqual(
+    db.build?.args?.POSTGRES_BASE_IMAGE,
     "postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b",
-    "pinned database image",
+    "digest-pinned PostgreSQL base image",
+  );
+  assertRenderedEqual(
+    db.build?.dockerfile,
+    "docker/postgres/Dockerfile",
+    "patched PostgreSQL Dockerfile",
   );
   assert.deepEqual(db.ports ?? [], [], "database must not publish a host port");
   assert.deepEqual(Object.keys(db.networks ?? {}), ["db-private"]);
