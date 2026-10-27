@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-if [[ "$#" -ne 8 ]]; then
-  echo "Usage: scan-container-images.sh APP_IMAGE VALIDATOR_IMAGE OPERATIONS_IMAGE OPERATIONAL_DATABASE_IMAGE ALPINE_DATABASE_IMAGE REVISION TREE OUTPUT_DIR" >&2
+if [[ "$#" -ne 10 ]]; then
+  echo "Usage: scan-container-images.sh APP_IMAGE VALIDATOR_IMAGE OPERATIONS_IMAGE OPERATIONAL_DATABASE_IMAGE ALPINE_DATABASE_IMAGE DEBIAN_TRIXIE_DATABASE_IMAGE DEBIAN_BOOKWORM_DATABASE_IMAGE REVISION TREE OUTPUT_DIR" >&2
   exit 2
 fi
 
@@ -10,10 +10,12 @@ app_image="$1"
 validator_image="$2"
 operations_image="$3"
 operational_database_image="$4"
-database_image="$5"
-revision="$6"
-tree="$7"
-output_dir="$8"
+alpine_database_image="$5"
+debian_trixie_database_image="$6"
+debian_bookworm_database_image="$7"
+revision="$8"
+tree="$9"
+output_dir="${10}"
 trivy_version="0.76.1"
 trivy_sha256="c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0"
 platform="linux/amd64"
@@ -25,7 +27,7 @@ if [[ ! "$revision" =~ ^[a-f0-9]{40}$ || ! "$tree" =~ ^[a-f0-9]{40}$ ]]; then
   echo "Image scan requires full source revision and tree hashes" >&2
   exit 1
 fi
-for image in "$app_image" "$validator_image" "$operations_image" "$operational_database_image" "$database_image"; do
+for image in "$app_image" "$validator_image" "$operations_image" "$operational_database_image" "$alpine_database_image" "$debian_trixie_database_image" "$debian_bookworm_database_image"; do
   if [[ -z "$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null)" ]]; then
     echo "Required local image is missing: $image" >&2
     exit 1
@@ -115,13 +117,17 @@ scan_image app "$app_image"
 scan_image validator "$validator_image"
 scan_image operations "$operations_image"
 scan_image operational-database "$operational_database_image"
-scan_image database "$database_image"
-for image_name in operations operational-database database; do
+scan_image alpine-database "$alpine_database_image"
+scan_image debian-trixie-database "$debian_trixie_database_image"
+scan_image debian-bookworm-database "$debian_bookworm_database_image"
+for image_name in operations operational-database alpine-database debian-trixie-database debian-bookworm-database; do
   report="${output_dir}/${image_name}.trivy.json"
   case "$image_name" in
     operations) image="$operations_image" ;;
     operational-database) image="$operational_database_image" ;;
-    database) image="$database_image" ;;
+    alpine-database) image="$alpine_database_image" ;;
+    debian-trixie-database) image="$debian_trixie_database_image" ;;
+    debian-bookworm-database) image="$debian_bookworm_database_image" ;;
   esac
   image_id="$(jq -r '.imageId' "${output_dir}/${image_name}.metadata.json")"
   current_image_id="$(docker image inspect --format '{{.Id}}' "$image")"
@@ -137,7 +143,7 @@ for image_name in operations operational-database database; do
     echo "The Trivy $image_name report has a malformed vulnerability list" >&2
     exit 1
   fi
-  if [[ "$image_name" != operational-database ]]; then
+  if [[ "$image_name" == operations || "$image_name" == alpine-database ]]; then
     if ! jq -e --arg image_id "$image_id" '
       .Metadata.ImageID == $image_id and
       .Metadata.OS.Family == "alpine" and
@@ -151,11 +157,16 @@ for image_name in operations operational-database database; do
       echo "CVE-2026-6653 remains in the Alpine $image_name image" >&2
       exit 1
     fi
+  elif [[ "$image_name" == operational-database || "$image_name" == debian-trixie-database || "$image_name" == debian-bookworm-database ]]; then
+    if ! jq -e --arg image_id "$image_id" '.Metadata.ImageID == $image_id and .Metadata.OS.Family == "debian"' "$report" >/dev/null; then
+      echo "The Trivy $image_name report does not identify the exact Debian image" >&2
+      exit 1
+    fi
   fi
 done
 {
-  for image_name in operations database; do
-    if [[ "$image_name" == operations ]]; then image="$operations_image"; else image="$database_image"; fi
+  for image_name in operations alpine-database; do
+    if [[ "$image_name" == operations ]]; then image="$operations_image"; else image="$alpine_database_image"; fi
     image_id="$(jq -r '.imageId' "${output_dir}/${image_name}.metadata.json")"
     libxml2_version="$(jq -er '
       [ .Results[]? | select(.Class == "os-pkgs" and .Type == "alpine")
@@ -184,10 +195,10 @@ cat > "${output_dir}/README.md" <<EOF
 - Vulnerability DB download time: \`${database_downloaded_at}\`
 - Vulnerability DB next update time: \`${database_next_update}\`
 - Vulnerability DB file-content SHA-256: \`${database_sha256}\` (metadata file: \`trivy-db-metadata.json\`; this is not an OCI digest)
-- Scope: local app, validator, operations, and source-built Trixie/Alpine PostgreSQL images from this checkout; PostgreSQL derivatives use digest-pinned official image bases and replace gosu with source-built gosu using moby/sys/user v0.4.1. The isolated Alpine candidate is defined by \`docker-compose.alpine-candidate.yml\`.
+- Scope: local app, validator, operations, and source-built Trixie, Bookworm, and Alpine PostgreSQL images from this checkout; PostgreSQL derivatives use digest-pinned official image bases and replace gosu with source-built gosu using moby/sys/user v0.4.1. Candidate Compose definitions are \`docker-compose.alpine-candidate.yml\`, \`docker-compose.debian-trixie-candidate.yml\`, and \`docker-compose.debian-bookworm-candidate.yml\`.
 - Policy: findings are reported without a general severity threshold; CVE-2026-6653 is a targeted release gate for the Alpine operations/database images
 - Image metadata sidecars record local image IDs (config digests), tags, source identity, and scan time
-- The CI scan fails if CVE-2026-6653 appears in either Alpine image; installed libxml2 versions come from each image-ID-bound Trivy package inventory in \`alpine-libxml2-versions.txt\`
+- The CI scan fails if CVE-2026-6653 appears in Alpine operations or Alpine database images; installed libxml2 versions come from their image-ID-bound Trivy package inventories in \`alpine-libxml2-versions.txt\`
 
 These reports do not represent a production deployment or a published registry image.
 EOF

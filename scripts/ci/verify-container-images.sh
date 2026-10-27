@@ -17,6 +17,8 @@ validator_image="taky-ci-validator:${project}"
 operations_image="taky-ci-operations:${project}"
 gosu_operational_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-operational-gosu"
 gosu_alpine_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-alpine-gosu"
+gosu_debian_trixie_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-debian-trixie-gosu"
+gosu_debian_bookworm_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-debian-bookworm-gosu"
 rclone_operations_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-operations-rclone"
 gosu_builder_image="golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4"
 gosu_commit="6456aaa0f3c854d199d0f037f068eb97515b7513"
@@ -32,33 +34,59 @@ fi
 
 main_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic SESSION_SECRET=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa DATABASE_URL=postgresql://ci:synthetic@db:5432/ci APP_ORIGIN=http://127.0.0.1:3000 docker compose -f docker-compose.yml config --format json)"
 candidate_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic docker compose -f docker-compose.alpine-candidate.yml config --format json)"
+debian_trixie_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic docker compose -f docker-compose.debian-trixie-candidate.yml config --format json)"
+debian_bookworm_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic docker compose -f docker-compose.debian-bookworm-candidate.yml config --format json)"
 db_image="$(MAIN_COMPOSE_CONFIG="$main_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.MAIN_COMPOSE_CONFIG).services.db.image)')"
-candidate_db_image="$(CANDIDATE_COMPOSE_CONFIG="$candidate_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.image)')"
+alpine_db_image="$(CANDIDATE_COMPOSE_CONFIG="$candidate_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.image)')"
 db_base_image="$(MAIN_COMPOSE_CONFIG="$main_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.MAIN_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
-candidate_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$candidate_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
-if [[ ! "$db_base_image" =~ @sha256:[a-f0-9]{64}$ || ! "$candidate_db_base_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
-  echo "Both PostgreSQL base images must be pinned by digest" >&2
+alpine_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$candidate_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
+debian_trixie_db_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_trixie_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.image)')"
+debian_trixie_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_trixie_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
+debian_bookworm_db_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.image)')"
+debian_bookworm_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
+for postgres_base_image in "$db_base_image" "$alpine_db_base_image" "$debian_trixie_db_base_image" "$debian_bookworm_db_base_image"; do
+  if [[ ! "$postgres_base_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
+    echo "All PostgreSQL base images must be pinned by digest: $postgres_base_image" >&2
+    exit 1
+  fi
+done
+if [[ "$db_base_image" != postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe || \
+  "$debian_trixie_db_base_image" != postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe || \
+  "$debian_bookworm_db_base_image" != postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27 ]]; then
+  echo "Debian candidate base images do not match their reviewed pinned identities" >&2
   exit 1
 fi
-MAIN_COMPOSE_CONFIG="$main_compose_config" CANDIDATE_COMPOSE_CONFIG="$candidate_compose_config" \
-  MAIN_DB_IMAGE="$db_image" CANDIDATE_DB_IMAGE="$candidate_db_image" \
-  MAIN_DB_BASE_IMAGE="$db_base_image" CANDIDATE_DB_BASE_IMAGE="$candidate_db_base_image" \
+MAIN_COMPOSE_CONFIG="$main_compose_config" ALPINE_COMPOSE_CONFIG="$candidate_compose_config" \
+  DEBIAN_TRIXIE_COMPOSE_CONFIG="$debian_trixie_compose_config" DEBIAN_BOOKWORM_COMPOSE_CONFIG="$debian_bookworm_compose_config" \
+  MAIN_DB_IMAGE="$db_image" ALPINE_DB_IMAGE="$alpine_db_image" \
+  DEBIAN_TRIXIE_DB_IMAGE="$debian_trixie_db_image" DEBIAN_BOOKWORM_DB_IMAGE="$debian_bookworm_db_image" \
+  MAIN_DB_BASE_IMAGE="$db_base_image" ALPINE_DB_BASE_IMAGE="$alpine_db_base_image" \
+  DEBIAN_TRIXIE_DB_BASE_IMAGE="$debian_trixie_db_base_image" DEBIAN_BOOKWORM_DB_BASE_IMAGE="$debian_bookworm_db_base_image" \
   node -e '
     const main = JSON.parse(process.env.MAIN_COMPOSE_CONFIG);
-    const candidate = JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG);
-    const expected = {
-      mainProject: "taky-erp",
-      mainVolume: "taky-erp_database",
-      candidateProject: "taky-erp-alpine-candidate",
-      candidateVolume: "taky-erp-alpine-candidate-database",
-    };
+    const expected = {mainProject: "taky-erp", mainVolume: "taky-erp_database"};
     if (main.name !== expected.mainProject || main.services.db.image !== process.env.MAIN_DB_IMAGE || main.services.db.build.args.POSTGRES_BASE_IMAGE !== process.env.MAIN_DB_BASE_IMAGE || main.volumes.database.name !== expected.mainVolume) {
       throw new Error(`Operational Compose identity changed: ${JSON.stringify({name: main.name, image: main.services.db.image, baseImage: main.services.db.build.args.POSTGRES_BASE_IMAGE, volume: main.volumes.database.name})}`);
     }
-    if (candidate.name !== expected.candidateProject || candidate.services.db.image !== process.env.CANDIDATE_DB_IMAGE || candidate.services.db.build.args.POSTGRES_BASE_IMAGE !== process.env.CANDIDATE_DB_BASE_IMAGE || candidate.volumes.database.name !== expected.candidateVolume || candidate.volumes.database.name === main.volumes.database.name) {
-      throw new Error(`Alpine candidate Compose isolation changed: ${JSON.stringify({name: candidate.name, image: candidate.services.db.image, baseImage: candidate.services.db.build.args.POSTGRES_BASE_IMAGE, volume: candidate.volumes.database.name})}`);
+    const candidates = [
+      ["alpine", process.env.ALPINE_COMPOSE_CONFIG, process.env.ALPINE_DB_IMAGE, process.env.ALPINE_DB_BASE_IMAGE, "taky-erp-alpine-candidate", "taky-erp-alpine-candidate-database", "alpine3.24"],
+      ["debian-trixie", process.env.DEBIAN_TRIXIE_COMPOSE_CONFIG, process.env.DEBIAN_TRIXIE_DB_IMAGE, process.env.DEBIAN_TRIXIE_DB_BASE_IMAGE, "taky-erp-trixie-collation-candidate", "taky-erp-trixie-collation-candidate-database", "trixie"],
+      ["debian-bookworm", process.env.DEBIAN_BOOKWORM_COMPOSE_CONFIG, process.env.DEBIAN_BOOKWORM_DB_IMAGE, process.env.DEBIAN_BOOKWORM_DB_BASE_IMAGE, "taky-erp-bookworm-collation-candidate", "taky-erp-bookworm-collation-candidate-database", "bookworm"],
+    ];
+    const projects = new Set([main.name]);
+    const volumes = new Set([main.volumes.database.name]);
+    const images = new Set([main.services.db.image]);
+    for (const [label, serialized, image, base, project, volume, family] of candidates) {
+      const config = JSON.parse(serialized);
+      if (config.name !== project || config.services.db.image !== image || config.services.db.build.args.POSTGRES_BASE_IMAGE !== base || config.volumes.database.name !== volume || !base.includes(family) || (config.services.db.ports ?? []).length !== 0) {
+        throw new Error(`${label} candidate Compose identity changed: ${JSON.stringify({name: config.name, image: config.services.db.image, baseImage: config.services.db.build.args.POSTGRES_BASE_IMAGE, volume: config.volumes.database.name})}`);
+      }
+      if (projects.has(config.name) || volumes.has(config.volumes.database.name) || images.has(config.services.db.image)) throw new Error(`${label} candidate reuses a project, database volume or image tag`);
+      projects.add(config.name);
+      volumes.add(config.volumes.database.name);
+      images.add(config.services.db.image);
     }
-    console.log("Operational and Alpine candidate Compose projects and database volumes are isolated.");
+    console.log("Operational, Alpine and Debian candidate Compose projects and database volumes are isolated.");
   '
 
 resource_label() {
@@ -97,7 +125,7 @@ cleanup() {
   local exit_status=$? cleanup_failed=0 name
   trap - EXIT
   set +e
-  rm -f -- "$gosu_operational_binary" "$gosu_alpine_binary" "$rclone_operations_binary"
+  rm -f -- "$gosu_operational_binary" "$gosu_alpine_binary" "$gosu_debian_trixie_binary" "$gosu_debian_bookworm_binary" "$rclone_operations_binary"
   for name in "$app" "$validator" "$database" "$probe"; do
     remove_owned_resource container "$name" || cleanup_failed=1
   done
@@ -156,19 +184,38 @@ build_postgres_image() {
 echo "Building pinned operational PostgreSQL derivative"
 build_postgres_image "$db_image" "$db_base_image"
 echo "Building isolated Alpine PostgreSQL candidate derivative"
-build_postgres_image "$candidate_db_image" "$candidate_db_base_image"
+build_postgres_image "$alpine_db_image" "$alpine_db_base_image"
+echo "Building isolated Debian Trixie PostgreSQL candidate derivative"
+build_postgres_image "$debian_trixie_db_image" "$debian_trixie_db_base_image"
+echo "Building isolated Debian Bookworm PostgreSQL candidate derivative"
+build_postgres_image "$debian_bookworm_db_image" "$debian_bookworm_db_base_image"
 legacy_trixie_db_image="postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
 legacy_bookworm_db_image="postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27"
 restore_probe_failures=0
-for source_db_image in "$legacy_trixie_db_image" "$legacy_bookworm_db_image"; do
-  if ! bash scripts/ci/verify-operations-backup-restore.sh \
-    "$operations_image" "$app_image" "$candidate_db_image" "$source_db_image"; then
-    echo "Source-to-Alpine restore/collation verification failed for $source_db_image" >&2
+restore_matrix_report="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-restore-matrix-${project}.txt"
+if [[ -e "$restore_matrix_report" ]]; then
+  echo "Refusing to overwrite existing restore matrix report: $restore_matrix_report" >&2
+  exit 1
+fi
+restore_routes=(
+  "trixie|$legacy_trixie_db_image|trixie|$debian_trixie_db_image"
+  "trixie|$legacy_trixie_db_image|bookworm|$debian_bookworm_db_image"
+  "bookworm|$legacy_bookworm_db_image|trixie|$debian_trixie_db_image"
+  "bookworm|$legacy_bookworm_db_image|bookworm|$debian_bookworm_db_image"
+)
+for route in "${restore_routes[@]}"; do
+  IFS='|' read -r source_label source_db_image target_label target_db_image <<< "$route"
+  printf 'RUN source=%s image=%s target=%s image=%s\n' "$source_label" "$source_db_image" "$target_label" "$target_db_image"
+  if bash scripts/ci/verify-operations-backup-restore.sh \
+    "$operations_image" "$app_image" "$target_db_image" "$source_db_image"; then
+    printf 'PASS source=%s source_image=%s target=%s target_image=%s\n' "$source_label" "$source_db_image" "$target_label" "$target_db_image" | tee -a "$restore_matrix_report"
+  else
+    printf 'FAIL source=%s source_image=%s target=%s target_image=%s\n' "$source_label" "$source_db_image" "$target_label" "$target_db_image" | tee -a "$restore_matrix_report"
     restore_probe_failures=1
   fi
 done
 if [[ "$restore_probe_failures" != 0 ]]; then
-  echo "At least one source-to-Alpine restore probe failed; continuing isolated runtime and image scans before failing this verification." >&2
+  echo "At least one required Debian source-to-candidate restore route failed; continuing isolated runtime and image scans before failing this verification." >&2
 fi
 
 docker run --rm --platform linux/amd64 --entrypoint sh "$app_image" -ec '
@@ -382,10 +429,16 @@ docker exec "$validator" sh -ec \
 echo "Validator removed temporary inputs after successful parsing."
 
 bash scripts/ci/scan-container-images.sh \
-  "$app_image" "$validator_image" "$operations_image" "$db_image" "$candidate_db_image" \
+  "$app_image" "$validator_image" "$operations_image" "$db_image" "$alpine_db_image" "$debian_trixie_db_image" "$debian_bookworm_db_image" \
   "$revision" "$tree" "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
 
 gosu_report_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
+cp "$restore_matrix_report" "$gosu_report_dir/restore-matrix.txt"
+{
+  printf '\n## Required Debian restore matrix\n\n'
+  printf 'Synthetic backup/restore routes use fresh run-owned resources; all four are required. Results are in `restore-matrix.txt`.\n\n'
+  cat "$restore_matrix_report"
+} >> "$gosu_report_dir/README.md"
 check_gosu_image() {
   local image="$1" base_image="$2" binary="$3" report_name="$4" image_id
   image_id="$(docker image inspect --format '{{.Id}}' "$image")"
@@ -396,9 +449,11 @@ check_gosu_image() {
   bash scripts/ci/check-gosu-binary-vulnerabilities.sh \
     "$binary" "$image" "$image_id" "$base_image" "$gosu_report_dir/$report_name"
 }
-printf '%s\n' '- Separate exact-binary Go reachability analyses cover both operational Trixie and candidate Alpine PostgreSQL images; they do not modify or suppress the raw Trivy reports.' >> "$gosu_report_dir/README.md"
+printf '%s\n' '- Separate exact-binary Go reachability analyses cover every source-built PostgreSQL derivative; they do not modify or suppress the raw Trivy reports.' >> "$gosu_report_dir/README.md"
 check_gosu_image "$db_image" "$db_base_image" "$gosu_operational_binary" gosu-operational-govulncheck.txt
-check_gosu_image "$candidate_db_image" "$candidate_db_base_image" "$gosu_alpine_binary" gosu-alpine-govulncheck.txt
+check_gosu_image "$alpine_db_image" "$alpine_db_base_image" "$gosu_alpine_binary" gosu-alpine-govulncheck.txt
+check_gosu_image "$debian_trixie_db_image" "$debian_trixie_db_base_image" "$gosu_debian_trixie_binary" gosu-debian-trixie-govulncheck.txt
+check_gosu_image "$debian_bookworm_db_image" "$debian_bookworm_db_base_image" "$gosu_debian_bookworm_binary" gosu-debian-bookworm-govulncheck.txt
 
 operations_image_id="$(docker image inspect --format '{{.Id}}' "$operations_image")"
 docker run --rm --platform linux/amd64 --entrypoint /bin/cat "$operations_image" /usr/local/bin/rclone > "$rclone_operations_binary"
@@ -414,6 +469,6 @@ bash scripts/ci/check-rclone-source-vulnerabilities.sh \
 printf '%s\n' '- Exact-binary govulncheck output is retained as diagnostic evidence; source-mode govulncheck gates the checksum-verified rclone release source and vendor tree under the same Linux/amd64, CGO-disabled, vendored build configuration. Neither replaces or suppresses raw Trivy reports.' >> "$gosu_report_dir/README.md"
 
 if [[ "$restore_probe_failures" != 0 ]]; then
-  echo "At least one source-to-Alpine restore probe failed; this database candidate must not be used to migrate production data." >&2
+  echo "At least one required Debian restore route failed; no database candidate is eligible for production migration." >&2
   exit 1
 fi

@@ -1,0 +1,30 @@
+# Isolated Debian Bookworm candidate for collation and restore validation.
+# Never reuse the operational project or database volume for candidate checks.
+name: taky-erp-bookworm-collation-candidate
+services:
+  db:
+    image: taky-erp-postgres:17.11-bookworm-collation-candidate-gosu-1.19-user-0.4.1-xsys-0.44.0
+    build:
+      context: .
+      dockerfile: docker/postgres/Dockerfile
+      args:
+        POSTGRES_BASE_IMAGE: postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Generate .env first}
+      POSTGRES_USER: ${POSTGRES_USER:?Generate .env first}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate .env first}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks: [private]
+networks:
+  private:
+    driver: bridge
+volumes:
+  database:
+    name: taky-erp-bookworm-collation-candidate-database
