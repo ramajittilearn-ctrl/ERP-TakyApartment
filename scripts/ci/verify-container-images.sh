@@ -17,6 +17,7 @@ validator_image="taky-ci-validator:${project}"
 operations_image="taky-ci-operations:${project}"
 gosu_operational_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-operational-gosu"
 gosu_alpine_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-alpine-gosu"
+rclone_operations_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-operations-rclone"
 gosu_builder_image="golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4"
 gosu_commit="6456aaa0f3c854d199d0f037f068eb97515b7513"
 gosu_user_module_version="v0.4.1"
@@ -96,7 +97,7 @@ cleanup() {
   local exit_status=$? cleanup_failed=0 name
   trap - EXIT
   set +e
-  rm -f -- "$gosu_operational_binary" "$gosu_alpine_binary"
+  rm -f -- "$gosu_operational_binary" "$gosu_alpine_binary" "$rclone_operations_binary"
   for name in "$app" "$validator" "$database" "$probe"; do
     remove_owned_resource container "$name" || cleanup_failed=1
   done
@@ -389,3 +390,13 @@ check_gosu_image() {
 printf '%s\n' '- Separate exact-binary Go reachability analyses cover both operational Trixie and candidate Alpine PostgreSQL images; they do not modify or suppress the raw Trivy reports.' >> "$gosu_report_dir/README.md"
 check_gosu_image "$db_image" "$db_base_image" "$gosu_operational_binary" gosu-operational-govulncheck.txt
 check_gosu_image "$candidate_db_image" "$candidate_db_base_image" "$gosu_alpine_binary" gosu-alpine-govulncheck.txt
+
+operations_image_id="$(docker image inspect --format '{{.Id}}' "$operations_image")"
+docker run --rm --platform linux/amd64 --entrypoint /bin/cat "$operations_image" /usr/local/bin/rclone > "$rclone_operations_binary"
+[[ "$(docker image inspect --format '{{.Id}}' "$operations_image")" == "$operations_image_id" ]]
+printf 'Extracted rclone from operations image %s (%s)\n' "$operations_image" "$operations_image_id"
+bash scripts/ci/check-rclone-binary-vulnerabilities.sh \
+  "$rclone_operations_binary" "$operations_image" "$operations_image_id" \
+  "$revision" "$tree" \
+  "$gosu_report_dir/rclone-operations-govulncheck.txt"
+printf '%s\n' '- Exact-binary govulncheck covers the operations rclone executable. This reachability result supplements but does not suppress the raw Trivy module findings.' >> "$gosu_report_dir/README.md"
