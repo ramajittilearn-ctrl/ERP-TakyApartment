@@ -67,7 +67,9 @@ go_version="$(go version)"
 govulncheck_path="$(command -v govulncheck || true)"
 [[ -n "$govulncheck_path" ]] || { echo "Pinned govulncheck is not installed" >&2; exit 1; }
 govulncheck_build="$(go version -m "$govulncheck_path")"
-awk '$1 == "mod" && $2 == "golang.org/x/vuln" && $3 == "v1.1.4" { found = 1 } END { exit !found }' <<<"$govulncheck_build" || {
+awk '$1 == "mod" && $2 == "golang.org/x/vuln" && $3 == "v1.9.0" { vuln = 1 }
+     $1 == "dep" && $2 == "golang.org/x/tools" && $3 == "v0.52.0" { tools = 1 }
+     END { exit !(vuln && tools) }' <<<"$govulncheck_build" || {
   echo "Unexpected govulncheck module version" >&2
   exit 1
 }

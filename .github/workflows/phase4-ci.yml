@@ -84,7 +84,7 @@ jobs:
         env:
           GOBIN: ${{ runner.temp }}/taky-gosu-tools
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
           echo "$GOBIN" >> "$GITHUB_PATH"
 
       - name: Build pinned images and verify isolated runtime
