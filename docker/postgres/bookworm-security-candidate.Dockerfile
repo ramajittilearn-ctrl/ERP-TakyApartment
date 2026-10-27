@@ -100,6 +100,21 @@ RUN set -eux; \
     test "$(dpkg-query -W -f='${Version}' openssl)" = "$OPENSSL_PACKAGE_VERSION"; \
     test "$(dpkg-query -W -f='${Version}' libssl3)" = "$LIBSSL3_PACKAGE_VERSION"; \
     test "$(dpkg-query -W -f='${Version}' tzdata)" = "$TZDATA_PACKAGE_VERSION"; \
+    test -s /usr/share/keyrings/debian-archive-keyring.gpg; \
+    gpgv --version > /usr/share/taky-bookworm-candidate-refresh/gpgv-before-prune.txt; \
+    LC_ALL=C apt-get --simulate purge --auto-remove gnupg > /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-simulation.txt 2>&1; \
+    awk '$1 == "Remv" || $1 == "Purg" { print $2 }' \
+      /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-simulation.txt | LC_ALL=C sort -u \
+      > /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-planned-packages.txt; \
+    awk '$1 == "Remv" || $1 == "Purg" { package = $2; sub(/:.*/, "", package); if (package == "gnupg") found = 1 } END { exit !found }' \
+      /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-simulation.txt; \
+    if grep -E '^(Remv|Purg) (apt|gpgv|debian-archive-keyring|libapt-pkg[^[:space:]]*|libpq[^[:space:]]*|libxml2|postgresql(-|:|[[:space:]]))' \
+      /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-simulation.txt; then \
+      echo 'GnuPG purge simulation would remove a protected runtime or verification package' >&2; exit 1; \
+    else \
+      grep_status=$?; \
+      if [ "$grep_status" -ne 1 ]; then echo 'Could not validate GnuPG purge simulation output' >&2; exit "$grep_status"; fi; \
+    fi; \
     postgres --version > /usr/share/taky-bookworm-candidate-refresh/postgres-after.txt; \
     pg_config --version > /usr/share/taky-bookworm-candidate-refresh/pg-config-after.txt; \
     cmp /usr/share/taky-bookworm-candidate-refresh/postgres-before.txt /usr/share/taky-bookworm-candidate-refresh/postgres-after.txt; \

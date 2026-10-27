@@ -1,8 +1,14 @@
 # Phase 4 RC Runtime Verification
 
-**Status:** Source head `70ae6569c136d1b93f9f56bdcf92db823832471a` passed all four jobs in PR run `40450971948` and push run `40450966334`. Stage 5 passed 52 checks/17 migrations including receipt layout; container verification and Agent UAT passed. Production-target runtime remains unverified.
+## Latest exact-head Stage 5 runtime — PR run 40516323826
 
-## Current-head PR Stage 5 runtime — run 40450971948
+This opening section records the latest Stage 5 PR run. All following runtime sections are historical snapshots; any “Current” or “Latest” wording in an older heading refers to that section's own run and commit.
+
+PR run [40516323826](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40516323826) passed Stage 5 at head `8034b35bd7b5ac6c7e5d1b63c60d1ec5b883015c`. Artifact [12739937173](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40516323826/artifacts/12739937173) records 52 passing checks and all 17 migrations, including isolated synthetic invoice/payment/receipt/PDF verification. Its generated `bahtGlyphVisualConfirmation` field remains `pending`; two independent reviewers separately inspected `invoice-page.png`, `receipt-page.png`, `invoice-after-source-change-page.png`, and `receipt-after-source-change-page.png`, confirmed clear `฿` glyphs and no clipping/overlap, and found before/after pages visually consistent. This visual review applies only to these synthetic artifacts and is not Owner UAT.
+
+**Prior recorded status:** Source head `70ae6569c136d1b93f9f56bdcf92db823832471a` passed all four jobs in PR run `40450971948` and push run `40450966334`. Stage 5 passed 52 checks/17 migrations including receipt layout; container verification and Agent UAT passed. Production-target runtime remains unverified.
+
+## Historical exact-head PR Stage 5 runtime — run 40450971948
 
 PR run [40450971948](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450971948) passed Stage 5 at head `70ae6569c136d1b93f9f56bdcf92db823832471a`; artifact [12710876314](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450971948/artifacts/12710876314) records 52 passing checks and 17 migrations. The merge checkout is `4fae38cd2eb8904f9c178d1d8cdfbccfc41565cb`, tree `7b8115c37d182e95ca4cdb9487b2a2ef5442b6ee`. The added receipt bbox-layout comparison passed using the same `CreationDate` normalization as invoice layout. Synthetic totals and immutable invoice/receipt snapshots match; see exact details in the run artifact. The artifact generator leaves its visual glyph status marked `pending`, since rendering metadata itself does not perform independent visual review; an independent reviewer subsequently inspected all four rendered pages and confirmed readable Thai/฿ glyphs, correct totals and no clipping/overlap. The matching push Stage 5 and both PR/push container-verification jobs subsequently passed; see exact-head evidence below.
 
@@ -25,7 +31,7 @@ The separate push workflow [40447766451](https://github.com/ramajittilearn-ctrl/
 
 The 51 recorded checks passed with no failures. The synthetic flow retained entered rent `1000.00`, calculated final total `1050.01`, issued one invoice, allocated and confirmed the matching payment, and issued one receipt. The invoice PDF visibly lists rent `฿1,000.00`, water `฿20.01`, electricity `฿30.01`, and rounding adjustment `-฿0.01`, reconciling to `฿1,050.01`. Rendered-page inspection showed separated adjustment label/amount and readable Thai/baht glyphs. Invoice and receipt snapshots remained unchanged after live source edits; unauthorized receipt PDF access returned 401; isolated runtime resources were removed. These are synthetic CI checks, not production-target or Owner acceptance.
 
-## Latest exact-head Stage 5 runtime — run 40398283420
+## Historical exact-head Stage 5 runtime — run 40398283420
 
 [Run 40398283420](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420) passed all four required checks on PR head `cec582fa73f3e57f92eca422cb9c2bb7ee6940b4`. The Stage 5 artifact is [12689470944](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40398283420/artifacts/12689470944). Its run summary binds the test to PR head `cec582f`, merge checkout `e9e8864e6f7a289eae8224790e2390ded453cf70`, and tree `faf5e5cdf2515dac44cd8b10bef0d685b32533e2`; the 17 migration names/checksums were compared on a fresh isolated PostgreSQL database.
 
@@ -90,7 +96,7 @@ An independent release audit found that these RC1 images were built from the fro
 
 Registry publication and production-host pullability remain open.
 
-## Current-source candidate runtime — 2026-10-26
+## Historical current-source candidate runtime — 2026-10-26
 
 The exact PR #2 head `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966` (tree `aa5cf57c5d1fb90c5eedbdfc9775d494176123bb`) has now passed a separate isolated app/validator runtime. This is the current candidate's local evidence, not production evidence.
 
@@ -115,7 +121,7 @@ A separate isolated run `stage5-sched-3d5-095100` exercised one immediately due 
 
 The record shows two logical `uploadAttempts`, but no network upload was attempted: with `BACKUP_REMOTE` empty, `uploadRecord` increments the logical counter and then throws before checksum/upload work or invoking `rclone`. The internal network also prevented egress. Cleanup removed the three run containers and network, retained two fresh volumes, removed generated environment/key/config files, and left no published ports. The private summary is `.local/runtime-uat/stage5-sched-3d5-095100/runtime-summary.json`. This verifies one local scheduled cycle; it does not verify Sunday 02:00 behavior across host sleep/restart, an off-device destination or key recovery, or a production target.
 
-## Latest exact PR-head verification — run 40436826101
+## Historical exact PR-head verification — run 40436826101
 
 The current PR head `8ba32bc3d2171b8d77536d6c748d56eca8e84693` passed Stage 5 in [run 40436826101](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101); artifact [12703609262](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101/artifacts/12703609262) records 51 passed checks and all 17 migration validations. Synthetic billing retained rent `1000.00`, calculated `1050.01`, issued immutable invoice and receipt snapshots, reconciled payment, and verified Thai PDFs after source edits. Production-target runtime remains unverified.
 

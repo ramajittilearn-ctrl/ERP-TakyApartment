@@ -1,6 +1,10 @@
 # Container security remediation — 2026-10-26
 
-## Latest exact-head build, restore matrix and raw scan — 2026-10-27, commit 151bfed
+## Exact Bookworm snapshot-pin correction — PR head 8034b35
+
+Push run [40516314374](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40516314374) and PR run [40516323826](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40516323826) passed all four required jobs. Container artifact [12739693385](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40516323826/artifacts/12739693385) verifies the exact Bookworm snapshot pins, package origin/version constraints, allowed dpkg delta, PostgreSQL/extension compatibility, and all four synthetic restore routes. The candidate remains security-ineligible with 3 Critical/69 High Trivy package findings (20 distinct High CVE IDs); operational Trixie retains 1 Critical/61 High package findings (16 distinct High IDs). PR #2 remains Draft and requires independent approval. Critical triage leaves SQLite/libxml2 unresolved and records zlib1g non-applicability evidence without suppressing Trivy output. See [the package-level triage](12-bookworm-critical-cve-triage-20261027.md) and [snapshot pin investigation](bookworm-snapshot-pin-investigation-20261027.md).
+
+## Prior exact-head build, restore matrix and raw scan — 2026-10-27, commit 151bfed
 
 The candidate-only Debian Bookworm refresh completed on exact source commit `151bfed8d0341fa37b927e9ad5573836126de7b6`. Push run [40468488249](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40468488249) and PR run [40468493268](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40468493268) passed all four required jobs: quality, Stage 5, Agent UAT and container verification. Agent UAT artifact 12718021477 reports 90/90 passed, zero failed, skipped or flaky. Stage 5 artifact 12718095741 passed.
 

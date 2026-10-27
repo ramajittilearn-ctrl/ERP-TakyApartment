@@ -556,6 +556,9 @@ bookworm_dpkg_allowed_delta_sha="$(sha256sum "$bookworm_refresh_evidence_dir/dpk
 bookworm_apt_sources_sha="$(sha256sum "$bookworm_refresh_evidence_dir/apt-sources.sources" | awk '{print $1}')"
 bookworm_apt_policy_sha="$(sha256sum "$bookworm_refresh_evidence_dir/apt-policy.txt" | awk '{print $1}')"
 bookworm_inrelease_manifest_sha="$(sha256sum "$bookworm_refresh_evidence_dir/inrelease-sha256.tsv" | awk '{print $1}')"
+bookworm_gnupg_prune_simulation_sha="$(sha256sum "$bookworm_refresh_evidence_dir/gnupg-purge-simulation.txt" | awk '{print $1}')"
+bookworm_gnupg_prune_plan_sha="$(sha256sum "$bookworm_refresh_evidence_dir/gnupg-purge-planned-packages.txt" | awk '{print $1}')"
+bookworm_gpgv_version_sha="$(sha256sum "$bookworm_refresh_evidence_dir/gpgv-before-prune.txt" | awk '{print $1}')"
 jq -n \
   --arg image "$debian_bookworm_db_image" \
   --arg imageId "$bookworm_image_id" \
@@ -577,8 +580,11 @@ jq -n \
   --arg aptSourcesSha256 "$bookworm_apt_sources_sha" \
   --arg aptPolicySha256 "$bookworm_apt_policy_sha" \
   --arg inreleaseManifestSha "$bookworm_inrelease_manifest_sha" \
+  --arg gnupgPurgeSimulationSha256 "$bookworm_gnupg_prune_simulation_sha" \
+  --arg gnupgPurgePlannedPackagesSha256 "$bookworm_gnupg_prune_plan_sha" \
+  --arg gpgvVersionSha256 "$bookworm_gpgv_version_sha" \
   --arg trivyDbSha256 "$bookworm_trivy_db_sha" \
-  '{image:$image,imageId:$imageId,platform:$platform,sourceRevision:$sourceRevision,sourceTree:$sourceTree,baseImage:$baseImage,mainSnapshot:$mainSnapshot,securitySnapshot:$securitySnapshot,inReleaseSha256:{bookworm:$mainInReleaseSha256,bookwormUpdates:$updatesInReleaseSha256,bookwormSecurity:$securityInReleaseSha256},requestedPackages:{openssl:$opensslVersion,libssl3:$libssl3Version,tzdata:$tzdataVersion},evidenceSha256:{dpkgBefore:$dpkgBeforeSha256,dpkgAfter:$dpkgAfterSha256,dpkgAllowedDelta:$dpkgAllowedDeltaSha256,aptSources:$aptSourcesSha256,aptPolicy:$aptPolicySha256,inReleaseManifest:$inreleaseManifestSha},trivyDbSha256:$trivyDbSha256}' \
+  '{image:$image,imageId:$imageId,platform:$platform,sourceRevision:$sourceRevision,sourceTree:$sourceTree,baseImage:$baseImage,mainSnapshot:$mainSnapshot,securitySnapshot:$securitySnapshot,inReleaseSha256:{bookworm:$mainInReleaseSha256,bookwormUpdates:$updatesInReleaseSha256,bookwormSecurity:$securityInReleaseSha256},requestedPackages:{openssl:$opensslVersion,libssl3:$libssl3Version,tzdata:$tzdataVersion},evidenceSha256:{dpkgBefore:$dpkgBeforeSha256,dpkgAfter:$dpkgAfterSha256,dpkgAllowedDelta:$dpkgAllowedDeltaSha256,aptSources:$aptSourcesSha256,aptPolicy:$aptPolicySha256,inReleaseManifest:$inreleaseManifestSha,gnupgPurgeSimulation:$gnupgPurgeSimulationSha256,gnupgPurgePlannedPackages:$gnupgPurgePlannedPackagesSha256,gpgvVersion:$gpgvVersionSha256},trivyDbSha256:$trivyDbSha256}' \
   > "$bookworm_refresh_evidence_dir/image-scan-binding.json"
 
 gosu_report_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
