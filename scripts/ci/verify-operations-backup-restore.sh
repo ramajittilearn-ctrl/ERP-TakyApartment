@@ -258,13 +258,24 @@ wait_healthy "$source_db"
 wait_healthy "$restore_db"
 if [[ "$source_label" == bookworm && "$target_label" == bookworm ]]; then
   refresh_kind="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.kind"}}' "$target_db_image")"
-  [[ "$refresh_kind" == bookworm-openssl-tzdata ]]
+  if [[ "$refresh_kind" != bookworm-openssl-tzdata ]]; then
+    echo "Unexpected Bookworm candidate refresh label: got '$refresh_kind', expected 'bookworm-openssl-tzdata'" >&2
+    exit 1
+  fi
   source_server_version="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc 'SHOW server_version')"
   target_server_version="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc 'SHOW server_version')"
-  [[ "$source_server_version" == 17.11 && "$target_server_version" == "$source_server_version" ]]
+  if [[ "$source_server_version" != 17.11 || "$target_server_version" != "$source_server_version" ]]; then
+    printf 'Bookworm PostgreSQL server version mismatch: source=%q target=%q expected=17.11\n' \
+      "$source_server_version" "$target_server_version" >&2
+    exit 1
+  fi
   source_pg_config_version="$(docker exec "$source_db" pg_config --version)"
   target_pg_config_version="$(docker exec "$restore_db" pg_config --version)"
-  [[ "$source_pg_config_version" == 'PostgreSQL 17.11'* && "$target_pg_config_version" == "$source_pg_config_version" ]]
+  if [[ "$source_pg_config_version" != 'PostgreSQL 17.11'* || "$target_pg_config_version" != "$source_pg_config_version" ]]; then
+    printf 'Bookworm pg_config version mismatch: source=%q target=%q expected_prefix=%q\n' \
+      "$source_pg_config_version" "$target_pg_config_version" 'PostgreSQL 17.11' >&2
+    exit 1
+  fi
   extension_query="SELECT name || '|' || default_version || '|' || COALESCE(installed_version, '') FROM pg_available_extensions ORDER BY name"
   source_extension_manifest="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc "$extension_query")"
   target_extension_manifest="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc "$extension_query")"
