@@ -102,10 +102,15 @@ RUN set -eux; \
     test "$(dpkg-query -W -f='${Version}' tzdata)" = "$TZDATA_PACKAGE_VERSION"; \
     test -s /usr/share/keyrings/debian-archive-keyring.gpg; \
     gpgv --version > /usr/share/taky-bookworm-candidate-refresh/gpgv-before-prune.txt; \
+    apt-get --version > /usr/share/taky-bookworm-candidate-refresh/apt-before-prune.txt; \
     LC_ALL=C apt-get --simulate purge --auto-remove gnupg > /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-simulation.txt 2>&1; \
     awk '$1 == "Remv" || $1 == "Purg" { print $2 }' \
-      /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-simulation.txt | LC_ALL=C sort -u \
+      /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-simulation.txt | sed 's/:.*//' | LC_ALL=C sort -u \
       > /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-planned-packages.txt; \
+    printf '%s\n' dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client gpg-wks-server gpgconf gpgsm libassuan0 libksba8 libncursesw6 libnpth0 libsqlite3-0 pinentry-curses | LC_ALL=C sort \
+      > /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-allowlist.txt; \
+    cmp /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-allowlist.txt \
+      /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-planned-packages.txt; \
     awk '$1 == "Remv" || $1 == "Purg" { package = $2; sub(/:.*/, "", package); if (package == "gnupg") found = 1 } END { exit !found }' \
       /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-simulation.txt; \
     if grep -E '^(Remv|Purg) (apt|gpgv|debian-archive-keyring|libapt-pkg[^[:space:]]*|libpq[^[:space:]]*|libxml2|postgresql(-|:|[[:space:]]))' \
@@ -115,16 +120,61 @@ RUN set -eux; \
       grep_status=$?; \
       if [ "$grep_status" -ne 1 ]; then echo 'Could not validate GnuPG purge simulation output' >&2; exit "$grep_status"; fi; \
     fi; \
+    awk -F '\t' '$1 ~ /^(apt|gpgv|debian-archive-keyring|libapt-pkg[^[:space:]]*|libpq[^[:space:]]*|libxml2|postgresql(-|$))/ { print }' \
+      /usr/share/taky-bookworm-candidate-refresh/dpkg-after.tsv > /usr/share/taky-bookworm-candidate-refresh/verification-packages-before-prune.tsv; \
+    apt-get purge --auto-remove --yes gnupg; \
+    dpkg-query -W -f='${binary:Package}\t${Version}\t${Architecture}\n' | LC_ALL=C sort > /usr/share/taky-bookworm-candidate-refresh/dpkg-after-prune.tsv; \
+    awk -F '\t' 'FNR == NR { name = $1; sub(/:.*/, "", name); expected[name] = 1; next } { name = $1; sub(/:.*/, "", name); if (name in expected) print }' \
+      /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-allowlist.txt /usr/share/taky-bookworm-candidate-refresh/dpkg-after.tsv | LC_ALL=C sort \
+      > /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-expected-removals.tsv; \
+    awk -F '\t' 'FNR == NR { before[$1] = $0; next } { after[$1] = 1 } END { for (name in before) if (!(name in after)) print before[name] }' \
+      /usr/share/taky-bookworm-candidate-refresh/dpkg-after.tsv /usr/share/taky-bookworm-candidate-refresh/dpkg-after-prune.tsv | LC_ALL=C sort \
+      > /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-removed-packages.tsv; \
+    cmp /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-expected-removals.tsv \
+      /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-removed-packages.tsv; \
+    cut -f1 /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-removed-packages.tsv | sed 's/:.*//' | LC_ALL=C sort -u \
+      > /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-removed-packages.txt; \
+    cmp /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-allowlist.txt \
+      /usr/share/taky-bookworm-candidate-refresh/gnupg-purge-removed-packages.txt; \
+    for required_package in apt gpgv debian-archive-keyring libxml2 libpq5 postgresql-17; do \
+      dpkg-query -W -f='${Status}\n' "$required_package" | grep -Fx 'install ok installed' >/dev/null; \
+    done; \
+    if dpkg-query -W -f='${Status}\n' libsqlite3-0 libncursesw6 2>/dev/null | grep -F 'install ok installed'; then \
+      echo 'GnuPG purge left an allowlisted package installed' >&2; exit 1; \
+    fi; \
+    gpgv --version > /usr/share/taky-bookworm-candidate-refresh/gpgv-after-prune.txt; \
+    cmp /usr/share/taky-bookworm-candidate-refresh/gpgv-before-prune.txt /usr/share/taky-bookworm-candidate-refresh/gpgv-after-prune.txt; \
+    apt-get --version > /usr/share/taky-bookworm-candidate-refresh/apt-after-prune.txt; \
+    cmp /usr/share/taky-bookworm-candidate-refresh/apt-before-prune.txt /usr/share/taky-bookworm-candidate-refresh/apt-after-prune.txt; \
+    printf '%s\n' "gpgv_sha256=$(sha256sum /usr/share/taky-bookworm-candidate-refresh/gpgv-after-prune.txt | awk '{print $1}')" "apt_version_sha256=$(sha256sum /usr/share/taky-bookworm-candidate-refresh/apt-after-prune.txt | awk '{print $1}')" \
+      > /usr/share/taky-bookworm-candidate-refresh/verification-tools-after-prune.txt; \
+    awk -F '\t' '$1 ~ /^(apt|gpgv|debian-archive-keyring|libapt-pkg[^[:space:]]*|libpq[^[:space:]]*|libxml2|postgresql(-|$))/ { print }' \
+      /usr/share/taky-bookworm-candidate-refresh/dpkg-after-prune.tsv > /usr/share/taky-bookworm-candidate-refresh/verification-packages-after-prune.tsv; \
+    cmp /usr/share/taky-bookworm-candidate-refresh/verification-packages-before-prune.tsv \
+      /usr/share/taky-bookworm-candidate-refresh/verification-packages-after-prune.tsv; \
+    rm -rf /var/lib/apt/lists/*; \
+    mkdir -p /var/lib/apt/lists/partial; \
+    apt-get --error-on=any update > /usr/share/taky-bookworm-candidate-refresh/apt-update-after-prune.txt 2>&1; \
+    test -s "$main_inrelease"; \
+    test -s "$updates_inrelease"; \
+    test -s "$security_inrelease"; \
+    printf '%s  %s\n' "$BOOKWORM_MAIN_INRELEASE_SHA256" "$main_inrelease" | sha256sum --check --status; \
+    printf '%s  %s\n' "$BOOKWORM_UPDATES_INRELEASE_SHA256" "$updates_inrelease" | sha256sum --check --status; \
+    printf '%s  %s\n' "$BOOKWORM_SECURITY_INRELEASE_SHA256" "$security_inrelease" | sha256sum --check --status; \
+    printf 'suite\tsha256\tstage\nbookworm\t%s\tbefore-and-after-prune\nbookworm-updates\t%s\tbefore-and-after-prune\nbookworm-security\t%s\tbefore-and-after-prune\n' \
+      "$BOOKWORM_MAIN_INRELEASE_SHA256" "$BOOKWORM_UPDATES_INRELEASE_SHA256" "$BOOKWORM_SECURITY_INRELEASE_SHA256" \
+      > /usr/share/taky-bookworm-candidate-refresh/inrelease-sha256-after-prune.tsv; \
+    test -s /usr/share/keyrings/debian-archive-keyring.gpg; \
     postgres --version > /usr/share/taky-bookworm-candidate-refresh/postgres-after.txt; \
     pg_config --version > /usr/share/taky-bookworm-candidate-refresh/pg-config-after.txt; \
     cmp /usr/share/taky-bookworm-candidate-refresh/postgres-before.txt /usr/share/taky-bookworm-candidate-refresh/postgres-after.txt; \
     cmp /usr/share/taky-bookworm-candidate-refresh/pg-config-before.txt /usr/share/taky-bookworm-candidate-refresh/pg-config-after.txt; \
-    dpkg-query -W -f='${binary:Package}\t${Version}\t${Architecture}\n' | LC_ALL=C sort > /usr/share/taky-bookworm-candidate-refresh/dpkg-after.tsv; \
+    cp /usr/share/taky-bookworm-candidate-refresh/dpkg-after-prune.tsv /usr/share/taky-bookworm-candidate-refresh/dpkg-after.tsv; \
     awk -F '\t' '$1 ~ /^postgresql(-|$)/ { print }' /usr/share/taky-bookworm-candidate-refresh/dpkg-before.tsv > /usr/share/taky-bookworm-candidate-refresh/postgresql-packages-before.tsv; \
     awk -F '\t' '$1 ~ /^postgresql(-|$)/ { print }' /usr/share/taky-bookworm-candidate-refresh/dpkg-after.tsv > /usr/share/taky-bookworm-candidate-refresh/postgresql-packages-after.tsv; \
     cmp /usr/share/taky-bookworm-candidate-refresh/postgresql-packages-before.tsv /usr/share/taky-bookworm-candidate-refresh/postgresql-packages-after.tsv; \
     awk -F '\t' '\
-      function allowed(name) { sub(/:.*/, "", name); return name == "openssl" || name == "libssl3" || name == "tzdata" } \
+      function allowed(name) { sub(/:.*/, "", name); return name == "openssl" || name == "libssl3" || name == "tzdata" || name == "dirmngr" || name == "gnupg" || name == "gnupg-l10n" || name == "gnupg-utils" || name == "gpg" || name == "gpg-agent" || name == "gpg-wks-client" || name == "gpg-wks-server" || name == "gpgconf" || name == "gpgsm" || name == "libassuan0" || name == "libksba8" || name == "libncursesw6" || name == "libnpth0" || name == "libsqlite3-0" || name == "pinentry-curses" } \
       FNR == NR { before[$1] = $2 "\t" $3; next } \
       { after[$1] = $2 "\t" $3 } \
       END { \
@@ -139,6 +189,13 @@ RUN set -eux; \
     LC_ALL=C sort -o /usr/share/taky-bookworm-candidate-refresh/dpkg-allowed-delta.tsv /usr/share/taky-bookworm-candidate-refresh/dpkg-allowed-delta.tsv; \
     rm -rf /var/lib/apt/lists/*
 
+RUN set -eux; \
+    ! dpkg-query -W libsqlite3-0 libncursesw6 >/dev/null 2>&1; \
+    ldd /usr/lib/postgresql/17/bin/postgres /usr/lib/postgresql/17/bin/psql /usr/lib/postgresql/17/bin/pg_dump /usr/lib/postgresql/17/bin/pg_restore > /tmp/taky-postgres-link-check.txt; \
+    if grep -F 'not found' /tmp/taky-postgres-link-check.txt; then echo 'PostgreSQL runtime has an unresolved shared library' >&2; exit 1; fi; \
+    rm -f /tmp/taky-postgres-link-check.txt; \
+    psql --version; postgres --version; pg_dump --version; pg_restore --version
+
 COPY --from=gosu-builder /out/gosu /usr/local/bin/gosu
 RUN set -eux; gosu --version; gosu nobody true
 
@@ -147,7 +204,7 @@ LABEL org.opencontainers.image.base.name="${POSTGRES_BASE_IMAGE}" \
       io.taky.postgres.gosu.user-module="${GOSU_USER_MODULE_VERSION}" \
       io.taky.postgres.gosu.x-sys-module="${GOSU_X_SYS_MODULE_VERSION}" \
       io.taky.postgres.gosu.builder="${GOSU_BUILDER_IMAGE}" \
-      io.taky.postgres.security-refresh.kind="bookworm-openssl-tzdata" \
+      io.taky.postgres.security-refresh.kind="bookworm-openssl-tzdata-gnupg-prune" \
       io.taky.postgres.security-refresh.main-snapshot="${DEBIAN_MAIN_SNAPSHOT}" \
       io.taky.postgres.security-refresh.security-snapshot="${DEBIAN_SECURITY_SNAPSHOT}" \
       io.taky.postgres.security-refresh.bookworm-inrelease-sha256="${BOOKWORM_MAIN_INRELEASE_SHA256}" \

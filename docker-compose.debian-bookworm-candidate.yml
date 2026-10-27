@@ -3,7 +3,7 @@
 name: taky-erp-bookworm-collation-candidate
 services:
   db:
-    image: taky-erp-postgres:17.11-bookworm-security-candidate-20261027-openssl-tzdata-gosu-1.19-user-0.4.1-xsys-0.44.0
+    image: taky-erp-postgres:17.11-bookworm-security-candidate-20261027-openssl-tzdata-gnupg-prune-gosu-1.19-user-0.4.1-xsys-0.44.0
     build:
       context: .
       dockerfile: docker/postgres/bookworm-security-candidate.Dockerfile
