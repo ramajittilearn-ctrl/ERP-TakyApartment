@@ -262,11 +262,16 @@ if [[ "$source_label" == bookworm && "$target_label" == bookworm ]]; then
     echo "Unexpected Bookworm candidate refresh label: got '$refresh_kind', expected 'bookworm-openssl-tzdata'" >&2
     exit 1
   fi
-  source_server_version="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc 'SHOW server_version')"
-  target_server_version="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc 'SHOW server_version')"
-  if [[ "$source_server_version" != 17.11 || "$target_server_version" != "$source_server_version" ]]; then
-    printf 'Bookworm PostgreSQL server version mismatch: source=%q target=%q expected=17.11\n' \
-      "$source_server_version" "$target_server_version" >&2
+  source_server_version="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc "SHOW server_version")"
+  target_server_version="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc "SHOW server_version")"
+  source_server_version_num="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc "SHOW server_version_num")"
+  target_server_version_num="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc "SHOW server_version_num")"
+  if [[ ( "$source_server_version" != 17.11 && ! "$source_server_version" =~ ^17\.11\ \(Debian\ 17\.11-[0-9]+\.pgdg12\+[0-9]+\)$ ) \
+    || "$target_server_version" != "$source_server_version" \
+    || "$source_server_version_num" != 170011 \
+    || "$target_server_version_num" != "$source_server_version_num" ]]; then
+    printf "Bookworm PostgreSQL server version mismatch: source=%q target=%q source_num=%q target_num=%q expected=17.11 and server_version_num 170011\n" \
+      "$source_server_version" "$target_server_version" "$source_server_version_num" "$target_server_version_num" >&2
     exit 1
   fi
   source_pg_config_version="$(docker exec "$source_db" pg_config --version)"
