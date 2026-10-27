@@ -32,7 +32,9 @@ go_version="$(go version)"
 govulncheck_path="$(command -v govulncheck || true)"
 [[ -n "$govulncheck_path" ]] || { echo "Pinned govulncheck is not installed" >&2; exit 1; }
 govulncheck_build="$(go version -m "$govulncheck_path")"
-grep -F 'mod golang.org/x/vuln v1.1.4' <<<"$govulncheck_build" >/dev/null || {
+printf 'govulncheck executable: %s\n' "$govulncheck_path"
+printf 'govulncheck build metadata:\n%s\n' "$govulncheck_build"
+awk '$1 == "mod" && $2 == "golang.org/x/vuln" && $3 == "v1.1.4" { found = 1 } END { exit !found }' <<<"$govulncheck_build" || {
   echo "Unexpected govulncheck module version" >&2
   exit 1
 }
