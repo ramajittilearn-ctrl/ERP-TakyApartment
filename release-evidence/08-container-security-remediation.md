@@ -1,5 +1,16 @@
 # Container security remediation — 2026-10-26
 
+## Latest exact-head build, restore matrix and raw scan — 2026-10-27, commit 151bfed
+
+The candidate-only Debian Bookworm refresh completed on exact source commit `151bfed8d0341fa37b927e9ad5573836126de7b6`. Push run [40468488249](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40468488249) and PR run [40468493268](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40468493268) passed all four required jobs: quality, Stage 5, Agent UAT and container verification. Agent UAT artifact 12718021477 reports 90/90 passed, zero failed, skipped or flaky. Stage 5 artifact 12718095741 passed.
+
+Container artifact [12717453020](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40468488249/artifacts/12717453020) contains the source-bound Bookworm image metadata, package manifests, APT policy and raw Trivy reports. All four Debian source-to-candidate restore routes passed, including Bookworm-to-Bookworm. The latter proves matching `server_version` (`17.11 (Debian 17.11-1.pgdg12+2)`), `server_version_num` 170011, `pg_config`, and available-extension versions. The candidate verified all three pinned signed InRelease files; its dpkg delta contains only the requested OpenSSL, libssl3 and tzdata package updates.
+
+The candidate does not clear the image-security gate. Its Bookworm database report still contains 3 Critical and 69 High findings. The operational Trixie image report contains 1 Critical and 61 High findings. These are Trivy findings in the same source-bound artifact; no finding is accepted by this report. Candidate build/restore success is not production eligibility. Continue separate investigation of findings and candidate suite choices. Do not change the operational image or UAT/production volumes. The HTTP snapshot transport also retains request-metadata exposure and denial-of-service risk.
+
+The PR remains OPEN/Draft and GitHub reports `REVIEW_REQUIRED`. No target-specific production rehearsal, immutable image publication/deployment pull, merge, deployment or Owner UAT acceptance is established by these runs. Keep production NO-GO.
+
+
 ## Bookworm-only pinned security refresh candidate — commit 32727aa on PR head 95ee8de
 
 Commit 32727aa adds a separate candidate-only Dockerfile selected by the Bookworm candidate Compose file. It leaves the shared operational PostgreSQL Dockerfile/Compose and Trixie candidate unchanged. It pins Debian main and Bookworm security snapshots to 20261027T000000Z and requests Bookworm-security OpenSSL/libssl3 3.0.22-1~deb12u2 plus tzdata 2026e-0+deb12u1, versions shown by Debian's current [OpenSSL tracker](https://security-tracker.debian.org/tracker/CVE-2026-84782) and [tzdata tracker](https://security-tracker.debian.org/tracker/source-package/tzdata) as fixed. Snapshot apt setup retains signature verification and disables only Valid-Until for archived Release files, as described in the [Debian Snapshot service instructions](https://snapshot.debian.org/).
