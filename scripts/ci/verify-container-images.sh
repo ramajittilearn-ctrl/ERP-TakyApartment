@@ -399,4 +399,7 @@ bash scripts/ci/check-rclone-binary-vulnerabilities.sh \
   "$rclone_operations_binary" "$operations_image" "$operations_image_id" \
   "$revision" "$tree" \
   "$gosu_report_dir/rclone-operations-govulncheck.txt"
-printf '%s\n' '- Exact-binary govulncheck covers the operations rclone executable. This reachability result supplements but does not suppress the raw Trivy module findings.' >> "$gosu_report_dir/README.md"
+bash scripts/ci/check-rclone-source-vulnerabilities.sh \
+  "$revision" "$tree" \
+  "$gosu_report_dir/rclone-source-govulncheck.txt"
+printf '%s\n' '- Exact-binary govulncheck output is retained as diagnostic evidence; source-mode govulncheck gates the checksum-verified rclone release source and vendor tree under the same Linux/amd64, CGO-disabled, vendored build configuration. Neither replaces or suppresses raw Trivy reports.' >> "$gosu_report_dir/README.md"

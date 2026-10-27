@@ -67,7 +67,47 @@ printf 'Operations image: %s\n' "$operations_image"
 printf 'Operations image ID: %s\n' "$operations_image_id"
 printf 'Operations image source revision/tree: %s/%s\n' "$image_revision" "$image_tree"
 printf 'Rclone runtime version: %s\n' "$runtime_first_line"
+rclone_build_info="$(go version -m "$rclone_binary")"
+printf 'Rclone binary module build info:\n%s\n' "$rclone_build_info"
+awk '$1 == "dep" && $2 == "github.com/go-chi/chi/v5" && $3 == "v5.3.1" { found = 1 } END { exit !found }' <<<"$rclone_build_info" || {
+  echo "Extracted rclone binary does not embed the Trivy-reported chi v5.3.1 dependency" >&2
+  exit 1
+}
+awk '$1 == "dep" && $2 == "golang.org/x/crypto" && $3 == "v0.57.0" { found = 1 } END { exit !found }' <<<"$rclone_build_info" || {
+  echo "Extracted rclone binary does not embed the Trivy-reported x/crypto v0.57.0 dependency" >&2
+  exit 1
+}
 printf 'Rclone binary SHA-256: '
 sha256sum "$rclone_binary"
+nm_report_path="${report_path%.txt}-nm.txt"
+set +e
+nm_error_path="${report_path%.txt}-nm-errors.txt"
+go tool nm "$rclone_binary" 2> "$nm_error_path" | \
+  grep -E 'golang\.org/x/crypto/openpgp|github\.com/ProtonMail/go-crypto/openpgp|ClientIPFromXFF' > "$nm_report_path"
+nm_statuses=("${PIPESTATUS[@]}")
+nm_status="${nm_statuses[0]}"
+grep_status="${nm_statuses[1]}"
+set -e
+printf 'go tool nm exit status: %s\n' "$nm_status"
+if [[ "$nm_status" != 0 ]]; then
+  cat "$nm_error_path"
+elif [[ "$grep_status" == 0 ]]; then
+  cat "$nm_report_path"
+else
+  echo "No OpenPGP or ClientIPFromXFF symbol names were listed by go tool nm."
+fi
 printf 'Command: govulncheck -mode=binary <extracted-rclone>\n'
-govulncheck -mode=binary "$rclone_binary"
+binary_report_path="${report_path%.txt}-binary.txt"
+set +e
+govulncheck -mode=binary "$rclone_binary" > "$binary_report_path" 2>&1
+binary_status=$?
+set -e
+cat "$binary_report_path"
+if [[ "$binary_status" == 0 ]]; then
+  echo "Exact-binary govulncheck found no vulnerabilities."
+elif grep -q 'Your code is affected by' "$binary_report_path"; then
+  echo "Exact-binary govulncheck returned findings; source-mode analysis of the checksum-verified build inputs must reconcile them."
+else
+  echo "Exact-binary govulncheck failed without a vulnerability result (exit=$binary_status)." >&2
+  exit "$binary_status"
+fi
