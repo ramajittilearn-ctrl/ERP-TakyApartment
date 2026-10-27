@@ -101,3 +101,7 @@ The record shows two logical `uploadAttempts`, but no network upload was attempt
 ## Latest exact PR-head verification — run 40436826101
 
 The current PR head `8ba32bc3d2171b8d77536d6c748d56eca8e84693` passed Stage 5 in [run 40436826101](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101); artifact [12703609262](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101/artifacts/12703609262) records 51 passed checks and all 17 migration validations. Synthetic billing retained rent `1000.00`, calculated `1050.01`, issued immutable invoice and receipt snapshots, reconciled payment, and verified Thai PDFs after source edits. Production-target runtime remains unverified.
+
+## Latest exact PR-head Stage 5 — run 40439455111
+
+The current PR head `e11ef962d0934bf1fd603cd5d15293667fb235f2` passed Stage 5 in [run 40439455111](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40439455111). Artifact [12706156418](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40439455111/artifacts/12706156418) records 51 passed checks and all 17 migration validations on isolated synthetic data. Billing retained `1000.00` rent, calculated `1050.01`, issued immutable invoice/receipt snapshots, reconciled payment, and verified Thai PDFs. This does not establish production-target runtime.

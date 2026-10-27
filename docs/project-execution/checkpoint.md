@@ -1,4 +1,26 @@
-# Current continuation checkpoint — 2026-10-27 (exact PR-head CI and independent scan review)
+# Current continuation checkpoint — 2026-10-27 (Alpine app/validator candidate verified)
+
+## Integration baseline and verified state
+
+- PR #2 remains OPEN/Draft: `codex/phase4-current-source-20261026` → protected `release/phase4`, exact head `e11ef962d0934bf1fd603cd5d15293667fb235f2`. PR run [40439455111](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40439455111) and matching push run `40439449997` passed all four jobs: required-quality, container-verification, Stage 5, and Agent UAT.
+- Agent UAT artifact [12706197568](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40439455111/artifacts/12706197568) reports 90 passed, 0 failed, 0 skipped, 0 flaky on isolated synthetic data. Browser run `c68e2120e5007c6b1fdb76b3` includes rent entered after room selection surviving save/reload. No Owner acceptance is claimed.
+- Stage 5 artifact [12706156418](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40439455111/artifacts/12706156418) passed 51 checks with all 17 migration validations. The isolated synthetic flow verified rent `1000.00`, total `1050.01`, immutable invoice/receipt snapshots, payment allocation, and Thai PDFs.
+- Container artifact [12705059522](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40439455111/artifacts/12705059522) is source-bound to merge checkout `f32ffa35dae69c0e27005c5b8c7d07ef54249355`, tree `a78fb8616712f8351082e9232897f41f0e6daaa9`, exactly matching the PR head tree. Independent `current_scan_review` confirmed app and validator Alpine candidates have zero Trivy findings across all severities for this `linux/amd64` source and DB snapshot. The Trixie operational DB still has 1 Critical/16 High/1 Unknown; operations has 1 Medium/1 Unknown.
+- Container runtime logs confirm Prisma musl engine, fresh DB migration and 15-room seed, app Argon2, validator invalid-token 401, valid synthetic PDF via qpdf, valid PNG via Sharp, and temporary-input cleanup. Small synthetic parser fixtures do not prove full app-to-validator authorization or production behavior.
+- No image publication, merge, deployment, production-data mutation, or existing UAT change occurred.
+
+## Remaining release gates
+
+1. Remediate or formally disposition the operational Trixie and operations image findings; obtain the required independent GitHub PR approval.
+2. Establish the production host, canonical origin, access model, and service ownership from authoritative project evidence.
+3. Complete target-specific backup/restore, migration, rollback, and off-device backup/key recovery.
+4. Publish/pull source-matched images and cut over only after release gates are met.
+
+Production remains **NO-GO** for cutover.
+
+---
+
+# Prior continuation checkpoint — 2026-10-27 (exact PR-head CI and independent scan review)
 
 ## Integration baseline and verified state
 

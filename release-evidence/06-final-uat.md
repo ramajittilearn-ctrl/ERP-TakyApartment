@@ -89,3 +89,7 @@ This report records delegated agent UAT and automated evidence. It does not clai
 ## Latest exact PR-head Agent UAT — run 40436826101
 
 Agent UAT artifact [12705320122](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101/artifacts/12705320122) is bound to PR head `8ba32bc3d2171b8d77536d6c748d56eca8e84693` and reports 90 passed, 0 failed, 0 skipped, and 0 flaky. It ran on isolated synthetic data and includes tenant rent persistence after save/reload. No Owner acceptance or production behavior is claimed.
+
+## Latest exact PR-head Agent UAT — run 40439455111
+
+Artifact [12706197568](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40439455111/artifacts/12706197568) is bound to PR head `e11ef962d0934bf1fd603cd5d15293667fb235f2` and reports 90 passed, 0 failed, 0 skipped, and 0 flaky (browser run `c68e2120e5007c6b1fdb76b3`). It ran on isolated synthetic data and includes tenant rent persistence after save/reload. No Owner acceptance or production behavior is claimed.
