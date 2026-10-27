@@ -26,7 +26,7 @@ current_database_image_id="$(docker image inspect --format '{{.Id}}' "$database_
 }
 actual_database_base_image="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.base.name"}}' "$database_image")"
 [[ "$actual_database_base_image" == "$database_base_image" ]] || {
-  echo "Database image base label does not match the pinned base image" >&2
+  echo "Database image base label does not match the pinned base image (expected=$database_base_image actual=${actual_database_base_image:-missing})" >&2
   exit 1
 }
 
