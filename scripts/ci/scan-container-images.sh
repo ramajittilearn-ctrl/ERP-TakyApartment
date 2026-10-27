@@ -176,7 +176,7 @@ cat > "${output_dir}/README.md" <<EOF
 - Vulnerability DB download time: \`${database_downloaded_at}\`
 - Vulnerability DB next update time: \`${database_next_update}\`
 - Vulnerability DB file-content SHA-256: \`${database_sha256}\` (metadata file: \`trivy-db-metadata.json\`; this is not an OCI digest)
-- Scope: local app, validator, and operations images built from the source checkout plus the exact pinned PostgreSQL image declared by the checkout's \`docker-compose.yml\`; vulnerability scanner only
+- Scope: local app, validator, and operations images built from the source checkout plus the exact pinned PostgreSQL image from the isolated \`docker-compose.alpine-candidate.yml\`; vulnerability scanner only
 - Policy: findings are reported without a general severity threshold; CVE-2026-6653 is a targeted release gate for the Alpine operations/database images
 - Image metadata sidecars record local image IDs (config digests), tags, source identity, and scan time
 - The CI scan fails if CVE-2026-6653 appears in either Alpine image; installed libxml2 versions come from each image-ID-bound Trivy package inventory in `alpine-libxml2-versions.txt`

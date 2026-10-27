@@ -2,19 +2,19 @@
 set -Eeuo pipefail
 
 usage() {
-  echo "Usage: $0 <operations-image> <app-image> [source-database-image]" >&2
+  echo "Usage: $0 <operations-image> <app-image> <target-database-image> [source-database-image]" >&2
   exit 2
 }
-[[ $# == 2 || $# == 3 ]] || usage
+[[ $# == 3 || $# == 4 ]] || usage
 
 operations_image="$1"
 app_image="$2"
 revision="$(git rev-parse HEAD)"
 tree="$(git rev-parse 'HEAD^{tree}')"
-db_image="$(awk '$1 == "db:" { in_db = 1; next } in_db && $1 == "app:" { exit } in_db && $1 == "image:" { print $2; exit }' docker-compose.yml)"
-source_db_image="${3:-$db_image}"
-if [[ ! "$db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
-  echo "The development database image must be pinned by digest" >&2
+target_db_image="$3"
+source_db_image="${4:-$target_db_image}"
+if [[ ! "$target_db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
+  echo "The restore target database image must be pinned by digest" >&2
   exit 1
 fi
 if [[ ! "$source_db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
@@ -218,7 +218,7 @@ docker run --detach --platform linux/amd64 \
   --env "POSTGRES_PASSWORD=$database_password" \
   --health-cmd "pg_isready -U taky_ci -d taky_restore_test" \
   --health-interval 2s --health-timeout 3s --health-retries 30 \
-  "$db_image" >/dev/null
+  "$target_db_image" >/dev/null
 
 wait_healthy() {
   local name="$1" state
@@ -477,4 +477,4 @@ restored_fixture="$(docker run --rm --platform linux/amd64 --label "$ownership_l
 node -e 'const f=JSON.parse(process.argv[1]);if(f.bytes!==Number(process.argv[2])||f.sha256!==process.argv[3])throw new Error(`Restored attachment bytes mismatch: ${JSON.stringify(f)}`)' \
   "$restored_fixture" "$fixture_bytes" "$fixture_sha"
 
-echo "Synthetic remote upload, read-back, and isolated cross-image restore passed: source=$source_db_image target=$db_image; locales (provider|locale|ctype|recorded-version|actual-version)=$source_collation->$target_collation; 15 rooms, valid rebuilt indexes, and executed collation index returned 5 rows; Attachment metadata owner links and attachment SHA-256 $fixture_sha."
+echo "Synthetic remote upload, read-back, and isolated cross-image restore passed: source=$source_db_image target=$target_db_image; locales (provider|locale|ctype|recorded-version|actual-version)=$source_collation->$target_collation; 15 rooms, valid rebuilt indexes, and executed collation index returned 5 rows; Attachment metadata owner links and attachment SHA-256 $fixture_sha."

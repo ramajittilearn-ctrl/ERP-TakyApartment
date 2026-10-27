@@ -4,8 +4,13 @@ set -Eeuo pipefail
 revision="$(git rev-parse HEAD)"
 tree="$(git rev-parse 'HEAD^{tree}')"
 db_image="$(awk '$1 == "db:" { in_db = 1; next } in_db && $1 == "app:" { exit } in_db && $1 == "image:" { print $2; exit }' docker-compose.yml)"
+candidate_db_image="$(awk '$1 == "db:" { in_db = 1; next } in_db && $1 == "image:" { print $2; exit }' docker-compose.alpine-candidate.yml)"
 if [[ ! "$db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
   echo "The development database image must be pinned by digest" >&2
+  exit 1
+fi
+if [[ ! "$candidate_db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
+  echo "The isolated Alpine candidate image must be pinned by digest" >&2
   exit 1
 fi
 
@@ -28,6 +33,28 @@ if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
   echo "Container verification requires a clean source checkout" >&2
   exit 1
 fi
+
+main_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic SESSION_SECRET=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa DATABASE_URL=postgresql://ci:synthetic@db:5432/ci APP_ORIGIN=http://127.0.0.1:3000 docker compose -f docker-compose.yml config --format json)"
+candidate_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic docker compose -f docker-compose.alpine-candidate.yml config --format json)"
+MAIN_COMPOSE_CONFIG="$main_compose_config" CANDIDATE_COMPOSE_CONFIG="$candidate_compose_config" \
+  MAIN_DB_IMAGE="$db_image" CANDIDATE_DB_IMAGE="$candidate_db_image" \
+  node -e '
+    const main = JSON.parse(process.env.MAIN_COMPOSE_CONFIG);
+    const candidate = JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG);
+    const expected = {
+      mainProject: "taky-erp",
+      mainVolume: "taky-erp_database",
+      candidateProject: "taky-erp-alpine-candidate",
+      candidateVolume: "taky-erp-alpine-candidate-database",
+    };
+    if (main.name !== expected.mainProject || main.services.db.image !== process.env.MAIN_DB_IMAGE || main.volumes.database.name !== expected.mainVolume) {
+      throw new Error(`Operational Compose identity changed: ${JSON.stringify({name: main.name, image: main.services.db.image, volume: main.volumes.database.name})}`);
+    }
+    if (candidate.name !== expected.candidateProject || candidate.services.db.image !== process.env.CANDIDATE_DB_IMAGE || candidate.volumes.database.name !== expected.candidateVolume || candidate.volumes.database.name === main.volumes.database.name) {
+      throw new Error(`Alpine candidate Compose isolation changed: ${JSON.stringify({name: candidate.name, image: candidate.services.db.image, volume: candidate.volumes.database.name})}`);
+    }
+    console.log("Operational and Alpine candidate Compose projects and database volumes are isolated.");
+  '
 
 resource_label() {
   local kind="$1" name="$2" output
@@ -99,8 +126,8 @@ echo "Building operations image"
 build_image "$operations_image" operations/Dockerfile .
 legacy_trixie_db_image="postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
 legacy_bookworm_db_image="postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27"
-bash scripts/ci/verify-operations-backup-restore.sh "$operations_image" "$app_image" "$legacy_trixie_db_image"
-bash scripts/ci/verify-operations-backup-restore.sh "$operations_image" "$app_image" "$legacy_bookworm_db_image"
+bash scripts/ci/verify-operations-backup-restore.sh "$operations_image" "$app_image" "$candidate_db_image" "$legacy_trixie_db_image"
+bash scripts/ci/verify-operations-backup-restore.sh "$operations_image" "$app_image" "$candidate_db_image" "$legacy_bookworm_db_image"
 
 docker run --rm --platform linux/amd64 --entrypoint sh "$app_image" -ec '
   ! command -v npm >/dev/null
@@ -252,5 +279,5 @@ docker exec "$probe" node -e \
 echo "Validator rejects an invalid token with HTTP 401."
 
 bash scripts/ci/scan-container-images.sh \
-  "$app_image" "$validator_image" "$operations_image" "$db_image" \
+  "$app_image" "$validator_image" "$operations_image" "$candidate_db_image" \
   "$revision" "$tree" "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
