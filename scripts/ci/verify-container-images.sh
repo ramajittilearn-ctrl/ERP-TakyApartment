@@ -610,7 +610,7 @@ cp "$restore_matrix_report" "$gosu_report_dir/restore-matrix.txt"
   printf 'Synthetic backup/restore routes use fresh run-owned resources; all four are required. Results are in `restore-matrix.txt`.\n\n'
   cat "$restore_matrix_report"
   printf '\n## Isolated Bookworm GnuPG purge candidate\n\n'
-  printf 'The candidate image removes only the exact pinned 16-package GnuPG allowlist after comparing APT simulation to actual `dpkg` removals including package version and architecture. It verifies the retained APT/gpgv/keyring/PostgreSQL/libpq/libxml2 package manifest, performs a fresh signed APT update and checks all three pinned InRelease hashes after removal, and passes the two Bookworm-target restore routes before the raw Trivy scan. This is candidate-only evidence; it does not authorize production use.\n'
+  printf 'The candidate image removes only the exact pinned 16-package GnuPG allowlist after comparing APT simulation to actual `dpkg` removals including package version and architecture. It verifies the retained APT/gpgv/keyring/PostgreSQL/libpq/libxml2 package manifest and performs a fresh signed APT update with all three pinned InRelease hashes checked after removal. The required four-route restore matrix, including both Bookworm-target routes, is reported above; each route must pass for the candidate to qualify. This is candidate-only evidence; it does not authorize production use.\n'
 } >> "$gosu_report_dir/README.md"
 check_gosu_image() {
   local image="$1" base_image="$2" binary="$3" report_name="$4" image_id

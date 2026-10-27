@@ -258,8 +258,8 @@ wait_healthy "$source_db"
 wait_healthy "$restore_db"
 if [[ "$source_label" == bookworm && "$target_label" == bookworm ]]; then
   refresh_kind="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.kind"}}' "$target_db_image")"
-  if [[ "$refresh_kind" != bookworm-openssl-tzdata ]]; then
-    echo "Unexpected Bookworm candidate refresh label: got '$refresh_kind', expected 'bookworm-openssl-tzdata'" >&2
+  if [[ "$refresh_kind" != bookworm-openssl-tzdata-gnupg-prune ]]; then
+    echo "Unexpected Bookworm candidate refresh label: got '$refresh_kind', expected 'bookworm-openssl-tzdata-gnupg-prune'" >&2
     exit 1
   fi
   source_server_version="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc "SHOW server_version")"
