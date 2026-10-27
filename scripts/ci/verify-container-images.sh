@@ -26,6 +26,13 @@ gosu_user_module_version="v0.4.1"
 gosu_x_sys_module_version="v0.44.0"
 validator_token="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 database_password="ci_synthetic_password_only"
+bookworm_compatibility_report="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-bookworm-candidate-compatibility.txt"
+bookworm_metadata_container="${project}-bookworm-candidate-metadata"
+bookworm_refresh_evidence_dir="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-container-scan/bookworm-candidate-refresh"
+if [[ -e "$bookworm_compatibility_report" || -e "$bookworm_refresh_evidence_dir" ]]; then
+  echo "Refusing to overwrite pre-existing Bookworm candidate evidence" >&2
+  exit 1
+fi
 
 if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
   echo "Container verification requires a clean source checkout" >&2
@@ -44,6 +51,12 @@ debian_trixie_db_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_trixie_compose_confi
 debian_trixie_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_trixie_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
 debian_bookworm_db_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.image)')"
 debian_bookworm_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
+debian_bookworm_dockerfile="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.dockerfile)')"
+debian_bookworm_main_snapshot="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.DEBIAN_MAIN_SNAPSHOT)')"
+debian_bookworm_security_snapshot="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.DEBIAN_SECURITY_SNAPSHOT)')"
+debian_bookworm_openssl_version="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.OPENSSL_PACKAGE_VERSION)')"
+debian_bookworm_libssl3_version="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.LIBSSL3_PACKAGE_VERSION)')"
+debian_bookworm_tzdata_version="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.TZDATA_PACKAGE_VERSION)')"
 for postgres_base_image in "$db_base_image" "$alpine_db_base_image" "$debian_trixie_db_base_image" "$debian_bookworm_db_base_image"; do
   if [[ ! "$postgres_base_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
     echo "All PostgreSQL base images must be pinned by digest: $postgres_base_image" >&2
@@ -52,7 +65,13 @@ for postgres_base_image in "$db_base_image" "$alpine_db_base_image" "$debian_tri
 done
 if [[ "$db_base_image" != postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe || \
   "$debian_trixie_db_base_image" != postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe || \
-  "$debian_bookworm_db_base_image" != postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27 ]]; then
+  "$debian_bookworm_db_base_image" != postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27 || \
+  "$debian_bookworm_dockerfile" != docker/postgres/bookworm-security-candidate.Dockerfile || \
+  "$debian_bookworm_main_snapshot" != 20261027T000000Z || \
+  "$debian_bookworm_security_snapshot" != 20261027T000000Z || \
+  "$debian_bookworm_openssl_version" != 3.0.22-1~deb12u2 || \
+  "$debian_bookworm_libssl3_version" != 3.0.22-1~deb12u2 || \
+  "$debian_bookworm_tzdata_version" != 2026e-0+deb12u1 ]]; then
   echo "Debian candidate base images do not match their reviewed pinned identities" >&2
   exit 1
 fi
@@ -62,12 +81,20 @@ MAIN_COMPOSE_CONFIG="$main_compose_config" ALPINE_COMPOSE_CONFIG="$candidate_com
   DEBIAN_TRIXIE_DB_IMAGE="$debian_trixie_db_image" DEBIAN_BOOKWORM_DB_IMAGE="$debian_bookworm_db_image" \
   MAIN_DB_BASE_IMAGE="$db_base_image" ALPINE_DB_BASE_IMAGE="$alpine_db_base_image" \
   DEBIAN_TRIXIE_DB_BASE_IMAGE="$debian_trixie_db_base_image" DEBIAN_BOOKWORM_DB_BASE_IMAGE="$debian_bookworm_db_base_image" \
+  DEBIAN_BOOKWORM_DOCKERFILE="$debian_bookworm_dockerfile" \
+  DEBIAN_BOOKWORM_MAIN_SNAPSHOT="$debian_bookworm_main_snapshot" \
+  DEBIAN_BOOKWORM_SECURITY_SNAPSHOT="$debian_bookworm_security_snapshot" \
+  DEBIAN_BOOKWORM_OPENSSL_VERSION="$debian_bookworm_openssl_version" \
+  DEBIAN_BOOKWORM_LIBSSL3_VERSION="$debian_bookworm_libssl3_version" \
+  DEBIAN_BOOKWORM_TZDATA_VERSION="$debian_bookworm_tzdata_version" \
   node -e '
     const main = JSON.parse(process.env.MAIN_COMPOSE_CONFIG);
     const expected = {mainProject: "taky-erp", mainVolume: "taky-erp_database"};
-    if (main.name !== expected.mainProject || main.services.db.image !== process.env.MAIN_DB_IMAGE || main.services.db.build.args.POSTGRES_BASE_IMAGE !== process.env.MAIN_DB_BASE_IMAGE || main.volumes.database.name !== expected.mainVolume) {
+    if (main.name !== expected.mainProject || main.services.db.image !== process.env.MAIN_DB_IMAGE || main.services.db.build.args.POSTGRES_BASE_IMAGE !== process.env.MAIN_DB_BASE_IMAGE || main.services.db.build.dockerfile !== "docker/postgres/Dockerfile" || main.volumes.database.name !== expected.mainVolume) {
       throw new Error(`Operational Compose identity changed: ${JSON.stringify({name: main.name, image: main.services.db.image, baseImage: main.services.db.build.args.POSTGRES_BASE_IMAGE, volume: main.volumes.database.name})}`);
     }
+    const refreshArgs = ["DEBIAN_MAIN_SNAPSHOT", "DEBIAN_SECURITY_SNAPSHOT", "OPENSSL_PACKAGE_VERSION", "LIBSSL3_PACKAGE_VERSION", "TZDATA_PACKAGE_VERSION"];
+    if (refreshArgs.some((key) => Object.hasOwn(main.services.db.build.args, key))) throw new Error("Operational Compose must not receive candidate-only Debian refresh inputs");
     const candidates = [
       ["alpine", process.env.ALPINE_COMPOSE_CONFIG, process.env.ALPINE_DB_IMAGE, process.env.ALPINE_DB_BASE_IMAGE, "taky-erp-alpine-candidate", "taky-erp-alpine-candidate-database", "alpine3.24"],
       ["debian-trixie", process.env.DEBIAN_TRIXIE_COMPOSE_CONFIG, process.env.DEBIAN_TRIXIE_DB_IMAGE, process.env.DEBIAN_TRIXIE_DB_BASE_IMAGE, "taky-erp-trixie-collation-candidate", "taky-erp-trixie-collation-candidate-database", "trixie"],
@@ -80,6 +107,20 @@ MAIN_COMPOSE_CONFIG="$main_compose_config" ALPINE_COMPOSE_CONFIG="$candidate_com
       const config = JSON.parse(serialized);
       if (config.name !== project || config.services.db.image !== image || config.services.db.build.args.POSTGRES_BASE_IMAGE !== base || config.volumes.database.name !== volume || !base.includes(family) || (config.services.db.ports ?? []).length !== 0) {
         throw new Error(`${label} candidate Compose identity changed: ${JSON.stringify({name: config.name, image: config.services.db.image, baseImage: config.services.db.build.args.POSTGRES_BASE_IMAGE, volume: config.volumes.database.name})}`);
+      }
+      if (label === "debian-trixie" && config.services.db.build.dockerfile !== "docker/postgres/Dockerfile") throw new Error("Trixie candidate must continue to use the operationally shared, unmodified Dockerfile");
+      if (label === "debian-trixie" && refreshArgs.some((key) => Object.hasOwn(config.services.db.build.args, key))) throw new Error("Trixie candidate must not receive Bookworm refresh inputs");
+      if (label === "debian-bookworm") {
+        const build = config.services.db.build;
+        const args = build.args;
+        if (build.dockerfile !== process.env.DEBIAN_BOOKWORM_DOCKERFILE ||
+          args.DEBIAN_MAIN_SNAPSHOT !== process.env.DEBIAN_BOOKWORM_MAIN_SNAPSHOT ||
+          args.DEBIAN_SECURITY_SNAPSHOT !== process.env.DEBIAN_BOOKWORM_SECURITY_SNAPSHOT ||
+          args.OPENSSL_PACKAGE_VERSION !== process.env.DEBIAN_BOOKWORM_OPENSSL_VERSION ||
+          args.LIBSSL3_PACKAGE_VERSION !== process.env.DEBIAN_BOOKWORM_LIBSSL3_VERSION ||
+          args.TZDATA_PACKAGE_VERSION !== process.env.DEBIAN_BOOKWORM_TZDATA_VERSION) {
+          throw new Error("Bookworm candidate refresh Dockerfile or pinned package inputs changed");
+        }
       }
       if (projects.has(config.name) || volumes.has(config.volumes.database.name) || images.has(config.services.db.image)) throw new Error(`${label} candidate reuses a project, database volume or image tag`);
       projects.add(config.name);
@@ -126,7 +167,7 @@ cleanup() {
   trap - EXIT
   set +e
   rm -f -- "$gosu_operational_binary" "$gosu_alpine_binary" "$gosu_debian_trixie_binary" "$gosu_debian_bookworm_binary" "$rclone_operations_binary"
-  for name in "$app" "$validator" "$database" "$probe"; do
+  for name in "$app" "$validator" "$database" "$probe" "$bookworm_metadata_container"; do
     remove_owned_resource container "$name" || cleanup_failed=1
   done
   for name in "$db_volume" "$attachments_volume"; do
@@ -181,6 +222,47 @@ build_postgres_image() {
     && "$actual_user_module" == "$gosu_user_module_version" \
     && "$actual_x_sys_module" == "$gosu_x_sys_module_version" ]]
 }
+build_bookworm_security_candidate_image() {
+  local image="$1" base_image="$2" actual_revision actual_tree actual_builder actual_gosu_commit actual_user_module actual_x_sys_module
+  local actual_refresh_kind actual_main_snapshot actual_security_snapshot actual_openssl actual_libssl3 actual_tzdata
+  docker build --pull --platform linux/amd64 \
+    --build-arg "GOSU_BUILDER_IMAGE=$gosu_builder_image" \
+    --build-arg "GOSU_COMMIT=$gosu_commit" \
+    --build-arg "GOSU_USER_MODULE_VERSION=$gosu_user_module_version" \
+    --build-arg "GOSU_X_SYS_MODULE_VERSION=$gosu_x_sys_module_version" \
+    --build-arg "POSTGRES_BASE_IMAGE=$base_image" \
+    --build-arg "DEBIAN_MAIN_SNAPSHOT=$debian_bookworm_main_snapshot" \
+    --build-arg "DEBIAN_SECURITY_SNAPSHOT=$debian_bookworm_security_snapshot" \
+    --build-arg "OPENSSL_PACKAGE_VERSION=$debian_bookworm_openssl_version" \
+    --build-arg "LIBSSL3_PACKAGE_VERSION=$debian_bookworm_libssl3_version" \
+    --build-arg "TZDATA_PACKAGE_VERSION=$debian_bookworm_tzdata_version" \
+    --label "org.opencontainers.image.revision=$revision" \
+    --label "org.opencontainers.image.tree=$tree" \
+    --tag "$image" --file "$debian_bookworm_dockerfile" .
+  actual_revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")"
+  actual_tree="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.tree"}}' "$image")"
+  actual_builder="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.gosu.builder"}}' "$image")"
+  actual_gosu_commit="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.gosu.commit"}}' "$image")"
+  actual_user_module="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.gosu.user-module"}}' "$image")"
+  actual_x_sys_module="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.gosu.x-sys-module"}}' "$image")"
+  actual_refresh_kind="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.kind"}}' "$image")"
+  actual_main_snapshot="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.main-snapshot"}}' "$image")"
+  actual_security_snapshot="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.security-snapshot"}}' "$image")"
+  actual_openssl="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.openssl"}}' "$image")"
+  actual_libssl3="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.libssl3"}}' "$image")"
+  actual_tzdata="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.tzdata"}}' "$image")"
+  [[ "$actual_revision" == "$revision" && "$actual_tree" == "$tree" \
+    && "$actual_builder" == "$gosu_builder_image" \
+    && "$actual_gosu_commit" == "$gosu_commit" \
+    && "$actual_user_module" == "$gosu_user_module_version" \
+    && "$actual_x_sys_module" == "$gosu_x_sys_module_version" \
+    && "$actual_refresh_kind" == bookworm-openssl-tzdata \
+    && "$actual_main_snapshot" == "$debian_bookworm_main_snapshot" \
+    && "$actual_security_snapshot" == "$debian_bookworm_security_snapshot" \
+    && "$actual_openssl" == "$debian_bookworm_openssl_version" \
+    && "$actual_libssl3" == "$debian_bookworm_libssl3_version" \
+    && "$actual_tzdata" == "$debian_bookworm_tzdata_version" ]]
+}
 echo "Building pinned operational PostgreSQL derivative"
 build_postgres_image "$db_image" "$db_base_image"
 echo "Building isolated Alpine PostgreSQL candidate derivative"
@@ -188,7 +270,7 @@ build_postgres_image "$alpine_db_image" "$alpine_db_base_image"
 echo "Building isolated Debian Trixie PostgreSQL candidate derivative"
 build_postgres_image "$debian_trixie_db_image" "$debian_trixie_db_base_image"
 echo "Building isolated Debian Bookworm PostgreSQL candidate derivative"
-build_postgres_image "$debian_bookworm_db_image" "$debian_bookworm_db_base_image"
+build_bookworm_security_candidate_image "$debian_bookworm_db_image" "$debian_bookworm_db_base_image"
 legacy_trixie_db_image="postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
 legacy_bookworm_db_image="postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27"
 restore_probe_failures=0
@@ -207,7 +289,8 @@ for route in "${restore_routes[@]}"; do
   IFS='|' read -r source_label source_db_image target_label target_db_image <<< "$route"
   printf 'RUN source=%s image=%s target=%s image=%s\n' "$source_label" "$source_db_image" "$target_label" "$target_db_image"
   if bash scripts/ci/verify-operations-backup-restore.sh \
-    "$operations_image" "$app_image" "$target_db_image" "$source_db_image"; then
+    "$operations_image" "$app_image" "$target_db_image" "$source_db_image" \
+    "$source_label" "$target_label" "$bookworm_compatibility_report"; then
     printf 'PASS source=%s source_image=%s target=%s target_image=%s\n' "$source_label" "$source_db_image" "$target_label" "$target_db_image" | tee -a "$restore_matrix_report"
   else
     printf 'FAIL source=%s source_image=%s target=%s target_image=%s\n' "$source_label" "$source_db_image" "$target_label" "$target_db_image" | tee -a "$restore_matrix_report"
@@ -431,6 +514,45 @@ echo "Validator removed temporary inputs after successful parsing."
 bash scripts/ci/scan-container-images.sh \
   "$app_image" "$validator_image" "$operations_image" "$db_image" "$alpine_db_image" "$debian_trixie_db_image" "$debian_bookworm_db_image" \
   "$revision" "$tree" "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
+
+if [[ ! -s "$bookworm_compatibility_report" ]]; then
+  echo "Bookworm-to-Bookworm extension compatibility evidence was not produced" >&2
+  restore_probe_failures=1
+else
+  cp "$bookworm_compatibility_report" "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan/bookworm-pg-compatibility.txt"
+fi
+mkdir -p "$bookworm_refresh_evidence_dir"
+docker create --platform linux/amd64 --label "$ownership_label=$project" \
+  --name "$bookworm_metadata_container" "$debian_bookworm_db_image" >/dev/null
+docker cp "$bookworm_metadata_container:/usr/share/taky-bookworm-candidate-refresh/." "$bookworm_refresh_evidence_dir/"
+docker rm "$bookworm_metadata_container" >/dev/null
+bookworm_image_id="$(docker image inspect --format '{{.Id}}' "$debian_bookworm_db_image")"
+bookworm_trivy_db_sha="$(jq -er '.vulnerabilityDbSha256' "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan/debian-bookworm-database.metadata.json")"
+bookworm_dpkg_before_sha="$(sha256sum "$bookworm_refresh_evidence_dir/dpkg-before.tsv" | awk '{print $1}')"
+bookworm_dpkg_after_sha="$(sha256sum "$bookworm_refresh_evidence_dir/dpkg-after.tsv" | awk '{print $1}')"
+bookworm_dpkg_allowed_delta_sha="$(sha256sum "$bookworm_refresh_evidence_dir/dpkg-allowed-delta.tsv" | awk '{print $1}')"
+bookworm_apt_sources_sha="$(sha256sum "$bookworm_refresh_evidence_dir/apt-sources.sources" | awk '{print $1}')"
+bookworm_apt_policy_sha="$(sha256sum "$bookworm_refresh_evidence_dir/apt-policy.txt" | awk '{print $1}')"
+jq -n \
+  --arg image "$debian_bookworm_db_image" \
+  --arg imageId "$bookworm_image_id" \
+  --arg platform linux/amd64 \
+  --arg sourceRevision "$revision" \
+  --arg sourceTree "$tree" \
+  --arg baseImage "$debian_bookworm_db_base_image" \
+  --arg mainSnapshot "$debian_bookworm_main_snapshot" \
+  --arg securitySnapshot "$debian_bookworm_security_snapshot" \
+  --arg opensslVersion "$debian_bookworm_openssl_version" \
+  --arg libssl3Version "$debian_bookworm_libssl3_version" \
+  --arg tzdataVersion "$debian_bookworm_tzdata_version" \
+  --arg dpkgBeforeSha256 "$bookworm_dpkg_before_sha" \
+  --arg dpkgAfterSha256 "$bookworm_dpkg_after_sha" \
+  --arg dpkgAllowedDeltaSha256 "$bookworm_dpkg_allowed_delta_sha" \
+  --arg aptSourcesSha256 "$bookworm_apt_sources_sha" \
+  --arg aptPolicySha256 "$bookworm_apt_policy_sha" \
+  --arg trivyDbSha256 "$bookworm_trivy_db_sha" \
+  '{image:$image,imageId:$imageId,platform:$platform,sourceRevision:$sourceRevision,sourceTree:$sourceTree,baseImage:$baseImage,mainSnapshot:$mainSnapshot,securitySnapshot:$securitySnapshot,requestedPackages:{openssl:$opensslVersion,libssl3:$libssl3Version,tzdata:$tzdataVersion},evidenceSha256:{dpkgBefore:$dpkgBeforeSha256,dpkgAfter:$dpkgAfterSha256,dpkgAllowedDelta:$dpkgAllowedDeltaSha256,aptSources:$aptSourcesSha256,aptPolicy:$aptPolicySha256},trivyDbSha256:$trivyDbSha256}' \
+  > "$bookworm_refresh_evidence_dir/image-scan-binding.json"
 
 gosu_report_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
 cp "$restore_matrix_report" "$gosu_report_dir/restore-matrix.txt"

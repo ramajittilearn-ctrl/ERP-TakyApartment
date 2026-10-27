@@ -2,10 +2,10 @@
 set -Eeuo pipefail
 
 usage() {
-  echo "Usage: $0 <operations-image> <app-image> <target-database-image> [source-database-image]" >&2
+  echo "Usage: $0 <operations-image> <app-image> <target-database-image> [source-database-image [source-label target-label [compatibility-report]]]" >&2
   exit 2
 }
-[[ $# == 3 || $# == 4 ]] || usage
+[[ $# == 3 || $# == 4 || $# == 6 || $# == 7 ]] || usage
 
 operations_image="$1"
 app_image="$2"
@@ -13,6 +13,17 @@ revision="$(git rev-parse HEAD)"
 tree="$(git rev-parse 'HEAD^{tree}')"
 target_db_image="$3"
 source_db_image="${4:-$target_db_image}"
+source_label="${5:-}"
+target_label="${6:-}"
+compatibility_report="${7:-}"
+if [[ "$source_label" == bookworm && "$target_label" == bookworm && -z "$compatibility_report" ]]; then
+  echo "The Bookworm-to-Bookworm candidate route requires a compatibility evidence path" >&2
+  exit 2
+fi
+if [[ -n "$compatibility_report" && -e "$compatibility_report" ]]; then
+  echo "Refusing to overwrite pre-existing compatibility report: $compatibility_report" >&2
+  exit 1
+fi
 if [[ ! "$source_db_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
   echo "The source database image must be pinned by digest" >&2
   exit 1
@@ -245,6 +256,31 @@ wait_healthy() {
 }
 wait_healthy "$source_db"
 wait_healthy "$restore_db"
+if [[ "$source_label" == bookworm && "$target_label" == bookworm ]]; then
+  refresh_kind="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.kind"}}' "$target_db_image")"
+  [[ "$refresh_kind" == bookworm-openssl-tzdata ]]
+  source_server_version="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc 'SHOW server_version')"
+  target_server_version="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc 'SHOW server_version')"
+  [[ "$source_server_version" == 17.11 && "$target_server_version" == "$source_server_version" ]]
+  source_pg_config_version="$(docker exec "$source_db" pg_config --version)"
+  target_pg_config_version="$(docker exec "$restore_db" pg_config --version)"
+  [[ "$source_pg_config_version" == 'PostgreSQL 17.11' && "$target_pg_config_version" == "$source_pg_config_version" ]]
+  extension_query="SELECT name || '|' || default_version || '|' || COALESCE(installed_version, '') FROM pg_available_extensions ORDER BY name"
+  source_extension_manifest="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc "$extension_query")"
+  target_extension_manifest="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc "$extension_query")"
+  if [[ "$source_extension_manifest" != "$target_extension_manifest" ]]; then
+    diff -u <(printf '%s\n' "$source_extension_manifest") <(printf '%s\n' "$target_extension_manifest") || true
+    echo "Bookworm security candidate changed PostgreSQL available-extension versions" >&2
+    exit 1
+  fi
+  {
+    printf 'source_database_image=%s\ntarget_database_image=%s\n' "$source_db_image" "$target_db_image"
+    printf 'postgres_server_version=%s\npg_config_version=%s\n' "$source_server_version" "$source_pg_config_version"
+    printf '\n[source_available_extensions]\n%s\n\n[target_available_extensions]\n%s\n' \
+      "$source_extension_manifest" "$target_extension_manifest"
+  } > "$compatibility_report"
+  echo "Bookworm security candidate preserved PostgreSQL 17.11 and all available-extension versions."
+fi
 collation_query="SELECT datlocprovider::text || '|' || datcollate || '|' || datctype || '|' || COALESCE(datcollversion, '') || '|' || COALESCE(pg_database_collation_actual_version(oid), '') FROM pg_database WHERE datname=current_database()"
 source_collation="$(docker exec "$source_db" psql -U taky_ci -d taky_ci -Atc "$collation_query")"
 target_collation="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc "$collation_query")"

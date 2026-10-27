@@ -200,6 +200,8 @@ cat > "${output_dir}/README.md" <<EOF
 - Image metadata sidecars record local image IDs (config digests), tags, source identity, and scan time
 - The CI scan fails if CVE-2026-6653 appears in Alpine operations or Alpine database images; installed libxml2 versions come from their image-ID-bound Trivy package inventories in \`alpine-libxml2-versions.txt\`
 
+Bookworm snapshot/package inputs and full before/after dpkg manifests are in bookworm-candidate-refresh/; image-scan-binding.json binds that evidence to the exact image ID, source revision/tree, platform, and Trivy DB SHA-256. bookworm-pg-compatibility.txt records the source-vs-candidate PostgreSQL and available-extension comparison.
+
 These reports do not represent a production deployment or a published registry image.
 EOF
 
