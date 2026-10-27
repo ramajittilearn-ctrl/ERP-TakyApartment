@@ -138,7 +138,7 @@ BOOKWORM_SIGNER_FINGERPRINTS="$BOOKWORM_ARCHIVE_SIGNER_PRIMARY,$BOOKWORM_ARCHIVE
 TRIXIE_BOOTSTRAP_UNKNOWN_SIGNER="$TRIXIE_ARCHIVE_SIGNER_A" \
 python3 - "$evidence_dir/debian-bookworm-bootstrap.apt-update.log" \
   "$evidence_dir/debian-bookworm-bootstrap.signer-fingerprints.txt" \
-  "$evidence_dir/debian-bookworm-bootstrap.allowed-unknown-signer-fingerprints.txt" <<'PY'
+  "$evidence_dir/debian-bookworm-bootstrap.unverified-additional-signer-fingerprints.txt" <<'PY'
 import pathlib
 import os
 import sys
@@ -348,10 +348,20 @@ export DEBIAN_DSC_SIGNER="$debian_dsc_fingerprints" UBUNTU_DSC_SIGNER="$ubuntu_d
 export DEBIAN_KEYRING_VERSION="$(dpkg-query -W -f='${Version}' debian-keyring)"
 export DEBIAN_ARCHIVE_KEYRING_VERSION="$(dpkg-query -W -f='${Version}' debian-archive-keyring)"
 export UBUNTU_KEYRING_VERSION="$(dpkg-query -W -f='${Version}' ubuntu-keyring)"
+checked_out_revision=$(git rev-parse HEAD)
+[[ "$checked_out_revision" == "$GITHUB_SHA" ]] || die 'checked-out revision differs from the GitHub event SHA'
+pull_request_head_sha=${PULL_REQUEST_HEAD_SHA:-}
+if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+  [[ "$pull_request_head_sha" =~ ^[[:xdigit:]]{40}$ ]] || die 'pull request head SHA is missing or malformed'
+else
+  [[ -z "$pull_request_head_sha" ]] || die 'pull request head SHA is unexpectedly set for a non-PR event'
+fi
+export CHECKED_OUT_REVISION="$checked_out_revision" PULL_REQUEST_HEAD_SHA="$pull_request_head_sha"
 export BOOKWORM_BOOTSTRAP_SNAPSHOT BOOKWORM_BOOTSTRAP_URI BOOKWORM_INRELEASE_SHA256
 export BOOKWORM_KEYRING_PACKAGE_VERSION BOOKWORM_KEYRING_PACKAGE_SHA256
 export BOOKWORM_KEYRING_FILE_SHA256="$trixie_archive_keyring_sha256"
 export BOOKWORM_RELEASE_SIGNERS="$(paste -sd, "$evidence_dir/debian-bookworm-bootstrap.signer-fingerprints.txt")"
+export BOOKWORM_UNVERIFIED_SIGNERS="$(cat "$evidence_dir/debian-bookworm-bootstrap.unverified-additional-signer-fingerprints.txt")"
 export BOOKWORM_PACKAGE_SHA256="$bookworm_keyring_package_sha256"
 export BOOKWORM_PACKAGES_INDEX_SHA256="$(awk '{print $1}' "$evidence_dir/debian-bookworm-bootstrap.Packages.apt-cache.sha256")"
 export BOOKWORM_PACKAGES_INDEX_NAME="$(cat "$evidence_dir/debian-bookworm-bootstrap.Packages.apt-cache.name")"
@@ -379,6 +389,14 @@ def files_for(directory: str) -> list[dict[str, str]]:
 manifest = {
     "schemaVersion": 1,
     "generatedAtUtc": os.environ["GENERATED_AT_UTC"],
+    "workflow": {
+        "runId": os.environ["GITHUB_RUN_ID"],
+        "runAttempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+        "eventName": os.environ["GITHUB_EVENT_NAME"],
+        "eventSha": os.environ["GITHUB_SHA"],
+        "checkedOutRevision": os.environ["CHECKED_OUT_REVISION"],
+        "pullRequestHeadSha": os.environ["PULL_REQUEST_HEAD_SHA"] or None,
+    },
     "verification": {
         "authenticatedReleaseMetadata": True,
         "dscSignaturesAndListedHashes": True,
@@ -395,6 +413,7 @@ manifest = {
         "suite": "bookworm",
         "inReleaseSha256": os.environ["BOOKWORM_INRELEASE_SHA256"],
         "inReleaseSignerFingerprints": os.environ["BOOKWORM_RELEASE_SIGNERS"].split(","),
+        "unverifiedAdditionalSignerFingerprints": os.environ["BOOKWORM_UNVERIFIED_SIGNERS"].splitlines(),
         "authenticatedPackagesIndex": {
             "name": os.environ["BOOKWORM_PACKAGES_INDEX_NAME"],
             "sha256": os.environ["BOOKWORM_PACKAGES_INDEX_SHA256"],

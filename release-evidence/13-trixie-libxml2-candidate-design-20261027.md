@@ -31,3 +31,10 @@ This is the preferred design because it retains Debian package ownership and Tri
 ## Current state
 
 Design and independent cross-review are complete. No source package was built, no candidate image/container/volume was created, and no production/UAT resource changed. The local `docker info` query returned no daemon result during this run and was interrupted; candidate package/image verification must use a functioning isolated Linux CI runner. PR #2 remains open/Draft and production remains NO-GO.
+
+
+## Source provenance gate completed — 2026-10-27T21:35:46Z
+
+The previously outstanding authenticated source and patch gates passed for exact head `dc6ea58be6b705e6ffb3a22eb216a2f0908ed6fe` in push run [40586592456](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40586592456) and PR run [40586599034](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40586599034). Provenance artifact [12772091667](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40586592456/artifacts/12772091667) records authenticated Debian Trixie `libxml2` and Ubuntu Jammy patch source metadata, valid `.dsc` signatures, listed source hashes, and the exact Jammy patch hash. An independent audit recomputed all six source artifact hashes and the patch hash and confirmed both `dscverify` logs validated every listed source file. The pinned Bookworm bootstrap metadata was accepted by APT with two pinned Bookworm signers; the only unavailable additional signer was the expected Trixie signing subkey. The downloaded keyring package hash/version and authenticated package index match the manifest.
+
+This supersedes the design-time statements above that source and patch provenance were still outstanding. It does not satisfy the build or runtime gates: no package or candidate image exists; exact patch application, Debian package build, one-package runtime delta, ABI/API, libxml2 tests/CVE reproducer, PostgreSQL XML behavior, restore, and candidate scan remain open. Existing operational images, candidate tags/volumes, UAT, and production remain untouched.
