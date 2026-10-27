@@ -1,7 +1,7 @@
 name: taky-erp
 services:
   db:
-    image: taky-erp-postgres:17.11-trixie-gosu-1.19-user-0.4.1
+    image: taky-erp-postgres:17.11-trixie-gosu-1.19-user-0.4.1-xsys-0.44.0
     build:
       context: .
       dockerfile: docker/postgres/Dockerfile

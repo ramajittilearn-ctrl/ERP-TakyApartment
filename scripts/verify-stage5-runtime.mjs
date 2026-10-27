@@ -292,7 +292,7 @@ function verifyComposeConfig(config, env, revision, tree) {
   const db = config.services.db;
   assertRenderedEqual(
     db.image,
-    "taky-erp-postgres:17.11-alpine3.24-gosu-1.19-user-0.4.1",
+    "taky-erp-postgres:17.11-alpine3.24-gosu-1.19-user-0.4.1-xsys-0.44.0",
     "patched Alpine database image",
   );
   assertRenderedEqual(
