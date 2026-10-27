@@ -39,6 +39,7 @@ ARG POSTGRES_BASE_IMAGE
 FROM ${POSTGRES_BASE_IMAGE}
 
 ARG POSTGRES_BASE_IMAGE
+ARG GOSU_BUILDER_IMAGE
 COPY --from=gosu-builder /out/gosu /usr/local/bin/gosu
 RUN set -eux; gosu --version; gosu nobody true
 ARG GOSU_COMMIT

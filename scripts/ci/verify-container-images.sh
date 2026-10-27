@@ -17,6 +17,10 @@ validator_image="taky-ci-validator:${project}"
 operations_image="taky-ci-operations:${project}"
 gosu_operational_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-operational-gosu"
 gosu_alpine_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-alpine-gosu"
+gosu_builder_image="golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4"
+gosu_commit="6456aaa0f3c854d199d0f037f068eb97515b7513"
+gosu_user_module_version="v0.4.1"
+gosu_x_sys_module_version="v0.44.0"
 validator_token="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 database_password="ci_synthetic_password_only"
 
@@ -126,15 +130,27 @@ build_image "$validator_image" operations/evidence-validator/Dockerfile operatio
 echo "Building operations image"
 build_image "$operations_image" operations/Dockerfile .
 build_postgres_image() {
-  local image="$1" base_image="$2" actual_revision actual_tree
+  local image="$1" base_image="$2" actual_revision actual_tree actual_builder actual_gosu_commit actual_user_module actual_x_sys_module
   docker build --pull --platform linux/amd64 \
+    --build-arg "GOSU_BUILDER_IMAGE=$gosu_builder_image" \
+    --build-arg "GOSU_COMMIT=$gosu_commit" \
+    --build-arg "GOSU_USER_MODULE_VERSION=$gosu_user_module_version" \
+    --build-arg "GOSU_X_SYS_MODULE_VERSION=$gosu_x_sys_module_version" \
     --build-arg "POSTGRES_BASE_IMAGE=$base_image" \
     --label "org.opencontainers.image.revision=$revision" \
     --label "org.opencontainers.image.tree=$tree" \
     --tag "$image" --file docker/postgres/Dockerfile .
   actual_revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")"
   actual_tree="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.tree"}}' "$image")"
-  [[ "$actual_revision" == "$revision" && "$actual_tree" == "$tree" ]]
+  actual_builder="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.gosu.builder"}}' "$image")"
+  actual_gosu_commit="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.gosu.commit"}}' "$image")"
+  actual_user_module="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.gosu.user-module"}}' "$image")"
+  actual_x_sys_module="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.gosu.x-sys-module"}}' "$image")"
+  [[ "$actual_revision" == "$revision" && "$actual_tree" == "$tree" \
+    && "$actual_builder" == "$gosu_builder_image" \
+    && "$actual_gosu_commit" == "$gosu_commit" \
+    && "$actual_user_module" == "$gosu_user_module_version" \
+    && "$actual_x_sys_module" == "$gosu_x_sys_module_version" ]]
 }
 echo "Building pinned operational PostgreSQL derivative"
 build_postgres_image "$db_image" "$db_base_image"

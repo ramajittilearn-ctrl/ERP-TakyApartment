@@ -60,6 +60,16 @@ printf 'Database image ID: %s\n' "$database_image_id"
 printf 'Pinned database base image: %s\n' "$database_base_image"
 printf 'Go toolchain: %s\n' "$go_version"
 printf 'govulncheck module build info:\n%s\n' "$govulncheck_build"
+gosu_build_info="$(go version -m "$gosu_binary")"
+printf 'Gosu binary module build info:\n%s\n' "$gosu_build_info"
+awk '$1 == "dep" && $2 == "github.com/moby/sys/user" && $3 == "v0.4.1" { found = 1 } END { exit !found }' <<<"$gosu_build_info" || {
+  echo "Extracted gosu binary does not use github.com/moby/sys/user v0.4.1" >&2
+  exit 1
+}
+awk '$1 == "dep" && $2 == "golang.org/x/sys" && $3 == "v0.44.0" { found = 1 } END { exit !found }' <<<"$gosu_build_info" || {
+  echo "Extracted gosu binary does not use golang.org/x/sys v0.44.0" >&2
+  exit 1
+}
 printf 'Upstream wrapper: %s\n' "$wrapper_url"
 printf 'Upstream wrapper SHA-256: %s\n' "$wrapper_sha256"
 printf 'Extracted binary SHA-256: '
