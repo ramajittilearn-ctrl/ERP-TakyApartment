@@ -264,7 +264,7 @@ if [[ "$source_label" == bookworm && "$target_label" == bookworm ]]; then
   [[ "$source_server_version" == 17.11 && "$target_server_version" == "$source_server_version" ]]
   source_pg_config_version="$(docker exec "$source_db" pg_config --version)"
   target_pg_config_version="$(docker exec "$restore_db" pg_config --version)"
-  [[ "$source_pg_config_version" == 'PostgreSQL 17.11' && "$target_pg_config_version" == "$source_pg_config_version" ]]
+  [[ "$source_pg_config_version" == 'PostgreSQL 17.11'* && "$target_pg_config_version" == "$source_pg_config_version" ]]
   extension_query="SELECT name || '|' || default_version || '|' || COALESCE(installed_version, '') FROM pg_available_extensions ORDER BY name"
   source_extension_manifest="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc "$extension_query")"
   target_extension_manifest="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc "$extension_query")"

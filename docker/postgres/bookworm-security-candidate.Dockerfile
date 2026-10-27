@@ -57,7 +57,7 @@ RUN set -eux; \
     postgres --version > /usr/share/taky-bookworm-candidate-refresh/postgres-before.txt; \
     pg_config --version > /usr/share/taky-bookworm-candidate-refresh/pg-config-before.txt; \
     case "$(cat /usr/share/taky-bookworm-candidate-refresh/postgres-before.txt)" in 'postgres (PostgreSQL) 17.11'*) ;; *) echo 'Unexpected PostgreSQL version before package refresh' >&2; exit 1 ;; esac; \
-    case "$(cat /usr/share/taky-bookworm-candidate-refresh/pg-config-before.txt)" in 'PostgreSQL 17.11') ;; *) echo 'Unexpected pg_config version before package refresh' >&2; exit 1 ;; esac; \
+    case "$(cat /usr/share/taky-bookworm-candidate-refresh/pg-config-before.txt)" in 'PostgreSQL 17.11'*) ;; *) echo 'Unexpected pg_config version before package refresh' >&2; cat /usr/share/taky-bookworm-candidate-refresh/pg-config-before.txt >&2; exit 1 ;; esac; \
     dpkg-query -W -f='${binary:Package}\t${Version}\t${Architecture}\n' | LC_ALL=C sort > /usr/share/taky-bookworm-candidate-refresh/dpkg-before.tsv; \
     printf 'openssl=%s\nlibssl3=%s\ntzdata=%s\n' "$OPENSSL_PACKAGE_VERSION" "$LIBSSL3_PACKAGE_VERSION" "$TZDATA_PACKAGE_VERSION" > /usr/share/taky-bookworm-candidate-refresh/requested-packages.txt; \
     rm -f /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \

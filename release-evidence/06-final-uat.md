@@ -1,5 +1,9 @@
 # Agent-run Phase 4 UAT
 
+## Latest Agent UAT — PR head 95ee8de (2026-10-27)
+
+Push run [40463274079](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40463274079), artifact [12716045150](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40463274079/artifacts/12716045150), and PR run [40463280614](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40463280614), artifact [12715447543](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40463280614/artifacts/12715447543), both report 90 passed, 0 failed, 0 skipped and 0 flaky. The PR report uses merge checkout c77b5bc against head 95ee8de. UAT is synthetic browser testing of the standalone application on an isolated runner; the Bookworm candidate image build failed separately before package installation. No Owner or production acceptance is claimed.
+
 ## Latest exact-head Agent UAT — commit b9db3ed (2026-10-27)
 
 Push run [40461557545](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40461557545), artifact [12714853094](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40461557545/artifacts/12714853094), and PR run [40461562660](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40461562660), artifact [12715246791](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40461562660/artifacts/12715246791), both report 90 passed, 0 failed, 0 skipped and 0 flaky. The PR artifact binds to head b9db3ed4e188a49ebe938dde204c35d20fe4134b. This used synthetic data in an isolated runner and does not represent Owner acceptance or production UAT. It verifies the documentation-only head; the subsequent Bookworm candidate refresh commit 32727aa still requires its own hosted CI run.
