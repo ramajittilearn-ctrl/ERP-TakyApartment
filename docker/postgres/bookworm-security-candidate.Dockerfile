@@ -120,6 +120,7 @@ RUN set -eux; \
       grep_status=$?; \
       if [ "$grep_status" -ne 1 ]; then echo 'Could not validate GnuPG purge simulation output' >&2; exit "$grep_status"; fi; \
     fi; \
+    dpkg-query -W -f='${binary:Package}\t${Version}\t${Architecture}\n' | LC_ALL=C sort > /usr/share/taky-bookworm-candidate-refresh/dpkg-after.tsv; \
     awk -F '\t' '$1 ~ /^(apt|gpgv|debian-archive-keyring|libapt-pkg[^[:space:]]*|libpq[^[:space:]]*|libxml2|postgresql(-|$))/ { print }' \
       /usr/share/taky-bookworm-candidate-refresh/dpkg-after.tsv > /usr/share/taky-bookworm-candidate-refresh/verification-packages-before-prune.tsv; \
     apt-get purge --auto-remove --yes gnupg; \
