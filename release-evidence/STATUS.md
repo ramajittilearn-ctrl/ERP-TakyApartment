@@ -1,6 +1,14 @@
 # Phase 4 Production Readiness
 
-## Latest exact-head evidence — PR run 40531195562
+## Current exact-head evidence — PR head 9ba89d67 (2026-10-27)
+
+PR #2 remains OPEN/Draft at `9ba89d67c324f4354559d66c82e09d071075b077`, with `REVIEW_REQUIRED` / `BLOCKED`. Exact-head PR run [40534501256](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40534501256) and push run [40534495473](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40534495473) passed all four jobs. Their artifacts bind to the same source tree `2957e3a1e23cb7ae094f5441cbd48b3fd763b4b9`; independent review found matching normalized scans and package/restore evidence. Both runs report synthetic Agent UAT 90/90, Stage 5 52 aggregate checks/17 migrations, and all four restore routes passing.
+
+Current raw scans remain Bookworm 2 Critical/66 High (18 distinct High IDs) and operational Trixie 1 Critical/61 High (16 distinct High IDs). The Trixie libxml2 design and independent cross-review selected an isolated Debian source-package backport prototype; source-signature and Ubuntu patch provenance, ABI/API, and PostgreSQL XML behavior remain gates. No package/image was built; see [candidate design](13-trixie-libxml2-candidate-design-20261027.md). The local Docker daemon query returned no result and was interrupted.
+
+No Owner acceptance, production target rehearsal, immutable image publication/pull, PR approval, merge, deployment, or Go-Live is evidenced. Production remains NO-GO.
+
+## Previous exact-head evidence — PR run 40531195562
 
 PR #2 remains OPEN/Draft at exact head `d8506c97f4055981a662c712e34bf09ab4c815f9` with GitHub review state `REVIEW_REQUIRED` / `BLOCKED`. PR CI [40531195562](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40531195562) passed all four jobs: required quality, container verification, Stage 5, and synthetic Agent UAT. The matching push run [40531187620](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40531187620) also passed all four jobs. Its Agent UAT artifact [12745944112](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40531187620/artifacts/12745944112) reports 90/90; Stage 5 artifact [12746672441](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40531187620/artifacts/12746672441) passed 52 checks/17 migrations; container artifact [12747172603](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40531187620/artifacts/12747172603) binds to the same source tree and reports the same four passing routes and scan counts. Its image ID differs from the PR merge candidate because the source-revision labels differ and the retained post-purge APT log has a different throughput line; independent review found package, pin, restore and normalized scan evidence matches.
 
