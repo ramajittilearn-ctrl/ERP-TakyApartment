@@ -1,6 +1,11 @@
 # Phase 4 Production Readiness
 
-## Current exact-head evidence — PR head 9ba89d67 (2026-10-27)
+## Latest exact-head evidence — 2026-10-27T21:24:41Z
+
+PR #2 is OPEN/Draft at `e6330e60f54237029bc92c201b253b09584ff673` (`REVIEW_REQUIRED`). PR run [40542061770](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40542061770) and push run [40542051970](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40542051970) passed quality, container verification, Stage 5, and synthetic Agent UAT; the new libxml2 provenance job failed because the Ubuntu runner keyring lacked the Trixie signer. The local correction is designed to bootstrap the pinned Bookworm Debian keyring package using isolated APT signature verification against an exact-hash InRelease, requires a pinned Bookworm signer, and only permits the expected extra Trixie signer to be unavailable. It also isolates `apt-get source` output and fixes manifest fingerprint arrays. Six focused fixtures pass and independent static cross-review passed; the review did not execute Linux APT or establish provenance success. Hosted CI remains pending. Source provenance has not passed; no patched package or candidate image is verified. Keep production NO-GO; no UAT or production environment was modified.
+
+
+## Previous exact-head evidence — PR head 9ba89d67 (2026-10-27)
 
 PR #2 remains OPEN/Draft at `9ba89d67c324f4354559d66c82e09d071075b077`, with `REVIEW_REQUIRED` / `BLOCKED`. Exact-head PR run [40534501256](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40534501256) and push run [40534495473](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40534495473) passed all four jobs. Their artifacts bind to the same source tree `2957e3a1e23cb7ae094f5441cbd48b3fd763b4b9`; independent review found matching normalized scans and package/restore evidence. Both runs report synthetic Agent UAT 90/90, Stage 5 52 aggregate checks/17 migrations, and all four restore routes passing.
 

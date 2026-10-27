@@ -6,11 +6,21 @@ umask 077
 readonly DEBIAN_VERSION='2.12.7+dfsg+really2.9.14-2.1+deb13u3'
 readonly UBUNTU_VERSION='2.9.13+dfsg-1ubuntu0.12'
 readonly DEBIAN_SNAPSHOT='20261027T000000Z'
+readonly BOOKWORM_BOOTSTRAP_SNAPSHOT='20261026T202550Z'
 readonly UBUNTU_SNAPSHOT='20260622T130000Z'
 readonly DEBIAN_URI="https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}"
+readonly BOOKWORM_BOOTSTRAP_URI="https://snapshot.debian.org/archive/debian/${BOOKWORM_BOOTSTRAP_SNAPSHOT}"
 readonly UBUNTU_URI="https://snapshot.ubuntu.com/ubuntu/${UBUNTU_SNAPSHOT}"
 readonly DEBIAN_ARCHIVE_KEYRING='/usr/share/keyrings/debian-archive-keyring.gpg'
 readonly UBUNTU_ARCHIVE_KEYRING='/usr/share/keyrings/ubuntu-archive-keyring.gpg'
+readonly BOOKWORM_INRELEASE_SHA256='77737fa4b34f2693e982cc9ee35736816c35a7778fc2d326cc1bbf5b301fe1aa'
+readonly BOOKWORM_KEYRING_PACKAGE_VERSION='2023.3+deb12u2'
+readonly BOOKWORM_KEYRING_PACKAGE_SHA256='f699e2f88dca05212f2a452b58475f2993cb6993dfbafb1d0205a3291eb8b4b8'
+readonly BOOKWORM_ARCHIVE_SIGNER_PRIMARY='B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8'
+readonly BOOKWORM_ARCHIVE_SIGNER_SUBKEY='4CB50190207B4758A3F73A796ED0E7B82643E131'
+readonly BOOKWORM_STABLE_SIGNER='4D64FEC119C2029067D6E791F8D2585B8783D481'
+readonly TRIXIE_ARCHIVE_SIGNER_A='B8E5F13176D2A7A75220028078DBA3BC47EF2265'
+readonly TRIXIE_ARCHIVE_SIGNER_B='41587F7DB8C774BCCF131416762F67A0B2C39DE4'
 readonly UBUNTU_UPLOAD_FINGERPRINT='71FBF17BE7E52D0C2A2C9144F0B61460B04C4B56'
 readonly UBUNTU_UPLOAD_KEY_URL='https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xF0B61460B04C4B56'
 readonly PATCH_RELATIVE_PATH='debian/patches/CVE-2026-6653.patch'
@@ -41,7 +51,7 @@ sudo apt-get update
 sudo apt-get install --yes --no-install-recommends \
   ca-certificates curl dpkg-dev debian-archive-keyring debian-keyring devscripts gnupg gpgv ubuntu-keyring xz-utils
 
-for required in curl gpg gpgv dscverify apt-get sha256sum dpkg-query xzcat; do
+for required in curl gpg gpgv dscverify apt-get sha256sum dpkg-deb dpkg-query xzcat; do
   command -v "$required" >/dev/null || die "required command unavailable: $required"
 done
 [[ -r "$DEBIAN_ARCHIVE_KEYRING" ]] || die "missing official Debian archive keyring: $DEBIAN_ARCHIVE_KEYRING"
@@ -52,6 +62,7 @@ readonly debian_dir="$output_dir/debian-source"
 readonly ubuntu_dir="$output_dir/ubuntu-source"
 readonly evidence_dir="$output_dir/metadata"
 mkdir -p -- "$work_dir/debian/lists/partial" "$work_dir/debian/archives/partial" \
+  "$work_dir/bookworm-bootstrap/lists/partial" "$work_dir/bookworm-bootstrap/archives/partial" \
   "$work_dir/ubuntu/lists/partial" "$work_dir/ubuntu/archives/partial" \
   "$debian_dir" "$ubuntu_dir" "$evidence_dir"
 
@@ -61,7 +72,14 @@ write_source_list() {
     "$keyring" "$uri" "$suite" >"$path"
 }
 
+write_binary_source_list() {
+  local path=$1 uri=$2 suite=$3 keyring=$4
+  printf 'deb [check-valid-until=no signed-by=%s] %s %s main\n' \
+    "$keyring" "$uri" "$suite" >"$path"
+}
+
 write_source_list "$work_dir/debian.sources.list" "$DEBIAN_URI" trixie "$DEBIAN_ARCHIVE_KEYRING"
+write_binary_source_list "$work_dir/bookworm-bootstrap.sources.list" "$BOOKWORM_BOOTSTRAP_URI" bookworm "$DEBIAN_ARCHIVE_KEYRING"
 write_source_list "$work_dir/ubuntu.sources.list" "$UBUNTU_URI" jammy-security "$UBUNTU_ARCHIVE_KEYRING"
 
 apt_with_state() {
@@ -94,7 +112,123 @@ record_release_signature() {
     >"$evidence_dir/$name.InRelease.sha256"
 }
 
-record_release_signature "$DEBIAN_URI" trixie "$DEBIAN_ARCHIVE_KEYRING" debian-trixie
+record_bookworm_bootstrap_release() {
+  local uri=$1 suite=$2 name=$3
+  local inrelease="$evidence_dir/$name.InRelease"
+  curl --fail --show-error --silent --location --retry 3 --connect-timeout 20 \
+    "$uri/dists/$suite/InRelease" --output "$inrelease"
+  printf '%s  %s\n' "$(sha256sum "$inrelease" | awk '{print $1}')" "$name.InRelease" \
+    >"$evidence_dir/$name.InRelease.sha256"
+  [[ $(awk '{print $1}' "$evidence_dir/$name.InRelease.sha256") == "$BOOKWORM_INRELEASE_SHA256" ]] \
+    || die 'Bookworm bootstrap InRelease SHA-256 does not match the approved exact snapshot'
+}
+
+pre_bootstrap_debian_archive_keyring_version=$(dpkg-query -W -f='${Version}' debian-archive-keyring)
+pre_bootstrap_debian_archive_keyring_sha256=$(sha256sum "$DEBIAN_ARCHIVE_KEYRING" | awk '{print $1}')
+record_bookworm_bootstrap_release "$BOOKWORM_BOOTSTRAP_URI" bookworm debian-bookworm-bootstrap
+
+apt_with_state "$work_dir/bookworm-bootstrap" "$work_dir/bookworm-bootstrap.sources.list" \
+  -o Debug::Acquire::gpgv=1 update >"$evidence_dir/debian-bookworm-bootstrap.apt-update.log" 2>&1
+bookworm_inrelease_cache=()
+mapfile -t bookworm_inrelease_cache < <(find "$work_dir/bookworm-bootstrap/lists" -maxdepth 1 -type f -name '*InRelease' -print | sort)
+[[ ${#bookworm_inrelease_cache[@]} -eq 1 ]] || die 'Bookworm bootstrap APT did not produce exactly one InRelease'
+cmp -s "$evidence_dir/debian-bookworm-bootstrap.InRelease" "${bookworm_inrelease_cache[0]}" \
+  || die 'Bookworm bootstrap APT used InRelease bytes different from the separately verified snapshot'
+BOOKWORM_SIGNER_FINGERPRINTS="$BOOKWORM_ARCHIVE_SIGNER_PRIMARY,$BOOKWORM_ARCHIVE_SIGNER_SUBKEY,$BOOKWORM_STABLE_SIGNER" \
+TRIXIE_BOOTSTRAP_UNKNOWN_SIGNER="$TRIXIE_ARCHIVE_SIGNER_A" \
+python3 - "$evidence_dir/debian-bookworm-bootstrap.apt-update.log" \
+  "$evidence_dir/debian-bookworm-bootstrap.signer-fingerprints.txt" \
+  "$evidence_dir/debian-bookworm-bootstrap.allowed-unknown-signer-fingerprints.txt" <<'PY'
+import pathlib
+import os
+import sys
+
+log_path, signer_path, unknown_path = map(pathlib.Path, sys.argv[1:])
+allowed_bookworm = set(os.environ["BOOKWORM_SIGNER_FINGERPRINTS"].split(","))
+expected_unknown = os.environ["TRIXIE_BOOTSTRAP_UNKNOWN_SIGNER"]
+valid = set()
+unknown = set()
+bad_statuses = {"BADSIG", "EXPSIG", "EXPKEYSIG", "REVKEYSIG", "NODATA"}
+
+for raw_line in log_path.read_text(errors="replace").splitlines():
+    marker = "[GNUPG:] "
+    if marker not in raw_line:
+        continue
+    fields = raw_line.split(marker, 1)[1].split()
+    if not fields:
+        continue
+    code = fields[0]
+    if code == "VALIDSIG" and len(fields) >= 2:
+        valid.add(fields[1].upper())
+        if len(fields) >= 11 and fields[10] != "-":
+            valid.add(fields[10].upper())
+    elif code == "NO_PUBKEY" and len(fields) >= 2:
+        key_id = fields[1].upper()
+        if not expected_unknown.endswith(key_id):
+            raise SystemExit(f"unexpected unknown Bookworm bootstrap signer: {key_id}")
+        unknown.add(expected_unknown)
+    elif code == "ERRSIG" and len(fields) >= 7:
+        key_id = fields[1].upper()
+        error_code = fields[6]
+        signer_fingerprint = fields[7].upper() if len(fields) >= 8 else ""
+        if error_code != "9" or not (
+            expected_unknown.endswith(key_id) or signer_fingerprint == expected_unknown
+        ):
+            raise SystemExit("Bookworm bootstrap has an unexpected unverifiable signature")
+        unknown.add(expected_unknown)
+    elif code in bad_statuses:
+        raise SystemExit(f"Bookworm bootstrap has unacceptable signature status: {code}")
+
+if not valid.intersection(allowed_bookworm):
+    raise SystemExit("APT debug evidence has no valid signature from a pinned Bookworm signer")
+signer_path.write_text("".join(f"{item}\n" for item in sorted(valid)))
+unknown_path.write_text("".join(f"{item}\n" for item in sorted(unknown)))
+PY
+bookworm_package_indexes=()
+mapfile -t bookworm_package_indexes < <(find "$work_dir/bookworm-bootstrap/lists" -maxdepth 1 -type f -name '*binary-amd64_Packages*' -print | sort)
+[[ ${#bookworm_package_indexes[@]} -eq 1 ]] || die 'Bookworm bootstrap APT did not produce exactly one amd64 Packages index'
+cp -- "${bookworm_package_indexes[0]}" "$evidence_dir/debian-bookworm-bootstrap.Packages.apt-cache"
+printf '%s\n' "${bookworm_package_indexes[0]##*/}" >"$evidence_dir/debian-bookworm-bootstrap.Packages.apt-cache.name"
+sha256sum "$evidence_dir/debian-bookworm-bootstrap.Packages.apt-cache" \
+  >"$evidence_dir/debian-bookworm-bootstrap.Packages.apt-cache.sha256"
+
+(
+  cd "$evidence_dir"
+  apt_with_state "$work_dir/bookworm-bootstrap" "$work_dir/bookworm-bootstrap.sources.list" \
+    download "debian-archive-keyring=$BOOKWORM_KEYRING_PACKAGE_VERSION"
+)
+bookworm_keyring_packages=()
+mapfile -t bookworm_keyring_packages < <(find "$evidence_dir" -maxdepth 1 -type f -name 'debian-archive-keyring_*.deb' -print | sort)
+[[ ${#bookworm_keyring_packages[@]} -eq 1 ]] || die 'expected exactly one downloaded Debian archive keyring package'
+bookworm_keyring_package=${bookworm_keyring_packages[0]}
+[[ $(sha256sum "$bookworm_keyring_package" | awk '{print $1}') == "$BOOKWORM_KEYRING_PACKAGE_SHA256" ]] \
+  || die 'downloaded Debian archive keyring package SHA-256 differs from its pinned signed-index package'
+bookworm_keyring_package_sha256=$(sha256sum "$bookworm_keyring_package" | awk '{print $1}')
+[[ $(dpkg-deb --field "$bookworm_keyring_package" Version) == "$BOOKWORM_KEYRING_PACKAGE_VERSION" ]] \
+  || die 'downloaded Debian archive keyring package version differs from the pin'
+[[ $(dpkg-deb --field "$bookworm_keyring_package" Architecture) == all ]] \
+  || die 'Debian archive keyring package is not architecture independent'
+readonly TRIXIE_KEYRING_ROOT="$work_dir/bookworm-keyring-package"
+dpkg-deb -x "$bookworm_keyring_package" "$TRIXIE_KEYRING_ROOT"
+readonly TRIXIE_ARCHIVE_KEYRING="$TRIXIE_KEYRING_ROOT/usr/share/keyrings/debian-archive-keyring.gpg"
+[[ -r "$TRIXIE_ARCHIVE_KEYRING" ]] || die 'authenticated Bookworm package lacks the combined Debian archive keyring'
+debian_archive_fingerprints=$(gpg --batch --show-keys --with-colons "$TRIXIE_ARCHIVE_KEYRING" \
+  | awk -F: '$1 == "fpr" { print toupper($10) }' | sort -u)
+grep -Fxq "$TRIXIE_ARCHIVE_SIGNER_A" <<<"$debian_archive_fingerprints" \
+  || die 'pinned Debian archive keyring lacks the required Trixie signer fingerprint A'
+grep -Fxq "$TRIXIE_ARCHIVE_SIGNER_B" <<<"$debian_archive_fingerprints" \
+  || die 'pinned Debian archive keyring lacks the required Trixie signer fingerprint B'
+printf '%s\n' "$debian_archive_fingerprints" >"$evidence_dir/debian-trixie-archive-keyring.fingerprints.txt"
+trixie_archive_keyring_sha256=$(sha256sum "$TRIXIE_ARCHIVE_KEYRING" | awk '{print $1}')
+printf '%s  %s\n' "$(sha256sum "$bookworm_keyring_package" | awk '{print $1}')" "${bookworm_keyring_package##*/}" \
+  >"$evidence_dir/debian-archive-keyring.package.sha256"
+
+write_source_list "$work_dir/debian.sources.list" "$DEBIAN_URI" trixie "$TRIXIE_ARCHIVE_KEYRING"
+record_release_signature "$DEBIAN_URI" trixie "$TRIXIE_ARCHIVE_KEYRING" debian-trixie
+trixie_release_signers=$(cat "$evidence_dir/debian-trixie.signer-fingerprints.txt")
+grep -Fxq "$TRIXIE_ARCHIVE_SIGNER_A" <<<"$trixie_release_signers" \
+  || grep -Fxq "$TRIXIE_ARCHIVE_SIGNER_B" <<<"$trixie_release_signers" \
+  || die 'Trixie InRelease signature is not by either required pinned archive signer'
 record_release_signature "$UBUNTU_URI" jammy-security "$UBUNTU_ARCHIVE_KEYRING" ubuntu-jammy-security
 
 apt_with_state "$work_dir/debian" "$work_dir/debian.sources.list" update
@@ -118,11 +252,11 @@ capture_authenticated_apt_indexes "$work_dir/debian" debian-trixie
 capture_authenticated_apt_indexes "$work_dir/ubuntu" ubuntu-jammy-security
 
 download_source() {
-  local state=$1 sources=$2 version=$3 destination=$4
+  local state=$1 sources=$2 version=$3 destination=$4 name=$5
   (
     cd "$destination"
     apt_with_state "$state" "$sources" source --download-only --only-source "libxml2=$version"
-  )
+  ) >"$evidence_dir/$name.apt-source.log" 2>&1
   local -a dscs=()
   mapfile -t dscs < <(find "$destination" -maxdepth 1 -type f -name 'libxml2_*.dsc' -print | sort)
   [[ ${#dscs[@]} -eq 1 ]] || die "expected one downloaded libxml2 .dsc for $version; found ${#dscs[@]}"
@@ -131,8 +265,8 @@ download_source() {
   printf '%s\n' "${dscs[0]}"
 }
 
-debian_dsc=$(download_source "$work_dir/debian" "$work_dir/debian.sources.list" "$DEBIAN_VERSION" "$debian_dir")
-ubuntu_dsc=$(download_source "$work_dir/ubuntu" "$work_dir/ubuntu.sources.list" "$UBUNTU_VERSION" "$ubuntu_dir")
+debian_dsc=$(download_source "$work_dir/debian" "$work_dir/debian.sources.list" "$DEBIAN_VERSION" "$debian_dir" debian-trixie)
+ubuntu_dsc=$(download_source "$work_dir/ubuntu" "$work_dir/ubuntu.sources.list" "$UBUNTU_VERSION" "$ubuntu_dir" ubuntu-jammy-security)
 
 debian_keyrings=()
 while IFS= read -r keyring; do
@@ -214,6 +348,16 @@ export DEBIAN_DSC_SIGNER="$debian_dsc_fingerprints" UBUNTU_DSC_SIGNER="$ubuntu_d
 export DEBIAN_KEYRING_VERSION="$(dpkg-query -W -f='${Version}' debian-keyring)"
 export DEBIAN_ARCHIVE_KEYRING_VERSION="$(dpkg-query -W -f='${Version}' debian-archive-keyring)"
 export UBUNTU_KEYRING_VERSION="$(dpkg-query -W -f='${Version}' ubuntu-keyring)"
+export BOOKWORM_BOOTSTRAP_SNAPSHOT BOOKWORM_BOOTSTRAP_URI BOOKWORM_INRELEASE_SHA256
+export BOOKWORM_KEYRING_PACKAGE_VERSION BOOKWORM_KEYRING_PACKAGE_SHA256
+export BOOKWORM_KEYRING_FILE_SHA256="$trixie_archive_keyring_sha256"
+export BOOKWORM_RELEASE_SIGNERS="$(paste -sd, "$evidence_dir/debian-bookworm-bootstrap.signer-fingerprints.txt")"
+export BOOKWORM_PACKAGE_SHA256="$bookworm_keyring_package_sha256"
+export BOOKWORM_PACKAGES_INDEX_SHA256="$(awk '{print $1}' "$evidence_dir/debian-bookworm-bootstrap.Packages.apt-cache.sha256")"
+export BOOKWORM_PACKAGES_INDEX_NAME="$(cat "$evidence_dir/debian-bookworm-bootstrap.Packages.apt-cache.name")"
+export PRE_BOOTSTRAP_DEBIAN_ARCHIVE_KEYRING_VERSION="$pre_bootstrap_debian_archive_keyring_version"
+export PRE_BOOTSTRAP_DEBIAN_ARCHIVE_KEYRING_SHA256="$pre_bootstrap_debian_archive_keyring_sha256"
+export TRIXIE_ARCHIVE_SIGNER_FINGERPRINTS="$TRIXIE_ARCHIVE_SIGNER_A,$TRIXIE_ARCHIVE_SIGNER_B"
 export GENERATED_AT_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 python3 - "$output_dir/provenance.json" <<'PY'
@@ -239,11 +383,28 @@ manifest = {
         "authenticatedReleaseMetadata": True,
         "dscSignaturesAndListedHashes": True,
         "ubuntuUploaderFingerprintPinned": os.environ["UBUNTU_DSC_SIGNER"],
-        "keyringPackages": {
+        "runnerInstalledKeyringPackages": {
             "debian-keyring": os.environ["DEBIAN_KEYRING_VERSION"],
             "debian-archive-keyring": os.environ["DEBIAN_ARCHIVE_KEYRING_VERSION"],
             "ubuntu-keyring": os.environ["UBUNTU_KEYRING_VERSION"],
         },
+    },
+    "debianArchiveKeyringBootstrap": {
+        "snapshot": os.environ["BOOKWORM_BOOTSTRAP_SNAPSHOT"],
+        "uri": os.environ["BOOKWORM_BOOTSTRAP_URI"],
+        "suite": "bookworm",
+        "inReleaseSha256": os.environ["BOOKWORM_INRELEASE_SHA256"],
+        "inReleaseSignerFingerprints": os.environ["BOOKWORM_RELEASE_SIGNERS"].split(","),
+        "authenticatedPackagesIndex": {
+            "name": os.environ["BOOKWORM_PACKAGES_INDEX_NAME"],
+            "sha256": os.environ["BOOKWORM_PACKAGES_INDEX_SHA256"],
+        },
+        "keyringPackageVersion": os.environ["BOOKWORM_KEYRING_PACKAGE_VERSION"],
+        "keyringPackageSha256": os.environ["BOOKWORM_PACKAGE_SHA256"],
+        "extractedKeyringSha256": os.environ["BOOKWORM_KEYRING_FILE_SHA256"],
+        "preBootstrapRunnerKeyringPackageVersion": os.environ["PRE_BOOTSTRAP_DEBIAN_ARCHIVE_KEYRING_VERSION"],
+        "preBootstrapRunnerKeyringFileSha256": os.environ["PRE_BOOTSTRAP_DEBIAN_ARCHIVE_KEYRING_SHA256"],
+        "requiredTrixieSignerFingerprints": os.environ["TRIXIE_ARCHIVE_SIGNER_FINGERPRINTS"].split(","),
     },
     "debian": {
         "source": "libxml2",
@@ -254,7 +415,7 @@ manifest = {
         "releaseInReleaseSha256": os.environ["DEBIAN_RELEASE_INRELEASE_SHA256"],
         "releaseSignerFingerprints": os.environ["DEBIAN_RELEASE_SIGNERS"].split(","),
         "aptAuthenticatedSourcesIndexSha256": os.environ["DEBIAN_SOURCES_INDEX_SHA256"],
-        "dscSignerFingerprints": os.environ["DEBIAN_DSC_SIGNER"].split(","),
+        "dscSignerFingerprints": os.environ["DEBIAN_DSC_SIGNER"].splitlines(),
         "sourceArtifacts": files_for("debian-source"),
     },
     "ubuntuJammyPatchSource": {
@@ -266,7 +427,7 @@ manifest = {
         "releaseInReleaseSha256": os.environ["UBUNTU_RELEASE_INRELEASE_SHA256"],
         "releaseSignerFingerprints": os.environ["UBUNTU_RELEASE_SIGNERS"].split(","),
         "aptAuthenticatedSourcesIndexSha256": os.environ["UBUNTU_SOURCES_INDEX_SHA256"],
-        "dscSignerFingerprints": os.environ["UBUNTU_DSC_SIGNER"].split(","),
+        "dscSignerFingerprints": os.environ["UBUNTU_DSC_SIGNER"].splitlines(),
         "sourceArtifacts": files_for("ubuntu-source"),
         "patchPath": os.environ["PATCH_RELATIVE_PATH"],
         "patchSha256": os.environ["PATCH_SHA256"],

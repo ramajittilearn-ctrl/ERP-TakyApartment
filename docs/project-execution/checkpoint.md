@@ -1,6 +1,16 @@
+# Phase 4 continuation checkpoint — 2026-10-28
+
+## Latest libxml2 provenance correction — 2026-10-27T21:24:41Z
+
+PR #2 remains OPEN/Draft at `e6330e60f54237029bc92c201b253b09584ff673`, with `REVIEW_REQUIRED`. Exact-head PR run [40542061770](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40542061770) and push run [40542051970](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40542051970) both passed `required-quality`, `container-verification`, `stage5-runtime-verification`, and synthetic `agent-uat`; `libxml2-source-provenance` failed in both because the runner keyring did not recognize the Trixie InRelease signer. Failure log: PR artifact [12750029331](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40542061770/artifacts/12750029331).
+
+The current uncommitted script correction is designed to authenticate a pinned Bookworm snapshot and package index with the runner's installed Debian archive keyring, downloads and hash-checks `debian-archive-keyring` version `2023.3+deb12u2`, extracts it without installing/downgrading runner packages, requires both pinned Trixie signer fingerprints, and uses that extracted keyring for Trixie signature verification. The initial bootstrap review PASS was superseded by a second cross-review finding: the hash-pinned Bookworm InRelease also carries an unavailable Trixie signature, so strict direct `gpgv` rejected the metadata. The script now delegates signature acceptance to isolated APT verification, pins the exact InRelease hash and byte equality, requires a valid Bookworm signer fingerprint, and rejects any unknown signer outside the explicitly expected Trixie signer. APT must itself accept the signed index, so invalid signatures still fail. The follow-up also isolates `apt-get source` chatter from returned `.dsc` paths and corrects signer-array parsing. Six focused policy fixtures pass. Independent cross-review on model gpt-6-astra returned PASS for the current static trust policy, manifest arrays, and source-output handling; it did not execute the Linux bootstrap. Exact-head hosted CI remains pending.
+
+No Debian/Ubuntu source provenance has passed yet; no patched package or image exists. Continue only in this isolated candidate branch. Operational images, UAT, production, and volumes remain untouched. See [candidate design](../../release-evidence/13-trixie-libxml2-candidate-design-20261027.md).
+
 # Phase 4 continuation checkpoint — 2026-10-27
 
-## Latest verified state — PR head 9ba89d67c324f4354559d66c82e09d071075b077
+## Previous verified state — PR head 9ba89d67c324f4354559d66c82e09d071075b077
 
 PR #2 is OPEN/Draft at `9ba89d67c324f4354559d66c82e09d071075b077`; GitHub reports `REVIEW_REQUIRED` / `BLOCKED`. Exact-head PR CI [40534501256](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40534501256) and push CI [40534495473](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40534495473) passed all four jobs. Both artifacts bind to tree `2957e3a1e23cb7ae094f5441cbd48b3fd763b4b9`; the PR job uses merge checkout `52a0e156108037d7ba47ee2ad65cccbafc37385e`, and push uses the branch head. Independent cross-run review found matching normalized scans and package/restore evidence; image IDs differ across the merge/head builds.
 
