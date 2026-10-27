@@ -310,6 +310,67 @@ docker exec "$probe" node -e \
   "fetch('http://evidence-validator:3835/validate',{method:'POST',headers:{'X-Taky-Validator-Token':'${validator_token:0:63}b'},body:'x'}).then(r=>process.exit(r.status===401?0:1)).catch(()=>process.exit(2))"
 echo "Validator rejects an invalid token with HTTP 401."
 
+docker exec "$app" node --input-type=module -e '
+  import argon2 from "argon2";
+  const hash = await argon2.hash("ci-only-native-module-smoke");
+  if (!(await argon2.verify(hash, "ci-only-native-module-smoke"))) process.exit(1);
+'
+echo "App image loads and exercises the native Argon2 module."
+
+validator_pdf="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-valid.pdf"
+python3 - "$validator_pdf" <<'PY'
+import sys
+from pathlib import Path
+
+output = Path(sys.argv[1])
+parts = [b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n"]
+objects = [
+    b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+    b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+    b"3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 10 10] /Resources << >> /Contents 4 0 R >>\nendobj\n",
+    b"4 0 obj\n<< /Length 4 >>\nstream\nq Q\n\nendstream\nendobj\n",
+]
+offsets = [0]
+for obj in objects:
+    offsets.append(sum(map(len, parts)))
+    parts.append(obj)
+xref_offset = sum(map(len, parts))
+parts.append(f"xref\n0 {len(offsets)}\n".encode())
+parts.append(b"0000000000 65535 f \n")
+for offset in offsets[1:]:
+    parts.append(f"{offset:010d} 00000 n \n".encode())
+parts.append(
+    f"trailer\n<< /Size {len(offsets)} /Root 1 0 R >>\nstartxref\n{xref_offset}\n%%EOF\n".encode()
+)
+output.write_bytes(b"".join(parts))
+PY
+docker cp "$validator_pdf" "$validator:/tmp/phase4-ci-valid.pdf" >/dev/null
+docker exec "$validator" node --input-type=module -e '
+  import { readFile } from "node:fs/promises";
+  import sharp from "sharp";
+  const token = process.env.EVIDENCE_VALIDATOR_TOKEN;
+  const post = async (bytes) => fetch("http://127.0.0.1:3835/validate", {
+    method: "POST",
+    headers: { "x-taky-validator-token": token },
+    body: bytes,
+  });
+  const pdf = await post(await readFile("/tmp/phase4-ci-valid.pdf"));
+  const pdfResult = await pdf.json();
+  if (pdf.status !== 200 || pdfResult.mimeType !== "application/pdf" || pdfResult.valid !== true) {
+    throw new Error(`Alpine qpdf validation failed: ${pdf.status} ${JSON.stringify(pdfResult)}`);
+  }
+  const pngBytes = await sharp({ create: { width: 2, height: 2, channels: 3, background: "#123456" } }).png().toBuffer();
+  const png = await post(pngBytes);
+  const pngResult = await png.json();
+  if (png.status !== 200 || pngResult.mimeType !== "image/png" || pngResult.valid !== true) {
+    throw new Error(`Alpine Sharp validation failed: ${png.status} ${JSON.stringify(pngResult)}`);
+  }
+'
+echo "Validator image accepted synthetic PDF via qpdf and PNG via Sharp over its bounded HTTP service."
+docker exec "$validator" sh -ec \
+  'test -z "$(find /tmp -mindepth 1 -maxdepth 1 -type d -name "taky-validator-*" -print -quit)"'
+echo "Validator removed temporary inputs after successful parsing."
+
 bash scripts/ci/scan-container-images.sh \
   "$app_image" "$validator_image" "$operations_image" "$db_image" "$candidate_db_image" \
   "$revision" "$tree" "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"

@@ -1,5 +1,15 @@
 # Container security remediation — 2026-10-26
 
+## Candidate: Alpine Node base for app and evidence validator
+
+The exact-head scan in run `40436826101` shows eight High IDs and one Unknown ID in each app/validator image, all inherited Debian OS packages from the same pinned Node Trixie base. Neither Dockerfile adds those packages directly. Purging shared/base packages was rejected because scan data alone cannot prove Debian essential dependencies or runtime compatibility. A minimal/distroless runtime was also rejected for this bounded change because the app currently starts migrations, seed, and Next through a shell, while the validator requires qpdf and its linked runtime closure.
+
+The candidate changes only the app and evidence-validator images to the already pinned `node:22.23.4-alpine3.24@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914` image used by the operations build. Builder and runner use the same digest so native modules target the same musl ABI. The app keeps OpenSSL and CA certificates; the validator keeps qpdf and CA certificates. The operational PostgreSQL image and its existing Compose volume identity remain on Trixie.
+
+Independent static review found no tag/digest or obvious package omission, but did not approve the candidate without exact-head runtime evidence. The container verifier now exercises native Argon2 in the app image, and sends synthetic PDF and PNG inputs through the validator's bounded HTTP service to exercise qpdf, Sharp, and temporary-file cleanup. The exact candidate still requires hosted container build/runtime/scan, Stage 5, restore, and Agent UAT checks before it can be considered verified. The verifier does not yet prove app-to-validator evidence-upload authorization or app-side image optimization; these limitations remain explicit.
+
+This is an isolated candidate. It is not a production risk disposition or deployment authorization. Keep the Trixie base and existing volumes unchanged until exact-head checks pass and the remaining security findings have an accepted disposition.
+
 ## Latest exact-source verification — 2026-10-27
 
 PR #2 head `f3b357fec95dd1765e68e1b72410a718f1297efc` passed all four checks in [run 40435165878](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40435165878). The scan [artifact 12704202063](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40435165878/artifacts/12704202063) is from merge checkout `8b6881be94f48630abd0595284d01ded87b17d53`, whose parents are the protected base `89a15a1aa88e8bc1ac42ce38f653448b1a32a645` and that exact PR head. The image sidecars and Trivy SBOM agree on Gosu source commit `6456aaa0f3c854d199d0f037f068eb97515b7513`, digest-pinned Go builder, `github.com/moby/sys/user v0.4.1`, `golang.org/x/sys v0.44.0`, and each digest-pinned PostgreSQL base. CI asserts these labels, while `go version -m` on each extracted binary asserts both embedded module versions. Independent review confirmed the label and binary metadata match.
