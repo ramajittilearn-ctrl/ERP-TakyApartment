@@ -54,6 +54,9 @@ debian_bookworm_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_comp
 debian_bookworm_dockerfile="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.dockerfile)')"
 debian_bookworm_main_snapshot="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.DEBIAN_MAIN_SNAPSHOT)')"
 debian_bookworm_security_snapshot="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.DEBIAN_SECURITY_SNAPSHOT)')"
+debian_bookworm_main_inrelease_sha256="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.BOOKWORM_MAIN_INRELEASE_SHA256)')"
+debian_bookworm_updates_inrelease_sha256="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.BOOKWORM_UPDATES_INRELEASE_SHA256)')"
+debian_bookworm_security_inrelease_sha256="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.BOOKWORM_SECURITY_INRELEASE_SHA256)')"
 debian_bookworm_openssl_version="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.OPENSSL_PACKAGE_VERSION)')"
 debian_bookworm_libssl3_version="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.LIBSSL3_PACKAGE_VERSION)')"
 debian_bookworm_tzdata_version="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.TZDATA_PACKAGE_VERSION)')"
@@ -69,6 +72,9 @@ if [[ "$db_base_image" != postgres:17.11-trixie@sha256:b8faeff7712663c2773a19018
   "$debian_bookworm_dockerfile" != docker/postgres/bookworm-security-candidate.Dockerfile || \
   "$debian_bookworm_main_snapshot" != 20261027T000000Z || \
   "$debian_bookworm_security_snapshot" != 20261027T000000Z || \
+  "$debian_bookworm_main_inrelease_sha256" != 77737fa4b34f2693e982cc9ee35736816c35a7778fc2d326cc1bbf5b301fe1aa || \
+  "$debian_bookworm_updates_inrelease_sha256" != 24f1a123d8081d3c9217fea03b17d71b6e0d814b4c6d1a08c2d856bd28341698 || \
+  "$debian_bookworm_security_inrelease_sha256" != cc4a4805631346888e47fcb5e7ba12c631a35b0aac411ecd44ae3273537f2cf0 || \
   "$debian_bookworm_openssl_version" != 3.0.22-1~deb12u2 || \
   "$debian_bookworm_libssl3_version" != 3.0.22-1~deb12u2 || \
   "$debian_bookworm_tzdata_version" != 2026e-0+deb12u1 ]]; then
@@ -84,6 +90,9 @@ MAIN_COMPOSE_CONFIG="$main_compose_config" ALPINE_COMPOSE_CONFIG="$candidate_com
   DEBIAN_BOOKWORM_DOCKERFILE="$debian_bookworm_dockerfile" \
   DEBIAN_BOOKWORM_MAIN_SNAPSHOT="$debian_bookworm_main_snapshot" \
   DEBIAN_BOOKWORM_SECURITY_SNAPSHOT="$debian_bookworm_security_snapshot" \
+  DEBIAN_BOOKWORM_MAIN_INRELEASE_SHA256="$debian_bookworm_main_inrelease_sha256" \
+  DEBIAN_BOOKWORM_UPDATES_INRELEASE_SHA256="$debian_bookworm_updates_inrelease_sha256" \
+  DEBIAN_BOOKWORM_SECURITY_INRELEASE_SHA256="$debian_bookworm_security_inrelease_sha256" \
   DEBIAN_BOOKWORM_OPENSSL_VERSION="$debian_bookworm_openssl_version" \
   DEBIAN_BOOKWORM_LIBSSL3_VERSION="$debian_bookworm_libssl3_version" \
   DEBIAN_BOOKWORM_TZDATA_VERSION="$debian_bookworm_tzdata_version" \
@@ -93,7 +102,7 @@ MAIN_COMPOSE_CONFIG="$main_compose_config" ALPINE_COMPOSE_CONFIG="$candidate_com
     if (main.name !== expected.mainProject || main.services.db.image !== process.env.MAIN_DB_IMAGE || main.services.db.build.args.POSTGRES_BASE_IMAGE !== process.env.MAIN_DB_BASE_IMAGE || main.services.db.build.dockerfile !== "docker/postgres/Dockerfile" || main.volumes.database.name !== expected.mainVolume) {
       throw new Error(`Operational Compose identity changed: ${JSON.stringify({name: main.name, image: main.services.db.image, baseImage: main.services.db.build.args.POSTGRES_BASE_IMAGE, volume: main.volumes.database.name})}`);
     }
-    const refreshArgs = ["DEBIAN_MAIN_SNAPSHOT", "DEBIAN_SECURITY_SNAPSHOT", "OPENSSL_PACKAGE_VERSION", "LIBSSL3_PACKAGE_VERSION", "TZDATA_PACKAGE_VERSION"];
+    const refreshArgs = ["DEBIAN_MAIN_SNAPSHOT", "DEBIAN_SECURITY_SNAPSHOT", "BOOKWORM_MAIN_INRELEASE_SHA256", "BOOKWORM_UPDATES_INRELEASE_SHA256", "BOOKWORM_SECURITY_INRELEASE_SHA256", "OPENSSL_PACKAGE_VERSION", "LIBSSL3_PACKAGE_VERSION", "TZDATA_PACKAGE_VERSION"];
     if (refreshArgs.some((key) => Object.hasOwn(main.services.db.build.args, key))) throw new Error("Operational Compose must not receive candidate-only Debian refresh inputs");
     const candidates = [
       ["alpine", process.env.ALPINE_COMPOSE_CONFIG, process.env.ALPINE_DB_IMAGE, process.env.ALPINE_DB_BASE_IMAGE, "taky-erp-alpine-candidate", "taky-erp-alpine-candidate-database", "alpine3.24"],
@@ -116,6 +125,9 @@ MAIN_COMPOSE_CONFIG="$main_compose_config" ALPINE_COMPOSE_CONFIG="$candidate_com
         if (build.dockerfile !== process.env.DEBIAN_BOOKWORM_DOCKERFILE ||
           args.DEBIAN_MAIN_SNAPSHOT !== process.env.DEBIAN_BOOKWORM_MAIN_SNAPSHOT ||
           args.DEBIAN_SECURITY_SNAPSHOT !== process.env.DEBIAN_BOOKWORM_SECURITY_SNAPSHOT ||
+          args.BOOKWORM_MAIN_INRELEASE_SHA256 !== process.env.DEBIAN_BOOKWORM_MAIN_INRELEASE_SHA256 ||
+          args.BOOKWORM_UPDATES_INRELEASE_SHA256 !== process.env.DEBIAN_BOOKWORM_UPDATES_INRELEASE_SHA256 ||
+          args.BOOKWORM_SECURITY_INRELEASE_SHA256 !== process.env.DEBIAN_BOOKWORM_SECURITY_INRELEASE_SHA256 ||
           args.OPENSSL_PACKAGE_VERSION !== process.env.DEBIAN_BOOKWORM_OPENSSL_VERSION ||
           args.LIBSSL3_PACKAGE_VERSION !== process.env.DEBIAN_BOOKWORM_LIBSSL3_VERSION ||
           args.TZDATA_PACKAGE_VERSION !== process.env.DEBIAN_BOOKWORM_TZDATA_VERSION) {
@@ -225,6 +237,7 @@ build_postgres_image() {
 build_bookworm_security_candidate_image() {
   local image="$1" base_image="$2" actual_revision actual_tree actual_builder actual_gosu_commit actual_user_module actual_x_sys_module
   local actual_refresh_kind actual_main_snapshot actual_security_snapshot actual_openssl actual_libssl3 actual_tzdata
+  local actual_bookworm_inrelease_sha256 actual_bookworm_updates_inrelease_sha256 actual_security_inrelease_sha256
   docker build --pull --platform linux/amd64 \
     --build-arg "GOSU_BUILDER_IMAGE=$gosu_builder_image" \
     --build-arg "GOSU_COMMIT=$gosu_commit" \
@@ -233,6 +246,9 @@ build_bookworm_security_candidate_image() {
     --build-arg "POSTGRES_BASE_IMAGE=$base_image" \
     --build-arg "DEBIAN_MAIN_SNAPSHOT=$debian_bookworm_main_snapshot" \
     --build-arg "DEBIAN_SECURITY_SNAPSHOT=$debian_bookworm_security_snapshot" \
+    --build-arg "BOOKWORM_MAIN_INRELEASE_SHA256=$debian_bookworm_main_inrelease_sha256" \
+    --build-arg "BOOKWORM_UPDATES_INRELEASE_SHA256=$debian_bookworm_updates_inrelease_sha256" \
+    --build-arg "BOOKWORM_SECURITY_INRELEASE_SHA256=$debian_bookworm_security_inrelease_sha256" \
     --build-arg "OPENSSL_PACKAGE_VERSION=$debian_bookworm_openssl_version" \
     --build-arg "LIBSSL3_PACKAGE_VERSION=$debian_bookworm_libssl3_version" \
     --build-arg "TZDATA_PACKAGE_VERSION=$debian_bookworm_tzdata_version" \
@@ -248,6 +264,9 @@ build_bookworm_security_candidate_image() {
   actual_refresh_kind="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.kind"}}' "$image")"
   actual_main_snapshot="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.main-snapshot"}}' "$image")"
   actual_security_snapshot="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.security-snapshot"}}' "$image")"
+  actual_bookworm_inrelease_sha256="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.bookworm-inrelease-sha256"}}' "$image")"
+  actual_bookworm_updates_inrelease_sha256="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.bookworm-updates-inrelease-sha256"}}' "$image")"
+  actual_security_inrelease_sha256="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.security-inrelease-sha256"}}' "$image")"
   actual_openssl="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.openssl"}}' "$image")"
   actual_libssl3="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.libssl3"}}' "$image")"
   actual_tzdata="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.security-refresh.tzdata"}}' "$image")"
@@ -259,6 +278,9 @@ build_bookworm_security_candidate_image() {
     && "$actual_refresh_kind" == bookworm-openssl-tzdata \
     && "$actual_main_snapshot" == "$debian_bookworm_main_snapshot" \
     && "$actual_security_snapshot" == "$debian_bookworm_security_snapshot" \
+    && "$actual_bookworm_inrelease_sha256" == "$debian_bookworm_main_inrelease_sha256" \
+    && "$actual_bookworm_updates_inrelease_sha256" == "$debian_bookworm_updates_inrelease_sha256" \
+    && "$actual_security_inrelease_sha256" == "$debian_bookworm_security_inrelease_sha256" \
     && "$actual_openssl" == "$debian_bookworm_openssl_version" \
     && "$actual_libssl3" == "$debian_bookworm_libssl3_version" \
     && "$actual_tzdata" == "$debian_bookworm_tzdata_version" ]]
@@ -533,6 +555,7 @@ bookworm_dpkg_after_sha="$(sha256sum "$bookworm_refresh_evidence_dir/dpkg-after.
 bookworm_dpkg_allowed_delta_sha="$(sha256sum "$bookworm_refresh_evidence_dir/dpkg-allowed-delta.tsv" | awk '{print $1}')"
 bookworm_apt_sources_sha="$(sha256sum "$bookworm_refresh_evidence_dir/apt-sources.sources" | awk '{print $1}')"
 bookworm_apt_policy_sha="$(sha256sum "$bookworm_refresh_evidence_dir/apt-policy.txt" | awk '{print $1}')"
+bookworm_inrelease_manifest_sha="$(sha256sum "$bookworm_refresh_evidence_dir/inrelease-sha256.tsv" | awk '{print $1}')"
 jq -n \
   --arg image "$debian_bookworm_db_image" \
   --arg imageId "$bookworm_image_id" \
@@ -542,6 +565,9 @@ jq -n \
   --arg baseImage "$debian_bookworm_db_base_image" \
   --arg mainSnapshot "$debian_bookworm_main_snapshot" \
   --arg securitySnapshot "$debian_bookworm_security_snapshot" \
+  --arg mainInReleaseSha256 "$debian_bookworm_main_inrelease_sha256" \
+  --arg updatesInReleaseSha256 "$debian_bookworm_updates_inrelease_sha256" \
+  --arg securityInReleaseSha256 "$debian_bookworm_security_inrelease_sha256" \
   --arg opensslVersion "$debian_bookworm_openssl_version" \
   --arg libssl3Version "$debian_bookworm_libssl3_version" \
   --arg tzdataVersion "$debian_bookworm_tzdata_version" \
@@ -550,8 +576,9 @@ jq -n \
   --arg dpkgAllowedDeltaSha256 "$bookworm_dpkg_allowed_delta_sha" \
   --arg aptSourcesSha256 "$bookworm_apt_sources_sha" \
   --arg aptPolicySha256 "$bookworm_apt_policy_sha" \
+  --arg inreleaseManifestSha "$bookworm_inrelease_manifest_sha" \
   --arg trivyDbSha256 "$bookworm_trivy_db_sha" \
-  '{image:$image,imageId:$imageId,platform:$platform,sourceRevision:$sourceRevision,sourceTree:$sourceTree,baseImage:$baseImage,mainSnapshot:$mainSnapshot,securitySnapshot:$securitySnapshot,requestedPackages:{openssl:$opensslVersion,libssl3:$libssl3Version,tzdata:$tzdataVersion},evidenceSha256:{dpkgBefore:$dpkgBeforeSha256,dpkgAfter:$dpkgAfterSha256,dpkgAllowedDelta:$dpkgAllowedDeltaSha256,aptSources:$aptSourcesSha256,aptPolicy:$aptPolicySha256},trivyDbSha256:$trivyDbSha256}' \
+  '{image:$image,imageId:$imageId,platform:$platform,sourceRevision:$sourceRevision,sourceTree:$sourceTree,baseImage:$baseImage,mainSnapshot:$mainSnapshot,securitySnapshot:$securitySnapshot,inReleaseSha256:{bookworm:$mainInReleaseSha256,bookwormUpdates:$updatesInReleaseSha256,bookwormSecurity:$securityInReleaseSha256},requestedPackages:{openssl:$opensslVersion,libssl3:$libssl3Version,tzdata:$tzdataVersion},evidenceSha256:{dpkgBefore:$dpkgBeforeSha256,dpkgAfter:$dpkgAfterSha256,dpkgAllowedDelta:$dpkgAllowedDeltaSha256,aptSources:$aptSourcesSha256,aptPolicy:$aptPolicySha256,inReleaseManifest:$inreleaseManifestSha},trivyDbSha256:$trivyDbSha256}' \
   > "$bookworm_refresh_evidence_dir/image-scan-binding.json"
 
 gosu_report_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
