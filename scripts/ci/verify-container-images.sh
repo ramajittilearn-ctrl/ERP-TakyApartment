@@ -26,6 +26,7 @@ attachments_volume="${project}-attachments"
 app_image="taky-ci-app:${project}"
 validator_image="taky-ci-validator:${project}"
 operations_image="taky-ci-operations:${project}"
+gosu_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-gosu"
 validator_token="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 database_password="ci_synthetic_password_only"
 
@@ -92,6 +93,7 @@ cleanup() {
   local exit_status=$? cleanup_failed=0 name
   trap - EXIT
   set +e
+  rm -f -- "$gosu_binary"
   for name in "$app" "$validator" "$database" "$probe"; do
     remove_owned_resource container "$name" || cleanup_failed=1
   done
@@ -281,3 +283,14 @@ echo "Validator rejects an invalid token with HTTP 401."
 bash scripts/ci/scan-container-images.sh \
   "$app_image" "$validator_image" "$operations_image" "$candidate_db_image" \
   "$revision" "$tree" "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
+
+gosu_database_image_id="$(docker image inspect --format '{{.Id}}' "$candidate_db_image")"
+docker run --rm --platform linux/amd64 --entrypoint sh "$candidate_db_image" -ec \
+  'cat /usr/local/bin/gosu' > "$gosu_binary"
+[[ "$(docker image inspect --format '{{.Id}}' "$candidate_db_image")" == "$gosu_database_image_id" ]]
+gosu_report_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
+printf 'Extracted gosu from image %s (%s)\n' "$candidate_db_image" "$gosu_database_image_id"
+printf '%s\n' '- Separate exact-binary Go reachability analysis is recorded in `gosu-govulncheck.txt`; it does not modify or suppress the raw Trivy reports.' >> "$gosu_report_dir/README.md"
+bash scripts/ci/check-gosu-binary-vulnerabilities.sh \
+  "$gosu_binary" "$candidate_db_image" "$gosu_database_image_id" \
+  "$gosu_report_dir/gosu-govulncheck.txt"
