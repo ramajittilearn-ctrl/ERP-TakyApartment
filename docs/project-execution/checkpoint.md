@@ -1,5 +1,23 @@
 # Production Go-Live continuation checkpoint — 2026-10-26
 
+# Current continuation checkpoint — 2026-10-27 (patched Gosu verified)
+
+## Exact integration state
+
+- PR #2 is OPEN/Draft from `codex/phase4-current-source-20261026` into protected `release/phase4`. Source head `876356b40e3ec77c5ed87bd114e1cb6f2c9bb816`. Push workflow `40432041638` passed quality, container verification, Stage 5, and Agent UAT. PR workflow `40432048656` had quality and container verification passed; Stage 5 and Agent UAT were still running at this checkpoint.
+- Container artifact `12701918281` matches the exact source SHA. Patched Gosu passed exact-binary `govulncheck` in both Trixie and Alpine derivatives. Agent UAT artifact `12703320519` reports 90 passed, zero failed/skipped/flaky, including rent entered after room selection surviving save/reload. This is synthetic Agent UAT; no Owner acceptance is claimed.
+- Residual findings: Trixie DB 1 Critical/16 High, including `CVE-2026-6653`; Alpine DB zero Critical/High/Medium/Low plus one Unknown; app and validator each eight High IDs. Remediation or explicit risk disposition remains open. The existing operational Trixie stack/volume were preserved; Alpine is isolated.
+- No image publication, merge, production deployment, or production data mutation occurred.
+
+## Remaining release gates
+
+1. Finish the current PR workflow and verify fresh exact-head CI after publishing this evidence update.
+2. Resolve or formally disposition remaining image findings and obtain the required independent PR approval.
+3. Establish production host, canonical origin, access model, and service ownership.
+4. Complete target-specific backup/restore, migration, rollback, and off-device backup/key recovery; publish/pull source-matched images only after release gates pass.
+
+Production remains **NO-GO** for cutover.
+
 > **Current-state pointer:** authoritative current state is in the latest dated checkpoint immediately below. Older checkpoints are historical snapshots; their pending/complete statements are superseded by that checkpoint.
 
 # Current continuation checkpoint — 2026-10-27 (Alpine image isolation)
