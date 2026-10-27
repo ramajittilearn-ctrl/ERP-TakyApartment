@@ -293,12 +293,18 @@ fi
 # Keep a text index in the dump so restore rebuilds it using the target
 # database's collation instead of reusing source index pages.
 docker exec -i "$source_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_ci <<'SQL'
-CREATE TABLE ci_collation_probe (value text NOT NULL);
-INSERT INTO ci_collation_probe(value) VALUES ('A'), ('a'), ('b'), ('é'), ('ภาษาไทย');
+CREATE TABLE ci_collation_probe (id smallint PRIMARY KEY, value text NOT NULL);
+INSERT INTO ci_collation_probe(id, value) VALUES
+  (1, 'A'), (2, 'a'), (3, 'b'), (4, 'B'), (5, 'á'), (6, 'á'),
+  (7, 'ä'), (8, 'Å'), (9, 'é'), (10, 'é'), (11, 'ø'),
+  (12, '1'), (13, '10'), (14, '2'), (15, 'ก'), (16, 'กา'),
+  (17, 'กิ'), (18, 'ไทย'), (19, 'ภาษาไทย');
 CREATE INDEX ci_collation_probe_value_idx ON ci_collation_probe(value);
 SQL
 source_probe_values="$(docker exec "$source_db" psql -U taky_ci -d taky_ci -Atc \
-  "SELECT string_agg(value, '|' ORDER BY value COLLATE \"C\") FROM ci_collation_probe")"
+  "SELECT string_agg(id::text, ',' ORDER BY value, id) FROM ci_collation_probe")"
+source_probe_comparisons="$(docker exec "$source_db" psql -U taky_ci -d taky_ci -Atc \
+  "SELECT string_agg(format('%s,%s,%s,%s', left_row.id, right_row.id, left_row.value < right_row.value, left_row.value = right_row.value), ';' ORDER BY left_row.id, right_row.id) FROM ci_collation_probe AS left_row CROSS JOIN ci_collation_probe AS right_row")"
 
 # Seed one synthetic Attachment owner graph in the isolated source database so
 # restore verification covers both database metadata and the matching file.
@@ -435,9 +441,15 @@ docker exec "$restore_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_restore_tes
   -c 'BEGIN; SET LOCAL enable_seqscan=off; EXPLAIN (ANALYZE, COSTS OFF, SUMMARY OFF, TIMING OFF) SELECT value FROM ci_collation_probe ORDER BY value; COMMIT' \
   | grep -E 'Index( Only)? Scan using ci_collation_probe_value_idx' >/dev/null
 restored_probe_values="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc \
-  "SELECT string_agg(value, '|' ORDER BY value COLLATE \"C\") FROM ci_collation_probe")"
+  "SELECT string_agg(id::text, ',' ORDER BY value, id) FROM ci_collation_probe")"
 if [[ "$restored_probe_values" != "$source_probe_values" || -z "$restored_probe_values" ]]; then
-  echo "Restored collation probe data mismatch: source=$source_probe_values target=$restored_probe_values" >&2
+  echo "Source/restore default-collation order differs for the synthetic probe: source=$source_probe_values target=$restored_probe_values" >&2
+  exit 1
+fi
+restored_probe_comparisons="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc \
+  "SELECT string_agg(format('%s,%s,%s,%s', left_row.id, right_row.id, left_row.value < right_row.value, left_row.value = right_row.value), ';' ORDER BY left_row.id, right_row.id) FROM ci_collation_probe AS left_row CROSS JOIN ci_collation_probe AS right_row")"
+if [[ "$restored_probe_comparisons" != "$source_probe_comparisons" || -z "$restored_probe_comparisons" ]]; then
+  echo "Source/restore default-collation comparisons differ for the synthetic probe" >&2
   exit 1
 fi
 indexed_collation_rows="$(docker exec "$restore_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_restore_test -qAtc \
@@ -445,7 +457,7 @@ indexed_collation_rows="$(docker exec "$restore_db" psql -v ON_ERROR_STOP=1 -U t
 indexed_collation_count="$(printf '%s\n' "$indexed_collation_rows" | wc -l | tr -d ' ' )"
 sequential_collation_rows="$(docker exec "$restore_db" psql -v ON_ERROR_STOP=1 -U taky_ci -d taky_restore_test -qAtc \
   'BEGIN; SET LOCAL enable_indexscan=off; SET LOCAL enable_indexonlyscan=off; SELECT value FROM ci_collation_probe ORDER BY value; COMMIT')"
-if [[ "$indexed_collation_count" != 5 || "$indexed_collation_rows" != "$sequential_collation_rows" ]]; then
+if [[ "$indexed_collation_count" != 19 || "$indexed_collation_rows" != "$sequential_collation_rows" ]]; then
   echo "Restored collation index did not return all values: $indexed_collation_rows" >&2
   echo "Sequentially sorted target values were: $sequential_collation_rows" >&2
   exit 1
@@ -483,4 +495,4 @@ restored_fixture="$(docker run --rm --platform linux/amd64 --label "$ownership_l
 node -e 'const f=JSON.parse(process.argv[1]);if(f.bytes!==Number(process.argv[2])||f.sha256!==process.argv[3])throw new Error(`Restored attachment bytes mismatch: ${JSON.stringify(f)}`)' \
   "$restored_fixture" "$fixture_bytes" "$fixture_sha"
 
-echo "Synthetic remote upload, read-back, and isolated cross-image restore passed: source=$source_db_image target=$target_db_image; locales (provider|locale|ctype|recorded-version|actual-version)=$source_collation->$target_collation; 15 rooms, valid rebuilt indexes, and executed collation index returned 5 rows; Attachment metadata owner links and attachment SHA-256 $fixture_sha."
+echo "Synthetic remote upload, read-back, and isolated cross-image restore passed: source=$source_db_image target=$target_db_image; locales (provider|locale|ctype|recorded-version|actual-version)=$source_collation->$target_collation; source/target default-collation order and pairwise comparisons match for a 19-value probe; 15 rooms, valid rebuilt indexes, and executed collation index returned 19 rows; Attachment metadata owner links and attachment SHA-256 $fixture_sha. This finite synthetic probe does not prove production-wide collation compatibility."

@@ -1,5 +1,11 @@
 # Stage 7 — Independent Release Audit
 
+## Collation scope correction — current container evidence reviewed 2026-10-27
+
+Independent reviewers inspected exact PR run `40453138452` container logs and `scripts/ci/verify-operations-backup-restore.sh`. The source Trixie locale record was `c|en_US.utf8|en_US.utf8|2.41|2.41`, the Bookworm source was `c|en_US.utf8|en_US.utf8|2.36|2.36`, and the Alpine restore target reported the same locale and ctype names with empty recorded and actual collation versions. The prior test recorded but did not compare those fields. It compared a source probe ordered under explicit `COLLATE "C"` and only checked index-vs-sequential behavior inside the restored target.
+
+This limits the claim supported by the green container job: synthetic records and attachment metadata were restored, and the target rebuilt and used its probe index. It does not prove that source and Alpine target apply identical default-collation ordering or equality behavior to production text. A follow-up changes the CI probe to compare default-collation order and pairwise comparisons across 19 representative synthetic strings. Verification of that follow-up is pending on a new exact-head workflow. A passing finite probe will still not establish production-wide compatibility; an exact-target protected-clone restore rehearsal remains required. Alpine database migration remains unsupported for production pending that evidence; do not reuse a Trixie/Bookworm data volume with Alpine.
+
 ## Independent audit — current candidate head 70ae656 (2026-10-27)
 
 **Verdict: NO-GO for production cutover.** The following was independently checked against the current PR/push runs, downloadable artifacts, scan data and current release/target records. The verifier did not implement the candidate changes.
