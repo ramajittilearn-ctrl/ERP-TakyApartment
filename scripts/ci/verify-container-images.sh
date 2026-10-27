@@ -168,8 +168,7 @@ for source_db_image in "$legacy_trixie_db_image" "$legacy_bookworm_db_image"; do
   fi
 done
 if [[ "$restore_probe_failures" != 0 ]]; then
-  echo "At least one source-to-Alpine restore probe failed; this database candidate must not be used to migrate production data." >&2
-  exit 1
+  echo "At least one source-to-Alpine restore probe failed; continuing isolated runtime and image scans before failing this verification." >&2
 fi
 
 docker run --rm --platform linux/amd64 --entrypoint sh "$app_image" -ec '
@@ -413,3 +412,8 @@ bash scripts/ci/check-rclone-source-vulnerabilities.sh \
   "$revision" "$tree" \
   "$gosu_report_dir/rclone-source-govulncheck.txt"
 printf '%s\n' '- Exact-binary govulncheck output is retained as diagnostic evidence; source-mode govulncheck gates the checksum-verified rclone release source and vendor tree under the same Linux/amd64, CGO-disabled, vendored build configuration. Neither replaces or suppresses raw Trivy reports.' >> "$gosu_report_dir/README.md"
+
+if [[ "$restore_probe_failures" != 0 ]]; then
+  echo "At least one source-to-Alpine restore probe failed; this database candidate must not be used to migrate production data." >&2
+  exit 1
+fi
