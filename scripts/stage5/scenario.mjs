@@ -464,11 +464,11 @@ const invoicePdf = await downloadPdf(
   `Invoice_${invoice.number}.pdf`,
   "invoice.pdf",
 );
-const invoicePdfText = execFileSync(
-  "pdftotext",
-  [join(artifactDir, invoicePdf.file), "-"],
-  { encoding: "utf8" },
-);
+const extractPdfText = (pdf) =>
+  execFileSync("pdftotext", ["-layout", join(artifactDir, pdf.file), "-"], {
+    encoding: "utf8",
+  });
+const invoicePdfText = extractPdfText(invoicePdf);
 const invoicePdfLayout = execFileSync(
   "pdftotext",
   ["-bbox-layout", join(artifactDir, invoicePdf.file), "-"],
@@ -623,6 +623,7 @@ const receiptPdf = await downloadPdf(
   `Receipt_${receipt.number}.pdf`,
   "receipt.pdf",
 );
+const receiptPdfText = extractPdfText(receiptPdf);
 
 const receiptLabels = globalThis.structuredClone(
   receipt.snapshot.invoices[0].labels,
@@ -728,6 +729,41 @@ const receiptPdfAfterSourceChange = await downloadPdf(
   staffSession.cookie,
   `Receipt_${receipt.number}.pdf`,
   "receipt-after-source-change.pdf",
+);
+const invoicePdfTextAfterSourceChange = extractPdfText(
+  invoicePdfAfterSourceChange,
+);
+const invoicePdfLayoutAfterSourceChange = execFileSync(
+  "pdftotext",
+  [
+    "-bbox-layout",
+    join(artifactDir, invoicePdfAfterSourceChange.file),
+    "-",
+  ],
+  { encoding: "utf8" },
+);
+const receiptPdfTextAfterSourceChange = extractPdfText(
+  receiptPdfAfterSourceChange,
+);
+assert.equal(
+  invoicePdfTextAfterSourceChange,
+  invoicePdfText,
+  "invoice PDF extracted text must remain stable after live-source changes",
+);
+assert.equal(
+  invoicePdfLayoutAfterSourceChange,
+  invoicePdfLayout,
+  "invoice PDF text layout must remain stable after live-source changes",
+);
+assert.equal(
+  receiptPdfTextAfterSourceChange,
+  receiptPdfText,
+  "receipt PDF extracted text must remain stable after live-source changes",
+);
+check(
+  "post-issue invoice and receipt PDF content/layout remain stable after live-source changes",
+  true,
+  "invoice text and layout plus receipt text match their pre-mutation output; PDF creation metadata is excluded",
 );
 check(
   "post-issue live tenant/property/room/lease changes preserve invoice and receipt snapshots, labels, and totals",
