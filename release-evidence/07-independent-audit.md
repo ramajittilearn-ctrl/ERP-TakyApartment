@@ -1,5 +1,11 @@
 # Stage 7 — Independent Release Audit
 
+## Exact-head cross-image collation result — commit f341ddc (2026-10-27)
+
+After adding a default-collation probe, exact push run [40455012271](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40455012271) and PR run [40455018688](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40455018688) both passed `required-quality` and `stage5-runtime-verification`, but failed `container-verification`. The source was pinned PostgreSQL 17.11 Trixie and the restore target was the pinned Alpine PostgreSQL candidate. CI recorded source collation `c|en_US.utf8|en_US.utf8|2.41|2.41` and Alpine target `c|en_US.utf8|en_US.utf8||`; the 19-value default-collation order differed (`source=12,13,14,2,1,6,5,8,7,3,4,10,9,11,15,16,17,18,19`, `target=12,13,14,1,4,2,6,3,10,8,5,7,9,11,15,16,17,19,18`). This proves the two tested images do not order this synthetic corpus identically. Agent UAT was skipped because its job depended on container verification; a workflow change now makes it depend on quality only and awaits CI.
+
+The Alpine database candidate is **not suitable for Trixie-to-Alpine data migration under the tested locale**. The exact owner production database is still unidentified, so this does not prove behavior on that unknown target; it is sufficient to reject the current cross-image migration claim. A follow-up makes the CI runner execute both Trixie and Bookworm source probes and preserves a failing required container check if either source differs. Do not adapt the expected ordering or reuse the source data volume to force a pass. Keep production NO-GO pending an exact target and a compatible database plan.
+
 ## Collation scope correction — current container evidence reviewed 2026-10-27
 
 Independent reviewers inspected exact PR run `40453138452` container logs and `scripts/ci/verify-operations-backup-restore.sh`. The source Trixie locale record was `c|en_US.utf8|en_US.utf8|2.41|2.41`, the Bookworm source was `c|en_US.utf8|en_US.utf8|2.36|2.36`, and the Alpine restore target reported the same locale and ctype names with empty recorded and actual collation versions. The prior test recorded but did not compare those fields. It compared a source probe ordered under explicit `COLLATE "C"` and only checked index-vs-sequential behavior inside the restored target.

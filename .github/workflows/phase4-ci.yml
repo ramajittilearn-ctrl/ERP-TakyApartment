@@ -150,7 +150,7 @@ jobs:
   agent-uat:
     name: agent-uat
     runs-on: ubuntu-24.04
-    needs: container-verification
+    needs: required-quality
     timeout-minutes: 45
     permissions:
       contents: read

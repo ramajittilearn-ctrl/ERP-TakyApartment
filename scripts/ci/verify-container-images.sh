@@ -159,8 +159,18 @@ echo "Building isolated Alpine PostgreSQL candidate derivative"
 build_postgres_image "$candidate_db_image" "$candidate_db_base_image"
 legacy_trixie_db_image="postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
 legacy_bookworm_db_image="postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27"
-bash scripts/ci/verify-operations-backup-restore.sh "$operations_image" "$app_image" "$candidate_db_image" "$legacy_trixie_db_image"
-bash scripts/ci/verify-operations-backup-restore.sh "$operations_image" "$app_image" "$candidate_db_image" "$legacy_bookworm_db_image"
+restore_probe_failures=0
+for source_db_image in "$legacy_trixie_db_image" "$legacy_bookworm_db_image"; do
+  if ! bash scripts/ci/verify-operations-backup-restore.sh \
+    "$operations_image" "$app_image" "$candidate_db_image" "$source_db_image"; then
+    echo "Source-to-Alpine restore/collation verification failed for $source_db_image" >&2
+    restore_probe_failures=1
+  fi
+done
+if [[ "$restore_probe_failures" != 0 ]]; then
+  echo "At least one source-to-Alpine restore probe failed; this database candidate must not be used to migrate production data." >&2
+  exit 1
+fi
 
 docker run --rm --platform linux/amd64 --entrypoint sh "$app_image" -ec '
   ! command -v npm >/dev/null
