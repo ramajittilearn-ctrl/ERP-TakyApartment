@@ -1,5 +1,34 @@
 # Stage 7 — Independent Release Audit
 
+## Independent audit — current candidate head 70ae656 (2026-10-27)
+
+**Verdict: NO-GO for production cutover.** The following was independently checked against the current PR/push runs, downloadable artifacts, scan data and current release/target records. The verifier did not implement the candidate changes.
+
+### Verified current facts
+
+- PR run [40450971948](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450971948) and push run [40450966334](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450966334) are complete and pass all four required jobs at source SHA `70ae6569c136d1b93f9f56bdcf92db823832471a`.
+- Stage 5 artifacts [12710876314](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450971948/artifacts/12710876314) and [12710797148](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450966334/artifacts/12710797148) bind to the same tree, pass 52 checks and validate 17 migrations. Synthetic rent is 1000.00; utilities are 20.0050 and 30.0050, total 1050.01; displayed lines reconcile with -0.01. Payment, allocation and receipt match. Invoice/receipt snapshots stay stable, unauthorized receipt PDF returns 401, and normalized extracted PDF text/layout stays stable. The receipt PDF hash matches; the invoice PDF hash differs because its CreationDate metadata changes. The harness normalizes only that volatile metadata before comparing layout. The independent reviewer visually inspected all four rendered pages and found Thai/baht readable with no clipping.
+- Agent UAT artifact [12709979361](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450966334/artifacts/12709979361) and PR artifact [12710534170](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450971948/artifacts/12710534170) report 90 passed, 0 failed, skipped, flaky or retries. The independent UAT review confirms the rent persistence cases include request payload, saved UI/API state and post-reload state. All UAT data is isolated and synthetic.
+- Scan artifact [12710592882](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450966334/artifacts/12710592882) is source/tree-bound. App, validator and Alpine database candidate have zero findings; Alpine operations retains Unknown `GO-2026-5932`. The operational Trixie database has 1 Critical (`CVE-2026-6653`), 16 High, 38 Medium, 61 Low and 1 Unknown. Debian's [security tracker](https://security-tracker.debian.org/tracker/CVE-2026-6653) currently lists the Trixie package as vulnerable with `<no-dsa> (Minor issue)`; its fixed version is listed only for unstable. This distro disposition and Trivy's Critical rating are distinct evidence, and neither is an owner risk acceptance. Pinned chi v5.4.0 removes `CVE-2026-114437` without changing other IDs versus the preceding scan on the same Trivy DB.
+- These are hosted CI candidate builds and synthetic recovery/UAT results. No current candidate image is published or proven pullable from a target host.
+
+### Findings
+
+| Severity | Finding | Evidence / disposition |
+|---|---|---|
+| BLOCKER | Exact production target, canonical HTTPS origin, Docker project, volumes and service owner are not established. Broad Go-Live authorization exists, but no identified target/release is available to bind it to. | Stage 2 records the inspected Mac as development-only and notes address mismatch; attached Go-Live instructions require exact target authorization before mutation. |
+| BLOCKER | Target-schema backup/restore, no-seed migration rehearsal, rollback, HTTPS trust, volume ownership and off-device key recovery are unverified. | Stages 3–4 are synthetic/fresh-database evidence only; there is no designated target clone. Do not migrate or start production services. |
+| BLOCKER | PR #2 remains OPEN/Draft and requires one independent approving review; protected `release/phase4` and RC1 tag remain at `89a15a1`. | GitHub reports `REVIEW_REQUIRED`; no approval is recorded. Candidate is not merged or released. |
+| HIGH | Operational Trixie DB retains one Critical and 16 High findings; no risk acceptance or safe database-image change is established. | Raw Trivy results remain open. Alpine restore/source collation compatibility is not proven for a real target. |
+| HIGH | Raw `GO-2026-5932` remains in the operations image. | Source/unstripped analysis indicates the legacy affected path is not called, but the raw scan finding remains and has no owner disposition. |
+| MEDIUM | Stage 7–10 evidence was incomplete or stale before this update. | Current audit and cutover/post-deployment/closure reports are added in this docs update; they record NO-GO, not completed deployment. |
+
+### Independent recommendation
+
+Keep PR #2 Draft and production unchanged. Safe work may continue on security remediation, reproducible evidence, release documentation and exact-target discovery. Before cutover, resolve or formally disposition image findings; establish and attest the exact target and bind the existing Go-Live authorization to that scope; rehearse a schema-matched backup/restore, no-seed migration and rollback; verify HTTPS, ownership and off-device recovery; obtain the required PR review; merge/release and publish immutable source-matched images; verify pullability. Only then execute cutover and post-deployment checks. No production GO or Owner acceptance is claimed.
+
+
+
 **Audit status:** The detailed audit body below is historical and assessed PR source commit `3d5db3cbae5f16532a3f1e37c7dfe33026c6a966`. Current evidence addenda for runs `40356454371`, `40360707470`, `40362968827`, `40365071119`, and `40398283420` follow and were independently cross-reviewed for evidence/source accuracy; they do not replace or extend the old detailed code-level audit findings beyond the evidence listed in those addenda.
 
 ## Documentation-only exact-head CI follow-up — run 40401983977

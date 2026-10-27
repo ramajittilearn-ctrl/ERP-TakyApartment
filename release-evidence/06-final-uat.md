@@ -1,6 +1,10 @@
 # Agent-run Phase 4 UAT
 
-**Latest Agent UAT:** PASS on PR head `1715628a562f809f766840463aabf8c78e49761e` in [run 40447771982](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40447771982). Artifact [12709477425](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40447771982/artifacts/12709477425) reports 90 passed, 0 failed, 0 skipped, and 0 flaky; browser run `6be217e71b87a3c68942d88f`. It includes both `tenant rent entered after room selection survives immediate save and reload` and `tenant contract rent survives room selection, save, reload and reselect`. Run scope is an isolated Ubuntu synthetic-data browser suite against the source-built standalone app. The container images are exercised separately in the same workflow's container-verification job. This is not Owner acceptance or production verification.
+**Latest completed exact-head Agent UAT:** PASS on `70ae6569c136d1b93f9f56bdcf92db823832471a` in push [run 40450966334](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450966334), artifact [12709979361](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450966334/artifacts/12709979361). It reports 90 passed, 0 failed, 0 skipped, 0 flaky, with checkout commit equal to PR head. PR workflow [40450971948](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450971948) also passed. This is isolated synthetic browser UAT, not Owner acceptance or production verification.
+
+The latest run includes the rent-after-room-selection/save/reload test, the 4100.75 rent-through-reselection test, and checks that unassigned tenants do not gain a rent and explicit zero remains zero. Independent review verified exact source binding, 90 passed with 0 failures/skips/flakes/retries, and those regression cases. See the coverage matrix and limits below; backup/restore and Thai PDF verification are separate CI evidence, not part of the 90 browser tests.
+
+Prior completed UAT artifact [12709477425](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40447771982/artifacts/12709477425) reports 90 passed, 0 failed, 0 skipped, and 0 flaky; browser run `6be217e71b87a3c68942d88f`. It includes both `tenant rent entered after room selection survives immediate save and reload` and `tenant contract rent survives room selection, save, reload and reselect`. Run scope is an isolated Ubuntu synthetic-data browser suite against the source-built standalone app. The container images are exercised separately in the same workflow's container-verification job. This is not Owner acceptance or production verification.
 
 **Prior Agent UAT:** PASS on PR head `f3b357fec95dd1765e68e1b72410a718f1297efc` in [run 40435165878](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40435165878). Artifact [12703927527](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40435165878/artifacts/12703927527) reports 90 passed, 0 failed, 0 skipped, 0 flaky (browser run `5f5555f3b013905e1e6aff8d`). It includes `tenant rent entered after room selection survives immediate save and reload`. This is isolated synthetic Agent UAT, not Owner acceptance or production verification.
 
@@ -8,7 +12,7 @@
 
 **Owner UAT:** Not performed. The Owner delegated UAT execution and requested a report.
 
-## Latest PR CI run
+## Prior PR CI run — 40401983977
 
 - Workflow: [Phase 4 CI run 40401983977, attempt 2](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977); PR head `87c3ec827da110afb3cf547398708b408556fff6`; merge checkout `df63cab9244bf4464156e9aa1afe6159bd372e8a`.
 - Result: `required-quality`, `container-verification`, `stage5-runtime-verification`, and `agent-uat` all passed. Agent UAT artifact [12692774142](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977/artifacts/12692774142) records 90 passed, 0 failed, 0 skipped, 0 flaky (browser run `96c9e04dd766d9072c80a0da`). The scenario `tenant rent entered after room selection survives immediate save and reload` passed.
@@ -78,6 +82,21 @@ The browser suite exercised room, property, floor, tenant, and lease workflows, 
 The shell-mode test verified that Dashboard and Reports are labeled read-only, database-backed pages are labeled persisted, and Maintenance and Settings are labeled demo-only. It also covered Deposits and a Deposit Entry detail route. An independent reviewer verified the final test and confirmed the run used the current built bundle.
 
 The separate Stage 3 rehearsal restored a synthetic encrypted backup with the Phase 4 operations image. It reported 44 tables, 17 migration checksums matching release source, and six attachments. See [Backup and Restore Validation](03-backup-restore.md). This is not production database recovery evidence.
+
+## Current UAT coverage map — source head `70ae656`
+
+| Area | Browser UAT evidence | Boundary of the evidence |
+|---|---|---|
+| Rooms, tenants, leases | `app.spec.ts`, `phase26.spec.ts`, and `tenant-rent-persisted.spec.ts`; rent `1000.00` is checked in the submitted payload, saved profile/API lease, and after reload. Rent `4100.75`, room reselection, unassigned tenant, and explicit zero are also covered. | Covers key create/assignment/persistence workflows, not production records or every lease lifecycle. |
+| Billing periods, rates, meters | `billing-setup.spec.ts`, `meter-reading.spec.ts`, `meter-stage3c4.spec.ts`. | Browser scenarios cover core setup, effective dates, readings, corrections and staff restrictions. Stage 5 separately checks a synthetic bill and 17 migrations. |
+| Invoices, payments, receipts | `invoice-accessibility.spec.ts`, `payment-persisted.spec.ts`, `receipt-pdf.spec.ts`. Payment cases cover allocation, reversal, immutable receipt, duplicates/replay, stale state, concurrency, precision, role changes and logout. | Browser PDF tests cover downloads/access/frozen facts; Thai glyph and invoice/receipt layout checks are separate Stage 5 evidence, not counted in 90. |
+| Deposits and evidence | `deposit-persisted.spec.ts`: zero/positive movement, immutable totals, wrong-lease evidence denial, staff read-only, replay and mobile accessibility. | Stage 5 separately tests synthetic evidence upload/read/download and hash consistency. Production attachment storage and authorization are not proven. |
+| Expenses | `expense-persisted.spec.ts`: OPEX/CAPEX capture, approval/post/cancel/reversal/correction, role enforcement, replay, paging, CSV and race cases. | Synthetic test data only; no production export or live records. |
+| Dashboard and reports | `dashboard-live.spec.ts`, `reports-month.spec.ts`; monthly report load and CSV totals. | The monthly CSV browser test intercepts a synthetic response; it does not prove end-to-end database aggregation. Service/API tests are separate evidence. |
+| Authentication and authorization | `app.spec.ts`, `target-safety.spec.ts` and payment/deposit/expense role/session cases. | Covers app sessions, CSRF, staff restrictions and unsafe redirects; not production identity-provider or deployment configuration. |
+| Backup and restore | Not counted in Agent UAT. Current exact-head container verification separately exercises synthetic encrypted backup/restore; historical rehearsal details are in `03-backup-restore.md`. | Does not prove production target recovery, off-device delivery/key recovery, or rollback. |
+
+The `90/90` result is the number of Playwright cases in this run, not a claim of 90 requirements covered. Agent UAT is isolated, source-built and synthetic; the Owner delegated agent execution and no Owner acceptance or production behavior is claimed.
 
 ## Limits
 

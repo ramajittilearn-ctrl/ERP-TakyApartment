@@ -19,3 +19,10 @@ After the independent audit identified that the branch previously required zero 
 ## Limits
 
 This confirms Git identity, frozen source inputs, published-asset byte checksums, and current PR state. It does not prove image availability/runtime, production database compatibility, backup/restore against the intended target, HTTPS trust, or deployment readiness. The local development worktree is a separate dirty snapshot at the accepted feature baseline and is not the tagged release checkout.
+
+## Read-only recheck — 2026-10-27
+
+- `origin/release/phase4` remains `89a15a1aa88e8bc1ac42ce38f653448b1a32a645`; annotated tag `phase4-2026-10-26-rc1` remains tag object `e4150007e021052df75f845eaaaa595f5b4c7424` peeled to that commit. `git tag -v` reports no signature; tag identity is established by Git object linkage, not a verified signing key.
+- The GitHub release remains Draft and Pre-release, targeting the same commit. The GitHub API reports six assets. The streamed source archive SHA-256 is `96d5263b561b659f6c78a037881010f34856d0a5573967bf6589cc90c583fc39`, matching both GitHub asset metadata and `SHA256SUMS`; `tar -tzf` successfully listed its contents without extracting or executing them. The deployment note, manifest, verification JSON and image-UAT note hashes match `SHA256SUMS` or their corresponding GitHub API asset digests.
+- The release preparation commit still changes only seven `deploy/phase4/` files plus `docker-compose.phase4-release.yml` from the accepted feature baseline, and all 20 frozen input object IDs match the tag manifest. This does not establish production target readiness or deployment authorization.
+- PR #2 is the active source candidate and remains separate from the tagged RC. Its head and latest CI state are recorded in `STATUS.md`; no merge, release mutation or deployment was performed during this recheck.
