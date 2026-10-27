@@ -1,5 +1,27 @@
 # Container security remediation — 2026-10-26
 
+## Latest exact-head image verification and scan — run 40447771982
+
+PR #2 head `1715628a562f809f766840463aabf8c78e49761e` passed the `container-verification` job in [run 40447771982](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40447771982). The job built and exercised local `linux/amd64` candidates from merge checkout `068546e2d16938c69b553648b780d4a137547427`, tree `ea37b7ab4f2cb8472dec77252e37ab17b2d16e8f`, which matches the PR-head tree. It did not publish any image. Scan artifact [12709750001](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40447771982/artifacts/12709750001) uses Trivy 0.76.1 and one database snapshot with SHA-256 `d434bbec40d2293b6b77e45a9c885bd87b1b923cfed0377b08aed21ab61a180c`.
+
+Unique Trivy vulnerability IDs by image and severity:
+
+| Image | Critical | High | Medium | Low | Unknown |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Alpine app candidate | 0 | 0 | 0 | 0 | 0 |
+| Alpine evidence-validator candidate | 0 | 0 | 0 | 0 | 0 |
+| Alpine PostgreSQL candidate | 0 | 0 | 0 | 0 | 0 |
+| Alpine operations image | 0 | 0 | 1 | 0 | 1 |
+| Operational Trixie PostgreSQL image | 1 | 16 | 38 | 61 | 1 |
+
+The Alpine operations image's Medium is `CVE-2026-114437` in `github.com/go-chi/chi/v5 v5.3.1`; its Unknown is `GO-2026-5932` in `golang.org/x/crypto v0.57.0`. The exact stripped rclone binary still reports `GO-2026-5932`. Separate checksum-verified rclone v1.75.2 source/vendor checks on the same Linux/amd64, CGO-disabled vendored build graph report no called vulnerability: the graph excludes `golang.org/x/crypto/openpgp`, includes ProtonMail's maintained OpenPGP package, and a same-source unstripped diagnostic build has those symbols and no legacy OpenPGP symbols. This narrowly reconciles the Go advisory for that tested build; it does not alter or suppress raw Trivy results, does not establish byte identity with the shipped stripped binary, and does not resolve the separate go-chi finding.
+
+The operational Trixie database retains Critical `CVE-2026-6653`, 16 High, 38 Medium, 61 Low, and Unknown `CVE-2026-82560` unique IDs. Alpine operations and Alpine PostgreSQL both contain image-ID-bound `libxml2 2.13.9-r2`; neither scan reports targeted `CVE-2026-6653`. This verifies only the scanned local candidate images and DB snapshot, not broad image safety or production compatibility. The Alpine operations and database images replace gosu with the same source-built binary; exact extracted-binary govulncheck and module metadata show `moby/sys/user v0.4.1` and `x/sys v0.44.0`, with no Go vulnerabilities in either binary.
+
+Runtime logs for the same job show app health, migration/seed of 15 synthetic rooms, HTTP 401 for an invalid validator token, synthetic remote upload/read-back, and isolated cross-image restores from both PostgreSQL Trixie and Bookworm sources into the Alpine candidate. Both restores had 15 rooms, valid rebuilt indexes, Attachment owner links, and matching file SHA-256. The source collation versions (2.41 and 2.36) were not reported as available on the Alpine restore image; the harness checked rebuilt indexes and an executed collation query, but this does not prove production collation compatibility. Production database/attachment recovery remains unverified.
+
+Independent scan review confirmed the artifact identity, counts, rclone/Gosu scope, and limitations. The same PR run passed Stage 5 and Agent UAT; the Agent UAT artifact and details are in `06-final-uat.md`. All evidence is synthetic and linux/amd64. No image publication, merge, deployment, or existing UAT/production mutation occurred. Residual findings require remediation or explicit disposition, and production remains NO-GO.
+
 ## Candidate: Alpine Node base for app and evidence validator
 
 The exact-head scan in run `40436826101` shows eight High IDs and one Unknown ID in each app/validator image, all inherited Debian OS packages from the same pinned Node Trixie base. Neither Dockerfile adds those packages directly. Purging shared/base packages was rejected because scan data alone cannot prove Debian essential dependencies or runtime compatibility. A minimal/distroless runtime was also rejected for this bounded change because the app currently starts migrations, seed, and Next through a shell, while the validator requires qpdf and its linked runtime closure.
@@ -12,13 +34,13 @@ The first exact candidate attempt (`fcba27d`, PR run `40438853107`) built both A
 
 This is an isolated candidate. It is not a production risk disposition or deployment authorization. Keep the Trixie base and existing volumes unchanged until exact-head checks pass and the remaining security findings have an accepted disposition.
 
-## Current exact PR-head candidate verification — run 40439455111
+## Prior exact-head candidate verification — run 40439455111
 
 PR #2 head `e11ef962d0934bf1fd603cd5d15293667fb235f2` passed all four required jobs in [run 40439455111](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40439455111); push run `40439449997` also passed. Container scan [artifact 12705059522](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40439455111/artifacts/12705059522) is bound to merge checkout `f32ffa35dae69c0e27005c5b8c7d07ef54249355`, tree `a78fb8616712f8351082e9232897f41f0e6daaa9`, matching the PR-head tree. Independent review verified both Alpine app/validator candidates have zero Trivy vulnerability entries across OS and Node.js targets on `linux/amd64`, with database SHA `d434bbec40d2293b6b77e45a9c885bd87b1b923cfed0377b08aed21ab61a180c`. The old Debian-base 8 High + 1 Unknown IDs are absent. The Trixie operational DB still has 1 Critical/16 High/1 Unknown and operations has 1 Medium/1 Unknown.
 
 Container logs confirm Prisma musl, database migrations and 15-room seed, Argon2, validator HTTP 401 for an invalid token, successful synthetic PDF via qpdf, PNG via Sharp, and temporary-input cleanup. Stage 5 passed 51 checks and 17 migration validations; Agent UAT passed 90/90. These checks verify the exact candidate images and tested synthetic flows only; they do not establish production deployment, risk acceptance, or full app-to-validator authorization. Production remains NO-GO.
 
-## Latest exact-source verification — 2026-10-27
+## Prior exact-source verification — run 40435165878
 
 PR #2 head `f3b357fec95dd1765e68e1b72410a718f1297efc` passed all four checks in [run 40435165878](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40435165878). The scan [artifact 12704202063](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40435165878/artifacts/12704202063) is from merge checkout `8b6881be94f48630abd0595284d01ded87b17d53`, whose parents are the protected base `89a15a1aa88e8bc1ac42ce38f653448b1a32a645` and that exact PR head. The image sidecars and Trivy SBOM agree on Gosu source commit `6456aaa0f3c854d199d0f037f068eb97515b7513`, digest-pinned Go builder, `github.com/moby/sys/user v0.4.1`, `golang.org/x/sys v0.44.0`, and each digest-pinned PostgreSQL base. CI asserts these labels, while `go version -m` on each extracted binary asserts both embedded module versions. Independent review confirmed the label and binary metadata match.
 
@@ -40,7 +62,7 @@ On PR head `4e40d57a08716006ffdcb5af2f9bda12542dafde`, all four workflow jobs pa
 
 The operational `docker-compose.yml` retains the existing Trixie image and `taky-erp_database` volume. The Alpine candidate has explicit project `taky-erp-alpine-candidate` and volume `taky-erp-alpine-candidate-database`. CI renders both Compose files and asserts those identities remain distinct. Stage 5 uses a separate image-only overlay with a fresh randomized project and volume; container verification restores from both Trixie and Bookworm source images into isolated synthetic Alpine targets. No existing UAT or production stack was changed. PR #2 remains Draft; production remains NO-GO.
 
-## Latest four-image hosted scan — run 40401983977
+## Prior four-image hosted scan — run 40401983977
 
 The [scan artifact 12692629579](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977/artifacts/12692629579) is from the docs-only exact-head rerun. It scanned the local app, validator, and operations images plus the exact pinned PostgreSQL image declared by the checkout, on `linux/amd64`; no registry image was published. PR head: `87c3ec827da110afb3cf547398708b408556fff6`; source checkout: `df63cab9244bf4464156e9aa1afe6159bd372e8a`, tree `092bdbb13586302381edf8a8d78ab91ee441b316`. Trivy `0.76.1`; DB schema `2`, updated `2026-10-26T19:14:50.196574068Z`, downloaded `2026-10-26T22:16:53.014568093Z`, file-content SHA-256 `f6435dc19b17290dc50e74823f4da086ee99662076febdd134aede5779b0f6fe`. Findings match the prior scan: app and validator each 8 High; operations 1 Critical and 16 High; PostgreSQL 2 Critical and 40 High. Each image sidecar records its image ID and the same DB hash.
 

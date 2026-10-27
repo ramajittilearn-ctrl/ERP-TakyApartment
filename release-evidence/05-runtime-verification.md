@@ -1,8 +1,15 @@
 # Phase 4 RC Runtime Verification
 
-**Status:** RC1 runtime PASS for its frozen baseline. The latest PR head `87c3ec827da110afb3cf547398708b408556fff6` passed the Stage 5 billing/PDF runtime in run `40401983977`, attempt 2; production-target runtime remains unverified.
+**Status:** Current PR run Stage 5 passed at head `1715628`, but the matching push run exposed a metadata-sensitive test assertion failure. The local fix excludes PDF `CreationDate` from the `-bbox-layout` comparison while retaining the page text coordinates; the corrected assertion still needs exact-head CI. Production-target runtime remains unverified.
 
-## Latest exact-head Stage 5 runtime — run 40401983977
+## Latest exact-head Stage 5 runtime — run 40447771982
+
+[Run 40447771982](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40447771982) passed Stage 5 on PR head `1715628a562f809f766840463aabf8c78e49761e`. Artifact [12709645744](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40447771982/artifacts/12709645744) binds the run to merge checkout `068546e2d16938c69b553648b780d4a137547427`, tree `ea37b7ab4f2cb8472dec77252e37ab17b2d16e8f`. All 52 run checks passed, including all 17 migration validations on a fresh isolated PostgreSQL database.
+
+The synthetic scenario retained tenant rent `1000.00`, computed invoice/payment/allocation/receipt total `1050.01`, and reconciled displayed lines `1000.00 + 20.01 + 30.01 - 0.01`. It checked secure session cookies, staff/admin billing-period authorization, idempotent invoice issue, immutable invoice/receipt snapshots, and anonymous receipt-PDF denial. After mutating synthetic tenant, property, room, and lease source data, the fingerprints and frozen labels stayed stable. The new assertion compares extracted text for both invoice and receipt PDFs and invoice text bounding-box layout; it intentionally excludes PDF metadata and does not assert receipt layout or full graphic styling. Independent reviewer inspected the rendered invoice and receipt pages and confirmed Thai/baht glyphs and no visible clipping. These are synthetic CI checks, not production-target runtime or Owner acceptance. The current PR run passed container verification and Agent UAT; the matching push run exposed the metadata-sensitive assertion described below.
+The separate push workflow [40447766451](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40447766451) used the same source commit and tree but ran the pre-mutation and post-mutation invoice PDF creation across adjacent seconds. Its [failure artifact 12709074906](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40447766451/artifacts/12709074906) shows `pdftotext -bbox-layout` differed only in the `CreationDate` metadata line; the text and bounding boxes were unchanged. This exposed a test-harness bug, not an invoice-content change. The correction is local and pending a new hosted run. The PR-run result alone is not sufficient to close the Stage 5 assertion issue.
+
+## Prior exact-head Stage 5 runtime — run 40401983977
 
 [Run 40401983977](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977) passed all four required checks on PR head `87c3ec827da110afb3cf547398708b408556fff6`. The Stage 5 artifact is [12694192757](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40401983977/artifacts/12694192757). Its run summary binds the test to merge checkout `df63cab9244bf4464156e9aa1afe6159bd372e8a`, tree `092bdbb13586302381edf8a8d78ab91ee441b316`; the 17 migration names/checksums were compared on a fresh isolated PostgreSQL database.
 
@@ -102,6 +109,6 @@ The record shows two logical `uploadAttempts`, but no network upload was attempt
 
 The current PR head `8ba32bc3d2171b8d77536d6c748d56eca8e84693` passed Stage 5 in [run 40436826101](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101); artifact [12703609262](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40436826101/artifacts/12703609262) records 51 passed checks and all 17 migration validations. Synthetic billing retained rent `1000.00`, calculated `1050.01`, issued immutable invoice and receipt snapshots, reconciled payment, and verified Thai PDFs after source edits. Production-target runtime remains unverified.
 
-## Latest exact PR-head Stage 5 — run 40439455111
+## Prior exact PR-head Stage 5 — run 40439455111
 
 The current PR head `e11ef962d0934bf1fd603cd5d15293667fb235f2` passed Stage 5 in [run 40439455111](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40439455111). Artifact [12706156418](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40439455111/artifacts/12706156418) records 51 passed checks and all 17 migration validations on isolated synthetic data. Billing retained `1000.00` rent, calculated `1050.01`, issued immutable invoice/receipt snapshots, reconciled payment, and verified Thai PDFs. This does not establish production-target runtime.

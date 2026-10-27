@@ -469,11 +469,13 @@ const extractPdfText = (pdf) =>
     encoding: "utf8",
   });
 const invoicePdfText = extractPdfText(invoicePdf);
-const invoicePdfLayout = execFileSync(
-  "pdftotext",
-  ["-bbox-layout", join(artifactDir, invoicePdf.file), "-"],
-  { encoding: "utf8" },
-);
+const extractPdfLayoutWithoutCreationDate = (pdf) =>
+  execFileSync(
+    "pdftotext",
+    ["-bbox-layout", join(artifactDir, pdf.file), "-"],
+    { encoding: "utf8" },
+  ).replace(/<meta name="CreationDate" content="[^"]*"\/>\r?\n/g, "");
+const invoicePdfLayout = extractPdfLayoutWithoutCreationDate(invoicePdf);
 assert.match(invoicePdfText, /Rounding adjustment\s+-฿0\.01/);
 assert.match(invoicePdfText, /TOTAL PAYABLE\s+฿1,050\.01/);
 for (const visibleAmount of ["฿1,000.00", "฿20.01", "฿30.01", "-฿0.01"])
@@ -733,15 +735,8 @@ const receiptPdfAfterSourceChange = await downloadPdf(
 const invoicePdfTextAfterSourceChange = extractPdfText(
   invoicePdfAfterSourceChange,
 );
-const invoicePdfLayoutAfterSourceChange = execFileSync(
-  "pdftotext",
-  [
-    "-bbox-layout",
-    join(artifactDir, invoicePdfAfterSourceChange.file),
-    "-",
-  ],
-  { encoding: "utf8" },
-);
+const invoicePdfLayoutAfterSourceChange =
+  extractPdfLayoutWithoutCreationDate(invoicePdfAfterSourceChange);
 const receiptPdfTextAfterSourceChange = extractPdfText(
   receiptPdfAfterSourceChange,
 );
