@@ -52,6 +52,8 @@ docker build --pull --network=default \
   --build-arg POSTGRES_BASE_IMAGE="$base_image" \
   --build-arg DEBIAN_SNAPSHOT="$snapshot" \
   --build-arg DEBIAN_INRELEASE_SHA256="$inrelease_sha" \
+  --build-arg DEBIAN_SECURITY_SNAPSHOT="$(jq -er '.debianSecuritySnapshot' "$input_dir/verified-inputs.json")" \
+  --build-arg DEBIAN_SECURITY_INRELEASE_SHA256="$(jq -er '.debianSecurityInReleaseSha256' "$input_dir/verified-inputs.json")" \
   --build-arg SOURCE_ARTIFACT_SHA256="$source_sha" \
   --build-arg RUNNER_CA_SHA256="$runner_ca_sha" \
   --build-arg RUN_ID="$GITHUB_RUN_ID" \
@@ -72,12 +74,12 @@ printf 'run_id=%s\nrun_attempt=%s\nimage=%s\nimage_id=%s\nsource_artifact_sha256
 docker run --rm --network=none --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m \
   --entrypoint postgres "$image" --version | tee "$evidence_dir/runtime-postgres-version.txt"
 docker run --rm --network=none --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m \
-  --entrypoint dpkg-query "$image" -W -f='${binary:Package}\t${Version}\t${Architecture}\n' 'libxml2-*' \
+  --entrypoint dpkg-query "$image" -W -f='${binary:Package}\t${Version}\t${Architecture}\n' libxml2 \
   | tee "$evidence_dir/runtime-libxml2-inventory.tsv"
 docker run --rm --network=none --read-only -i \
   --tmpfs /tmp:rw,nosuid,size=256m --tmpfs /var/lib/postgresql/data:rw,nosuid,size=256m \
   --tmpfs /var/run/postgresql:rw,nosuid,size=16m \
-  --entrypoint /bin/bash "$image" -eus 2>&1 | tee "$evidence_dir/postgres-xml-restore-smoke.log" <<'CONTAINER_SCRIPT'
+  --entrypoint /bin/bash "$image" -eus 2>&1 <<'CONTAINER_SCRIPT' | tee "$evidence_dir/postgres-xml-restore-smoke.log"
 data=/var/lib/postgresql/data/ci-smoke
 mkdir -p "$data"
 chown postgres:postgres "$data"
@@ -89,19 +91,15 @@ psql -h /tmp -U postgres -v ON_ERROR_STOP=1 -c "INSERT INTO xml_candidate_smoke 
 psql -h /tmp -U postgres -v ON_ERROR_STOP=1 -c "SELECT xpath(\$path\$/root/text()\$path\$, payload) FROM xml_candidate_smoke" postgres
 xml_before=$(psql -h /tmp -U postgres -Atc "SELECT array_to_string(xpath(\$path\$/root/text()\$path\$, payload), \$empty\$\$empty\$) FROM xml_candidate_smoke" postgres)
 test "$xml_before" = candidate
-xml_before=$(psql -h /tmp -U postgres -Atc "SELECT array_to_string(xpath(\$path\$/root/text()\$path\$, payload), \$empty\$\$empty\$) FROM xml_candidate_smoke" postgres)
-test "$xml_before" = candidate
 pg_dump -h /tmp -U postgres -Fc -t xml_candidate_smoke -f /tmp/xml_candidate_smoke.dump postgres
 psql -h /tmp -U postgres -v ON_ERROR_STOP=1 -c "DROP TABLE xml_candidate_smoke" postgres
 pg_restore -h /tmp -U postgres -v -d postgres /tmp/xml_candidate_smoke.dump
 psql -h /tmp -U postgres -v ON_ERROR_STOP=1 -c "SELECT xpath(\$path\$/root/text()\$path\$, payload) FROM xml_candidate_smoke" postgres
 xml_after=$(psql -h /tmp -U postgres -Atc "SELECT array_to_string(xpath(\$path\$/root/text()\$path\$, payload), \$empty\$\$empty\$) FROM xml_candidate_smoke" postgres)
 test "$xml_after" = candidate
-xml_after=$(psql -h /tmp -U postgres -Atc "SELECT array_to_string(xpath(\$path\$/root/text()\$path\$, payload), \$empty\$\$empty\$) FROM xml_candidate_smoke" postgres)
-test "$xml_after" = candidate
 if [ "$(psql -h /tmp -U postgres -Atc "SELECT count(*) FROM pg_available_extensions WHERE name = \$e\$xml2\$e\$" postgres)" -eq 1 ]; then
-  psql -h /tmp -U postgres -v ON_ERROR_STOP=1 -c "CREATE EXTENSION xml2" postgres
-  xml2_value=$(psql -h /tmp -U postgres -Atc "SELECT xml2.xpath_string(\$path\$/root/text()\$path\$, \$xml\$<root>candidate</root>\$xml\$)" postgres)
+  psql -h /tmp -U postgres -v ON_ERROR_STOP=1 -c "CREATE EXTENSION xml2 WITH SCHEMA public" postgres
+  xml2_value=$(psql -h /tmp -U postgres -Atc "SELECT public.xpath_string(\$xml\$<root>candidate</root>\$xml\$, \$path\$/root/text()\$path\$)" postgres)
   test "$xml2_value" = candidate
 else
   echo "xml2 extension unavailable in the pinned PostgreSQL base; core XML behavior exercised"
@@ -124,15 +122,23 @@ jq -e --arg imageId "$base_image_id" '.SchemaVersion == 2 and .Metadata.ImageID 
 "$trivy_dir/trivy" --cache-dir "$trivy_dir/cache" image \
   --disable-telemetry --skip-version-check --ignorefile /dev/null --scanners vuln --list-all-pkgs \
   --format json --output "$evidence_dir/trivy-candidate-image.json" --exit-code 0 "$image"
-jq -e --arg imageId "$image_id" '.SchemaVersion == 2 and .Metadata.ImageID == $imageId and ([.Results[]?.Vulnerabilities[]? | select(.VulnerabilityID == "CVE-2026-6653")] | length == 0)' \
-  "$evidence_dir/trivy-candidate-image.json" >/dev/null || die 'candidate scan did not bind to the image or reports CVE-2026-6653'
-jq -r '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL" or .Severity == "HIGH") | [.VulnerabilityID, .PkgName, .InstalledVersion, .Severity] | @tsv] | sort | .[]' \
+jq -e --arg imageId "$image_id" '.SchemaVersion == 2 and .Metadata.ImageID == $imageId' \
+  "$evidence_dir/trivy-candidate-image.json" >/dev/null || die 'candidate scan did not bind to the candidate image ID'
+jq -r '[.Results[]?.Vulnerabilities[]? | select(.VulnerabilityID == "CVE-2026-6653") | [.VulnerabilityID, .PkgName, .InstalledVersion, .FixedVersion, .Severity] | @tsv] | sort | .[]' \
+  "$evidence_dir/trivy-candidate-image.json" > "$evidence_dir/candidate-target-cve.tsv"
+jq -r '[.Results[] as $result | $result.Vulnerabilities[]? | select(.Severity == "CRITICAL" or .Severity == "HIGH") | [$result.Class, $result.Type, .VulnerabilityID, .PkgName, .Severity] | @tsv] | unique | .[]' \
   "$evidence_dir/trivy-base-image.json" > "$evidence_dir/base-high-critical.tsv"
-jq -r '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL" or .Severity == "HIGH") | [.VulnerabilityID, .PkgName, .InstalledVersion, .Severity] | @tsv] | sort | .[]' \
+jq -r '[.Results[] as $result | $result.Vulnerabilities[]? | select(.Severity == "CRITICAL" or .Severity == "HIGH") | [$result.Class, $result.Type, .VulnerabilityID, .PkgName, .Severity] | @tsv] | unique | .[]' \
   "$evidence_dir/trivy-candidate-image.json" > "$evidence_dir/candidate-high-critical.tsv"
 comm -13 "$evidence_dir/base-high-critical.tsv" "$evidence_dir/candidate-high-critical.tsv" > "$evidence_dir/new-high-critical-findings.tsv"
 [[ ! -s "$evidence_dir/new-high-critical-findings.tsv" ]] || die 'candidate introduces new Critical/High findings relative to its exact pinned base image'
-printf 'Full unsuppressed candidate scan is retained. This slice gates the target CVE and no new Critical/High findings relative to the exact pinned PostgreSQL base. Inherited base findings remain open outside this candidate scope.\n' > "$evidence_dir/trivy-disposition.txt"
+if [[ -s "$evidence_dir/candidate-target-cve.tsv" ]]; then
+  printf 'Raw Trivy still reports CVE-2026-6653 for the private candidate package. Debian has no fixed version for this backport, so this scanner result remains unresolved; the source patch and runtime checks are separate evidence and do not clear the vulnerability finding.\n' \
+    > "$evidence_dir/trivy-disposition.txt"
+else
+  printf 'Raw Trivy does not report CVE-2026-6653 for the candidate package. This result is not a substitute for source-patch or runtime verification.\n' \
+    > "$evidence_dir/trivy-disposition.txt"
+fi
 cp "$trivy_dir/cache/db/metadata.json" "$evidence_dir/trivy-db-metadata.json"
 sha256sum "$trivy_dir/cache/db/trivy.db" > "$evidence_dir/trivy-db.sha256"
 printf 'Candidate image %s (%s) built and runtime/scan checks completed.\n' "$image" "$image_id"

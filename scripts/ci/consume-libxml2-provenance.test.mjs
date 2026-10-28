@@ -28,6 +28,7 @@ function fixtureFiles() {
   }
   files.set('debian/patches/CVE-2026-6653.patch', patch);
   files.set('metadata/debian-trixie.InRelease', Buffer.from('signed release bytes'));
+  files.set('metadata/debian-security-trixie.InRelease', Buffer.from('signed security release bytes'));
   files.set('metadata/debian-trixie.Sources.apt-cache', Buffer.from('authenticated source index bytes'));
   const keyring = Buffer.from('pinned keyring package bytes');
   files.set('metadata/debian-archive-keyring_2023.3+deb12u2_all.deb', keyring);
@@ -36,6 +37,7 @@ function fixtureFiles() {
     workflow: { runId: '42', runAttempt: 2, eventName: 'pull_request', eventSha: env.GITHUB_SHA, checkedOutRevision: env.GITHUB_SHA, pullRequestHeadSha: env.PULL_REQUEST_HEAD_SHA },
     verification: { authenticatedReleaseMetadata: true, dscSignaturesAndListedHashes: true },
     debian: { source: 'libxml2', version: debVer, suite: 'trixie', snapshot: '20261027T000000Z', uri: 'https://snapshot.debian.org/archive/debian/20261027T000000Z', releaseInReleaseSha256: hash(files.get('metadata/debian-trixie.InRelease')), aptAuthenticatedSourcesIndexSha256: hash(files.get('metadata/debian-trixie.Sources.apt-cache')), sourceArtifacts: sourceArtifacts['debian-source'] },
+    debianSecurityBinarySource: { uri: 'https://snapshot.debian.org/archive/debian-security/20261027T000000Z', snapshot: '20261027T000000Z', suite: 'trixie-security', releaseInReleaseSha256: hash(files.get('metadata/debian-security-trixie.InRelease')), releaseSignerFingerprints: ['89C87ACEA5DD6B8E6A7068808E9F831205B4BA95'] },
     ubuntuJammyPatchSource: { source: 'libxml2', version: ubuVer, suite: 'jammy-security', snapshot: '20260622T130000Z', uri: 'https://snapshot.ubuntu.com/ubuntu/20260622T130000Z', patchPath: 'debian/patches/CVE-2026-6653.patch', patchSha256: hash(patch), sourceArtifacts: sourceArtifacts['ubuntu-source'] },
     debianArchiveKeyringBootstrap: { keyringPackageVersion: '2023.3+deb12u2', keyringPackageSha256: hash(keyring) },
   };
@@ -112,6 +114,14 @@ test('rejects incomplete provenance evidence and changed manifest claims', () =>
   manifest.debian.snapshot = 'rolling';
   wrong.set('provenance.json', Buffer.from(JSON.stringify(manifest)));
   assert.throws(() => validateManifest(wrong, env, hash(patch)), /Unexpected Debian source package identity/);
+  const untrustedSecurityRelease = fixtureFiles();
+  const securityManifest = JSON.parse(untrustedSecurityRelease.get('provenance.json'));
+  securityManifest.debianSecurityBinarySource.releaseSignerFingerprints = ['0000000000000000000000000000000000000000'];
+  untrustedSecurityRelease.set('provenance.json', Buffer.from(JSON.stringify(securityManifest)));
+  assert.throws(() => validateManifest(untrustedSecurityRelease, env, hash(patch)), /not a pinned Trixie security archive signer/);
+  const changedSecurityRelease = fixtureFiles();
+  changedSecurityRelease.set('metadata/debian-security-trixie.InRelease', Buffer.from('changed security Release'));
+  assert.throws(() => validateManifest(changedSecurityRelease, env, hash(patch)), /Debian security Trixie InRelease digest mismatch/);
 });
 
 test('binds downloaded artifact metadata to the exact run, attempt, repository, digest and PR head', () => {

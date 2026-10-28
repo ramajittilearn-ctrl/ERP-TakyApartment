@@ -6,9 +6,11 @@ umask 077
 readonly DEBIAN_VERSION='2.12.7+dfsg+really2.9.14-2.1+deb13u3'
 readonly UBUNTU_VERSION='2.9.13+dfsg-1ubuntu0.12'
 readonly DEBIAN_SNAPSHOT='20261027T000000Z'
+readonly DEBIAN_SECURITY_SNAPSHOT='20261027T000000Z'
 readonly BOOKWORM_BOOTSTRAP_SNAPSHOT='20261026T202550Z'
 readonly UBUNTU_SNAPSHOT='20260622T130000Z'
 readonly DEBIAN_URI="https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}"
+readonly DEBIAN_SECURITY_URI="https://snapshot.debian.org/archive/debian-security/${DEBIAN_SECURITY_SNAPSHOT}"
 readonly BOOKWORM_BOOTSTRAP_URI="https://snapshot.debian.org/archive/debian/${BOOKWORM_BOOTSTRAP_SNAPSHOT}"
 readonly UBUNTU_URI="https://snapshot.ubuntu.com/ubuntu/${UBUNTU_SNAPSHOT}"
 readonly DEBIAN_ARCHIVE_KEYRING='/usr/share/keyrings/debian-archive-keyring.gpg'
@@ -21,6 +23,8 @@ readonly BOOKWORM_ARCHIVE_SIGNER_SUBKEY='4CB50190207B4758A3F73A796ED0E7B82643E13
 readonly BOOKWORM_STABLE_SIGNER='4D64FEC119C2029067D6E791F8D2585B8783D481'
 readonly TRIXIE_ARCHIVE_SIGNER_A='B8E5F13176D2A7A75220028078DBA3BC47EF2265'
 readonly TRIXIE_ARCHIVE_SIGNER_B='41587F7DB8C774BCCF131416762F67A0B2C39DE4'
+readonly TRIXIE_SECURITY_ARCHIVE_SIGNER_PRIMARY='5E04A1E3223A19A20706E20F9904613D4CCE68C6'
+readonly TRIXIE_SECURITY_ARCHIVE_SIGNER_SUBKEY='89C87ACEA5DD6B8E6A7068808E9F831205B4BA95'
 readonly UBUNTU_UPLOAD_FINGERPRINT='71FBF17BE7E52D0C2A2C9144F0B61460B04C4B56'
 readonly UBUNTU_UPLOAD_KEY_URL='https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xF0B61460B04C4B56'
 readonly PATCH_RELATIVE_PATH='debian/patches/CVE-2026-6653.patch'
@@ -229,6 +233,11 @@ trixie_release_signers=$(cat "$evidence_dir/debian-trixie.signer-fingerprints.tx
 grep -Fxq "$TRIXIE_ARCHIVE_SIGNER_A" <<<"$trixie_release_signers" \
   || grep -Fxq "$TRIXIE_ARCHIVE_SIGNER_B" <<<"$trixie_release_signers" \
   || die 'Trixie InRelease signature is not by either required pinned archive signer'
+record_release_signature "$DEBIAN_SECURITY_URI" trixie-security "$TRIXIE_ARCHIVE_KEYRING" debian-security-trixie
+security_release_signers=$(cat "$evidence_dir/debian-security-trixie.signer-fingerprints.txt")
+grep -Fxq "$TRIXIE_SECURITY_ARCHIVE_SIGNER_PRIMARY" <<<"$security_release_signers" \
+  || grep -Fxq "$TRIXIE_SECURITY_ARCHIVE_SIGNER_SUBKEY" <<<"$security_release_signers" \
+  || die 'Trixie security InRelease signature is not by a required pinned archive signer'
 record_release_signature "$UBUNTU_URI" jammy-security "$UBUNTU_ARCHIVE_KEYRING" ubuntu-jammy-security
 
 apt_with_state "$work_dir/debian" "$work_dir/debian.sources.list" update
@@ -337,8 +346,10 @@ printf '%s\n' "$ubuntu_dsc_fingerprints" >"$evidence_dir/ubuntu-dsc.signer-finge
 printf '%s  %s\n' "$actual_patch_sha256" "$PATCH_RELATIVE_PATH" >"$evidence_dir/patch.sha256"
 
 export OUTPUT_DIR="$output_dir" DEBIAN_VERSION UBUNTU_VERSION DEBIAN_SNAPSHOT UBUNTU_SNAPSHOT
-export DEBIAN_URI UBUNTU_URI PATCH_RELATIVE_PATH PATCH_SHA256
+export DEBIAN_URI DEBIAN_SECURITY_SNAPSHOT DEBIAN_SECURITY_URI UBUNTU_URI PATCH_RELATIVE_PATH PATCH_SHA256
 export DEBIAN_RELEASE_INRELEASE_SHA256="$(awk '{print $1}' "$evidence_dir/debian-trixie.InRelease.sha256")"
+export DEBIAN_SECURITY_RELEASE_INRELEASE_SHA256="$(awk '{print $1}' "$evidence_dir/debian-security-trixie.InRelease.sha256")"
+export DEBIAN_SECURITY_RELEASE_SIGNERS="$(paste -sd, "$evidence_dir/debian-security-trixie.signer-fingerprints.txt")"
 export UBUNTU_RELEASE_INRELEASE_SHA256="$(awk '{print $1}' "$evidence_dir/ubuntu-jammy-security.InRelease.sha256")"
 export DEBIAN_RELEASE_SIGNERS="$(paste -sd, "$evidence_dir/debian-trixie.signer-fingerprints.txt")"
 export UBUNTU_RELEASE_SIGNERS="$(paste -sd, "$evidence_dir/ubuntu-jammy-security.signer-fingerprints.txt")"
@@ -436,6 +447,13 @@ manifest = {
         "aptAuthenticatedSourcesIndexSha256": os.environ["DEBIAN_SOURCES_INDEX_SHA256"],
         "dscSignerFingerprints": os.environ["DEBIAN_DSC_SIGNER"].splitlines(),
         "sourceArtifacts": files_for("debian-source"),
+    },
+    "debianSecurityBinarySource": {
+        "uri": os.environ["DEBIAN_SECURITY_URI"],
+        "snapshot": os.environ["DEBIAN_SECURITY_SNAPSHOT"],
+        "suite": "trixie-security",
+        "releaseInReleaseSha256": os.environ["DEBIAN_SECURITY_RELEASE_INRELEASE_SHA256"],
+        "releaseSignerFingerprints": os.environ["DEBIAN_SECURITY_RELEASE_SIGNERS"].split(","),
     },
     "ubuntuJammyPatchSource": {
         "source": "libxml2",

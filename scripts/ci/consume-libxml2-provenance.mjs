@@ -15,6 +15,7 @@ const PATCH_SHA256 = 'b4cc290c275b250c3170259386887a679857d97e760e114f6fb1f0d2c6
 const DEBIAN_VERSION = '2.12.7+dfsg+really2.9.14-2.1+deb13u3';
 const DEBIAN_ORIG_VERSION = '2.12.7+dfsg+really2.9.14';
 const DEBIAN_SNAPSHOT = '20261027T000000Z';
+const DEBIAN_SECURITY_SNAPSHOT = '20261027T000000Z';
 const UBUNTU_VERSION = '2.9.13+dfsg-1ubuntu0.12';
 const UBUNTU_ORIG_VERSION = '2.9.13+dfsg';
 const UBUNTU_SNAPSHOT = '20260622T130000Z';
@@ -195,7 +196,7 @@ export function extractZip(zip) {
   for (let index = 1; index < intervals.length; index += 1) {
     if (intervals[index][0] < intervals[index - 1][1]) fail('ZIP entry data overlaps');
   }
-  for (const requiredName of ['provenance.json', PATCH_PATH, 'debian-source/SHA256SUMS', 'ubuntu-source/SHA256SUMS', 'metadata/debian-trixie.InRelease', 'metadata/debian-trixie.Sources.apt-cache', 'metadata/debian-archive-keyring_2023.3+deb12u2_all.deb']) {
+  for (const requiredName of ['provenance.json', PATCH_PATH, 'debian-source/SHA256SUMS', 'ubuntu-source/SHA256SUMS', 'metadata/debian-trixie.InRelease', 'metadata/debian-security-trixie.InRelease', 'metadata/debian-trixie.Sources.apt-cache', 'metadata/debian-archive-keyring_2023.3+deb12u2_all.deb']) {
     if (!files.has(requiredName)) fail('Required provenance artifact entry is missing: ' + requiredName);
   }
   return files;
@@ -244,6 +245,9 @@ export function validateManifest(files, env, expectedPatchSha = PATCH_SHA256) {
     fail('Unexpected PR-head provenance for a non-PR workflow');
   }
   if (manifest.debian?.source !== 'libxml2' || manifest.debian?.version !== DEBIAN_VERSION || manifest.debian?.suite !== 'trixie' || manifest.debian?.snapshot !== DEBIAN_SNAPSHOT || manifest.debian?.uri !== 'https://snapshot.debian.org/archive/debian/' + DEBIAN_SNAPSHOT) fail('Unexpected Debian source package identity');
+  if (manifest.debianSecurityBinarySource?.snapshot !== DEBIAN_SECURITY_SNAPSHOT || manifest.debianSecurityBinarySource?.suite !== 'trixie-security' || manifest.debianSecurityBinarySource?.uri !== 'https://snapshot.debian.org/archive/debian-security/' + DEBIAN_SECURITY_SNAPSHOT) fail('Unexpected Debian security binary source identity');
+  if (!Array.isArray(manifest.debianSecurityBinarySource.releaseSignerFingerprints) || !manifest.debianSecurityBinarySource.releaseSignerFingerprints.some((fingerprint) => fingerprint === '5E04A1E3223A19A20706E20F9904613D4CCE68C6' || fingerprint === '89C87ACEA5DD6B8E6A7068808E9F831205B4BA95')) fail('Debian security Release signer is not a pinned Trixie security archive signer');
+  if (sha256(files.get('metadata/debian-security-trixie.InRelease')) !== manifest.debianSecurityBinarySource.releaseInReleaseSha256) fail('Debian security Trixie InRelease digest mismatch');
   if (manifest.ubuntuJammyPatchSource?.source !== 'libxml2' || manifest.ubuntuJammyPatchSource?.version !== UBUNTU_VERSION || manifest.ubuntuJammyPatchSource?.suite !== 'jammy-security' || manifest.ubuntuJammyPatchSource?.snapshot !== UBUNTU_SNAPSHOT || manifest.ubuntuJammyPatchSource?.uri !== 'https://snapshot.ubuntu.com/ubuntu/' + UBUNTU_SNAPSHOT) fail('Unexpected Ubuntu patch source package identity');
   if (manifest.ubuntuJammyPatchSource.patchPath !== PATCH_PATH || manifest.ubuntuJammyPatchSource.patchSha256 !== expectedPatchSha || sha256(files.get(PATCH_PATH)) !== expectedPatchSha) fail('Ubuntu CVE patch path or digest mismatch');
   if (!manifest.verification?.authenticatedReleaseMetadata || !manifest.verification?.dscSignaturesAndListedHashes) fail('Provenance manifest lacks authenticated source verification');
@@ -402,6 +406,8 @@ export async function consume(env = process.env) {
       debianSourceVersion: manifest.debian.version,
       debianSnapshot: manifest.debian.snapshot,
       debianInReleaseSha256: manifest.debian.releaseInReleaseSha256,
+      debianSecuritySnapshot: manifest.debianSecurityBinarySource.snapshot,
+      debianSecurityInReleaseSha256: manifest.debianSecurityBinarySource.releaseInReleaseSha256,
       debianSourceIndexSha256: manifest.debian.aptAuthenticatedSourcesIndexSha256,
       debianKeyringPackagePath: keyringPackageName,
       debianKeyringPackageSha256: manifest.debianArchiveKeyringBootstrap.keyringPackageSha256,
