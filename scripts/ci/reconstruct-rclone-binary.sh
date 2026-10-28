@@ -186,6 +186,7 @@ result = {
         },
         "productionCommand": production_command,
         "diagnosticCommand": diagnostic_command,
+        "pullCommand": ["docker", "pull", "--platform", "linux/amd64", builder_ref],
         "containerArgv": json.loads(builder_argv),
     },
     "gitBindings": {
@@ -317,7 +318,9 @@ operations_image_tree="$(docker image inspect --format '{{index .Config.Labels "
 [[ "$operations_image_id_before" == "$operations_image_id" ]] || fail "operations image ID changed before reconstruction"
 [[ "$operations_image_revision" == "$source_revision" && "$operations_image_tree" == "$source_tree" ]] || fail "operations image revision/tree labels do not match the requested checkout"
 
-builder_image_id="$(docker image inspect --format '{{.Id}}' "$builder_image_ref" 2>>"$log_path")" || fail "pinned Go builder image is not available locally"
+printf 'Pulling pinned Go builder image by digest: %s\n' "$builder_image_ref" >> "$log_path"
+docker pull --platform linux/amd64 "$builder_image_ref" >>"$log_path" 2>&1 || fail "cannot pull pinned Go builder image"
+builder_image_id="$(docker image inspect --format '{{.Id}}' "$builder_image_ref" 2>>"$log_path")" || fail "cannot inspect pulled pinned Go builder image"
 builder_platform="$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$builder_image_ref" 2>>"$log_path")" || fail "cannot inspect pinned Go builder platform"
 [[ "$builder_platform" == "linux/amd64" ]] || fail "pinned Go builder platform is not linux/amd64"
 

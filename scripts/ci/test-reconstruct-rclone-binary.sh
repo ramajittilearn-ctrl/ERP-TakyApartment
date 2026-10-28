@@ -52,6 +52,13 @@ export FIXTURE_REVISION="$revision" FIXTURE_TREE="$tree" FIXTURE_BINARY_MODE=mat
 cat > "$tmp/bin/docker" <<'DOCKER'
 #!/usr/bin/env bash
 set -Eeuo pipefail
+if [[ "$1" == pull ]]; then
+  [[ $# == 4 && "$2" == --platform && "$3" == linux/amd64 && "$4" == 'golang:1.27.3-alpine3.24@sha256:b8c9b82affbbb82a020bbcf998dad2ba9516944ac7e883524642a481a9505e9c' ]] || {
+    echo "unexpected builder pull command: $*" >&2
+    exit 35
+  }
+  exit 0
+fi
 if [[ "$1 $2" == 'image inspect' ]]; then
   format="$4"
   image="$5"
@@ -128,6 +135,10 @@ assert "disposition" not in d, d
 env = d["evidence"]["environment"]
 assert env["path"].endswith("/go-environment.txt"), env
 assert env["sha256"], env
+assert d["builder"]["pullCommand"] == [
+    "docker", "pull", "--platform", "linux/amd64",
+    "golang:1.27.3-alpine3.24@sha256:b8c9b82affbbb82a020bbcf998dad2ba9516944ac7e883524642a481a9505e9c",
+], d["builder"]
 PY
 
 export FIXTURE_BINARY_MODE=mismatch
