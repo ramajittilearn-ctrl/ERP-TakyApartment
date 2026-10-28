@@ -45,6 +45,7 @@ cp "$input_dir/provenance.json" "$evidence_dir/"
 cp "$input_dir/verified-inputs.json" "$evidence_dir/"
 printf '%s  %s\n' "$runner_ca_sha" 'GitHub runner CA bundle (not uploaded)' > "$evidence_dir/runner-ca-bundle.sha256"
 
+docker pull "$base_image" 2>&1 | tee "$evidence_dir/base-image-pull.log"
 docker build --pull --network=default \
   --secret id=runner-ca,src="$runner_ca_bundle" \
   --file "$dockerfile" \
