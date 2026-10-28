@@ -13,8 +13,10 @@ const MAX_JSON_BYTES = 2 * 1024 * 1024;
 const PATCH_PATH = 'debian/patches/CVE-2026-6653.patch';
 const PATCH_SHA256 = 'b4cc290c275b250c3170259386887a679857d97e760e114f6fb1f0d2c617c82c';
 const DEBIAN_VERSION = '2.12.7+dfsg+really2.9.14-2.1+deb13u3';
+const DEBIAN_ORIG_VERSION = '2.12.7+dfsg+really2.9.14';
 const DEBIAN_SNAPSHOT = '20261027T000000Z';
 const UBUNTU_VERSION = '2.9.13+dfsg-1ubuntu0.12';
+const UBUNTU_ORIG_VERSION = '2.9.13+dfsg';
 const UBUNTU_SNAPSHOT = '20260622T130000Z';
 
 function fail(message) {
@@ -250,7 +252,8 @@ export function validateManifest(files, env, expectedPatchSha = PATCH_SHA256) {
     const declared = [...(source.sourceArtifacts || [])].sort((a, b) => a.name.localeCompare(b.name));
     if (JSON.stringify(records) !== JSON.stringify(declared)) fail('Manifest source artifact hashes differ from extracted ' + directory);
     const sourceVersion = directory === 'debian-source' ? DEBIAN_VERSION : UBUNTU_VERSION;
-    const expectedNames = ['libxml2_' + sourceVersion + '.dsc', 'libxml2_' + sourceVersion + '.orig.tar.xz', 'libxml2_' + sourceVersion + '.debian.tar.xz'].sort();
+    const origVersion = directory === 'debian-source' ? DEBIAN_ORIG_VERSION : UBUNTU_ORIG_VERSION;
+    const expectedNames = ['libxml2_' + sourceVersion + '.dsc', 'libxml2_' + origVersion + '.orig.tar.xz', 'libxml2_' + sourceVersion + '.debian.tar.xz'].sort();
     if (JSON.stringify(records.map((entry) => entry.name).sort()) !== JSON.stringify(expectedNames)) fail('Unexpected source archive names in ' + directory);
     const dsc = records.find((entry) => entry.name.endsWith('.dsc'));
     if (!dsc) fail('Source .dsc is missing in ' + directory);
@@ -310,7 +313,7 @@ export function validateWorkflowRun(run, env, repo, runId, attempt) {
   const eventName = required(env, 'GITHUB_EVENT_NAME');
   const eventSha = required(env, 'GITHUB_SHA').toLowerCase();
   const pullHeadSha = env.PULL_REQUEST_HEAD_SHA || '';
-  if (String(run.id) !== runId || String(run.repository?.full_name).toLowerCase() !== repo.toLowerCase() || String(run.run_attempt) !== attempt || run.event !== eventName) fail('GitHub workflow run identity does not match this candidate job');
+  if (String(run.id) !== runId || String(run.repository?.full_name).toLowerCase() !== repo.toLowerCase() || Number(run.run_attempt) !== attempt || run.event !== eventName) fail('GitHub workflow run identity does not match this candidate job');
   if (eventName === 'pull_request') {
     if (!/^[a-f0-9]{40}$/i.test(pullHeadSha) || String(run.head_sha).toLowerCase() !== pullHeadSha.toLowerCase()) fail('GitHub PR run head does not match this candidate job');
   } else if (String(run.head_sha).toLowerCase() !== eventSha) {

@@ -7,14 +7,16 @@ import { extractZip, validateArtifactMetadata, validateManifest, validateWorkflo
 const patch = Buffer.from('fixture patch bytes');
 const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 const debVer = '2.12.7+dfsg+really2.9.14-2.1+deb13u3';
+const debOrigVer = '2.12.7+dfsg+really2.9.14';
 const ubuVer = '2.9.13+dfsg-1ubuntu0.12';
+const ubuOrigVer = '2.9.13+dfsg';
 const env = { GITHUB_RUN_ID: '42', GITHUB_RUN_ATTEMPT: '2', GITHUB_EVENT_NAME: 'pull_request', GITHUB_SHA: 'a'.repeat(40), PULL_REQUEST_HEAD_SHA: 'b'.repeat(40) };
 
 function fixtureFiles() {
   const files = new Map();
   const sourceArtifacts = {};
-  for (const [directory, version] of [['debian-source', debVer], ['ubuntu-source', ubuVer]]) {
-    const names = [`libxml2_${version}.dsc`, `libxml2_${version}.orig.tar.xz`, `libxml2_${version}.debian.tar.xz`];
+  for (const [directory, version, origVersion] of [['debian-source', debVer, debOrigVer], ['ubuntu-source', ubuVer, ubuOrigVer]]) {
+    const names = [`libxml2_${version}.dsc`, `libxml2_${origVersion}.orig.tar.xz`, `libxml2_${version}.debian.tar.xz`];
     const records = [];
     names.forEach((name, index) => {
       const bytes = Buffer.from(`${directory}-${index}`);
@@ -114,12 +116,12 @@ test('rejects incomplete provenance evidence and changed manifest claims', () =>
 
 test('binds downloaded artifact metadata to the exact run, attempt, repository, digest and PR head', () => {
   const run = { id: 42, run_attempt: 2, event: 'pull_request', head_sha: env.PULL_REQUEST_HEAD_SHA, repository: { full_name: 'owner/repo' }, head_repository: { id: 9 } };
-  assert.equal(validateWorkflowRun(run, env, 'owner/repo', '42', '2'), run);
-  assert.throws(() => validateWorkflowRun({ ...run, id: 43 }, env, 'owner/repo', '42', '2'), /run identity/);
-  assert.throws(() => validateWorkflowRun({ ...run, run_attempt: 1 }, env, 'owner/repo', '42', '2'), /run identity/);
-  assert.throws(() => validateWorkflowRun({ ...run, event: 'push' }, env, 'owner/repo', '42', '2'), /run identity/);
-  assert.throws(() => validateWorkflowRun({ ...run, repository: { full_name: 'fork/repo' } }, env, 'owner/repo', '42', '2'), /run identity/);
-  assert.throws(() => validateWorkflowRun({ ...run, head_sha: env.GITHUB_SHA }, env, 'owner/repo', '42', '2'), /PR run head/);
+  assert.equal(validateWorkflowRun(run, env, 'owner/repo', '42', 2), run);
+  assert.throws(() => validateWorkflowRun({ ...run, id: 43 }, env, 'owner/repo', '42', 2), /run identity/);
+  assert.throws(() => validateWorkflowRun({ ...run, run_attempt: 1 }, env, 'owner/repo', '42', 2), /run identity/);
+  assert.throws(() => validateWorkflowRun({ ...run, event: 'push' }, env, 'owner/repo', '42', 2), /run identity/);
+  assert.throws(() => validateWorkflowRun({ ...run, repository: { full_name: 'fork/repo' } }, env, 'owner/repo', '42', 2), /run identity/);
+  assert.throws(() => validateWorkflowRun({ ...run, head_sha: env.GITHUB_SHA }, env, 'owner/repo', '42', 2), /PR run head/);
   const digest = 'a'.repeat(64);
   const artifact = { id: 123, name: 'libxml2-source-provenance-42-2', expired: false, digest: `sha256:${digest}`, workflow_run: { id: 42, head_sha: run.head_sha, head_repository_id: 9 } };
   assert.equal(validateArtifactMetadata(artifact, '123', artifact.name, '42', run, digest), artifact);
@@ -128,6 +130,6 @@ test('binds downloaded artifact metadata to the exact run, attempt, repository, 
   assert.throws(() => validateArtifactMetadata({ ...artifact, workflow_run: { ...artifact.workflow_run, id: 43 } }, '123', artifact.name, '42', run, digest), /does not belong/);
   const pushEnv = { ...env, GITHUB_EVENT_NAME: 'push', GITHUB_SHA: 'c'.repeat(40), PULL_REQUEST_HEAD_SHA: '' };
   const pushRun = { ...run, event: 'push', head_sha: pushEnv.GITHUB_SHA };
-  assert.equal(validateWorkflowRun(pushRun, pushEnv, 'owner/repo', '42', '2'), pushRun);
-  assert.throws(() => validateWorkflowRun({ ...pushRun, head_sha: env.PULL_REQUEST_HEAD_SHA }, pushEnv, 'owner/repo', '42', '2'), /push run head/);
+  assert.equal(validateWorkflowRun(pushRun, pushEnv, 'owner/repo', '42', 2), pushRun);
+  assert.throws(() => validateWorkflowRun({ ...pushRun, head_sha: env.PULL_REQUEST_HEAD_SHA }, pushEnv, 'owner/repo', '42', 2), /push run head/);
 });
