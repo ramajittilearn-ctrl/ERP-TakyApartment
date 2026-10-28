@@ -629,7 +629,7 @@ check_gosu_image "$debian_trixie_db_image" "$debian_trixie_db_base_image" "$gosu
 check_gosu_image "$debian_bookworm_db_image" "$debian_bookworm_db_base_image" "$gosu_debian_bookworm_binary" gosu-debian-bookworm-govulncheck.txt
 
 operations_image_id="$(docker image inspect --format '{{.Id}}' "$operations_image")"
-docker run --rm --platform linux/amd64 --entrypoint /bin/cat "$operations_image" /usr/local/bin/rclone > "$rclone_operations_binary"
+docker run --rm --platform linux/amd64 --entrypoint /bin/cat "$operations_image_id" /usr/local/bin/rclone > "$rclone_operations_binary"
 [[ "$(docker image inspect --format '{{.Id}}' "$operations_image")" == "$operations_image_id" ]]
 printf 'Extracted rclone from operations image %s (%s)\n' "$operations_image" "$operations_image_id"
 bash scripts/ci/check-rclone-binary-vulnerabilities.sh \
@@ -637,9 +637,9 @@ bash scripts/ci/check-rclone-binary-vulnerabilities.sh \
   "$revision" "$tree" \
   "$gosu_report_dir/rclone-operations-govulncheck.txt"
 bash scripts/ci/check-rclone-source-vulnerabilities.sh \
-  "$revision" "$tree" \
+  "$revision" "$tree" "$operations_image" "$operations_image_id" "$rclone_operations_binary" \
   "$gosu_report_dir/rclone-source-govulncheck.txt"
-printf '%s\n' '- Exact-binary govulncheck output is retained as diagnostic evidence; source-mode govulncheck gates the checksum-verified rclone release source and vendor tree under the same Linux/amd64, CGO-disabled, vendored build configuration. Neither replaces or suppresses raw Trivy reports.' >> "$gosu_report_dir/README.md"
+printf '%s\n' '- Exact operations-image rclone binary is reconstructed from the checksum-verified source in the pinned builder and byte-compared; source/import/symbol evidence is tied to that image ID. The raw stripped-binary GO-2026-5932 and Trivy reports remain visible; scoped non-applicability does not clear the overall image.' >> "$gosu_report_dir/README.md"
 
 if [[ "$restore_probe_failures" != 0 ]]; then
   echo "At least one required Debian restore route failed; no database candidate is eligible for production migration." >&2
