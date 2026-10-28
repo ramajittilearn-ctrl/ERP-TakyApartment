@@ -9,6 +9,8 @@ die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 [[ ${QUALITY_RESULT:-} == success ]] || die 'required quality job did not succeed'
 command -v docker >/dev/null || die 'Docker is required for the isolated Linux candidate build'
 command -v jq >/dev/null || die 'jq is required'
+readonly runner_ca_bundle=/etc/ssl/certs/ca-certificates.crt
+[[ -s "$runner_ca_bundle" ]] || die 'GitHub runner CA bundle is unavailable'
 
 readonly input_dir=$(realpath -- "$1")
 readonly evidence_dir="$RUNNER_TEMP/phase4-libxml2-candidate-evidence"
@@ -24,6 +26,7 @@ STATUS
 readonly source_sha=$(jq -er '.sourceArtifact.digest | sub("^sha256:"; "")' "$input_dir/verified-inputs.json")
 readonly snapshot=$(jq -er '.debianSnapshot' "$input_dir/verified-inputs.json")
 readonly inrelease_sha=$(jq -er '.debianInReleaseSha256' "$input_dir/verified-inputs.json")
+readonly runner_ca_sha=$(sha256sum "$runner_ca_bundle" | awk '{print $1}')
 [[ "$source_sha" =~ ^[a-f0-9]{64}$ && "$inrelease_sha" =~ ^[a-f0-9]{64}$ ]] || die 'verified input digest is malformed'
 [[ "$snapshot" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || die 'Debian snapshot is malformed'
 [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]] || die 'GitHub run identity is malformed'
@@ -40,14 +43,17 @@ cp "$input_dir/metadata/debian-archive-keyring_2023.3+deb12u2_all.deb" "$evidenc
 cp "$input_dir/source-artifact.zip" "$evidence_dir/"
 cp "$input_dir/provenance.json" "$evidence_dir/"
 cp "$input_dir/verified-inputs.json" "$evidence_dir/"
+printf '%s  %s\n' "$runner_ca_sha" 'GitHub runner CA bundle (not uploaded)' > "$evidence_dir/runner-ca-bundle.sha256"
 
 docker build --pull --network=default \
+  --secret id=runner-ca,src="$runner_ca_bundle" \
   --file "$dockerfile" \
   --tag "$image" \
   --build-arg POSTGRES_BASE_IMAGE="$base_image" \
   --build-arg DEBIAN_SNAPSHOT="$snapshot" \
   --build-arg DEBIAN_INRELEASE_SHA256="$inrelease_sha" \
   --build-arg SOURCE_ARTIFACT_SHA256="$source_sha" \
+  --build-arg RUNNER_CA_SHA256="$runner_ca_sha" \
   --build-arg RUN_ID="$GITHUB_RUN_ID" \
   --build-arg RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" \
   "$build_context" 2>&1 | tee "$evidence_dir/docker-build.log"
