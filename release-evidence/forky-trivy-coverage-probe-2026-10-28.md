@@ -11,6 +11,8 @@ This local experiment checks whether Trivy 0.76.1 can interpret Debian Forky pac
 - Synthetic Forky and Debian 14 fixtures both declare amd64 `libxml2-16` version `2.15.3+dfsg-1`, source `libxml2 (2.15.3+dfsg-1)`, with package status `install ok installed`. Their `/etc/debian_version` values are `forky/sid` and `14.0` respectively.
 - The synthetic Debian 13 control declares amd64 `libxml2` version `2.12.7+dfsg+really2.9.14-2.1+deb13u3`, source at the same version, and `/etc/debian_version=13.0`.
 
+The [Debian Security Tracker record for CVE-2026-6653](https://security-tracker.debian.org/tracker/CVE-2026-6653) lists Forky fixed at `2.15.4+dfsg-1`; the [Debian Package Tracker history](https://tracker.debian.org/pkg/libxml2/news/) records `2.15.3+dfsg-1` migrating to testing before `2.15.4+dfsg-1`. Therefore the Debian 14 fixture's `2.15.3+dfsg-1` is a target-CVE-specific vulnerable positive control according to Debian's source tracker.
+
 ## Results
 
 | Fixture and scan mode | Trivy OS metadata | Findings | CVE-2026-6653 |
@@ -20,7 +22,7 @@ This local experiment checks whether Trivy 0.76.1 can interpret Debian Forky pac
 | Debian 14 version file, default detection | `debian/14.0` | 10 | absent |
 | Debian 13 vulnerable control | `debian/13` | 12 | present |
 
-The Debian 14 mapped results include other libxml2 advisories, so the experimental override obtains partial advisory data. It does not contain CVE-2026-6653 even though the Debian 13 positive control detects that CVE. Consequently, an empty Forky target-CVE result cannot be treated as remediation evidence. The source-tracker fix version and a candidate's authenticated package/runtime identity need separate verification; unknown advisory coverage stays unresolved.
+The Debian 14 mapped results include other libxml2 advisories, so the experimental override obtains partial advisory data. It does not contain CVE-2026-6653 even though Debian's source tracker marks the fixture version vulnerable and the Debian 13 positive control detects that CVE. This is a target-CVE-specific positive-control failure for the Debian 14 mapping. Consequently, an empty Forky target-CVE result cannot be treated as remediation evidence. The source-tracker fix version and a candidate's authenticated package/runtime identity need separate verification; unknown advisory coverage stays unresolved.
 
 ## Reproduce / retain
 
