@@ -73,13 +73,37 @@ let cleanupAllowed = false;
 let generatedSecrets = [];
 
 function docker(args, options = {}) {
-  return execFileSync("docker", ["--context", "default", ...args], {
-    cwd: root,
-    env: childEnv,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-    ...options,
-  });
+  try {
+    return execFileSync("docker", ["--context", "default", ...args], {
+      cwd: root,
+      env: childEnv,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      maxBuffer: 8 * 1024 * 1024,
+      ...options,
+    });
+  } catch (error) {
+    const rawOutput = [error.stdout, error.stderr]
+      .map((value) =>
+        Buffer.isBuffer(value) ? value.toString("utf8") : String(value ?? ""),
+      )
+      .filter(Boolean)
+      .join("\n");
+    const diagnostic = sanitizeDiagnostic(
+      rawOutput,
+      error.code === "ENOBUFS" || /maxbuffer|enobufs/i.test(error.message ?? ""),
+    );
+    const outcome = [
+      `exit=${error.status ?? "unknown"}`,
+      `signal=${error.signal ?? "none"}`,
+      `code=${error.code ?? "none"}`,
+      `diagnosticTruncated=${diagnostic.truncated}`,
+    ].join(" ");
+    throw new Error(
+      `Docker command failed (${outcome})${diagnostic.text ? `\n${diagnostic.text}` : ""}`,
+      { cause: error },
+    );
+  }
 }
 function git(args) {
   return execFileSync("git", args, {
@@ -89,6 +113,9 @@ function git(args) {
   });
 }
 function compose(args, options = {}) {
+  const composeArgs = [...args];
+  if (composeArgs[0] === "build" && !composeArgs.includes("--progress"))
+    composeArgs.splice(1, 0, "--progress", "plain");
   return docker(
     [
       "compose",
@@ -104,7 +131,7 @@ function compose(args, options = {}) {
       "docker-compose.stage5-runtime.yml",
       "-f",
       "docker-compose.stage5-runtime-networks.yml",
-      ...args,
+      ...composeArgs,
     ],
     options,
   );
