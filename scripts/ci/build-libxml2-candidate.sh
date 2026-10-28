@@ -26,9 +26,15 @@ STATUS
 readonly source_sha=$(jq -er '.sourceArtifact.digest | sub("^sha256:"; "")' "$input_dir/verified-inputs.json")
 readonly snapshot=$(jq -er '.debianSnapshot' "$input_dir/verified-inputs.json")
 readonly inrelease_sha=$(jq -er '.debianInReleaseSha256' "$input_dir/verified-inputs.json")
+readonly checkout_revision=$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)
+readonly provenance_checkout_revision=$(jq -er '.workflow.checkedOutRevision' "$input_dir/provenance.json")
+readonly regression_hook="$GITHUB_WORKSPACE/docker/postgres/libxml2-candidate-regression-hook.mk"
+readonly regression_hook_sha=$(sha256sum "$regression_hook" | awk '{print $1}')
 readonly runner_ca_sha=$(sha256sum "$runner_ca_bundle" | awk '{print $1}')
 [[ "$source_sha" =~ ^[a-f0-9]{64}$ && "$inrelease_sha" =~ ^[a-f0-9]{64}$ ]] || die 'verified input digest is malformed'
 [[ "$snapshot" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || die 'Debian snapshot is malformed'
+[[ "$checkout_revision" == "$provenance_checkout_revision" ]] || die 'candidate checkout revision differs from authenticated provenance workflow checkout'
+[[ "$regression_hook_sha" =~ ^[a-f0-9]{64}$ ]] || die 'candidate regression hook is missing or has a malformed digest'
 [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]] || die 'GitHub run identity is malformed'
 
 readonly image="taky-libxml2-cve-candidate:${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
@@ -37,6 +43,12 @@ readonly dockerfile="$GITHUB_WORKSPACE/docker/postgres/libxml2-cve-candidate.Doc
 readonly build_context="$RUNNER_TEMP/phase4-libxml2-candidate-context"
 mkdir -m 0700 -- "$build_context"
 cp -a "$input_dir/." "$build_context/"
+mkdir -p "$build_context/docker/postgres"
+cp "$regression_hook" "$build_context/docker/postgres/"
+[[ "$(sha256sum "$build_context/docker/postgres/libxml2-candidate-regression-hook.mk" | awk '{print $1}')" == "$regression_hook_sha" ]] || die 'candidate regression hook changed while staging the build context'
+printf 'checkout_revision=%s\nhook_path=docker/postgres/libxml2-candidate-regression-hook.mk\nhook_sha256=%s\n' \
+  "$checkout_revision" "$regression_hook_sha" \
+  > "$evidence_dir/candidate-regression-hook-provenance.txt"
 cp "$input_dir/metadata/debian-trixie.InRelease" "$evidence_dir/"
 cp "$input_dir/metadata/debian-trixie.Sources.apt-cache" "$evidence_dir/"
 cp "$input_dir/metadata/debian-archive-keyring_2023.3+deb12u2_all.deb" "$evidence_dir/"
@@ -67,6 +79,10 @@ docker image inspect "$image" > "$evidence_dir/image-inspect.json"
 docker image inspect "$base_image" > "$evidence_dir/base-image-inspect.json"
 docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/runtime-package-delta.tsv > "$evidence_dir/runtime-package-delta.tsv"
 docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/build-package-inventory.tsv > "$evidence_dir/build-package-inventory.tsv"
+docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/cve-regression-test.log > "$evidence_dir/cve-regression-test.log"
+grep -Fxq '## Parsing non-recursive huge case' "$evidence_dir/cve-regression-test.log"
+grep -Fxq 'Ran 1 tests, no errors' "$evidence_dir/cve-regression-test.log"
+grep -Fxq 'Total 1 tests, no errors' "$evidence_dir/cve-regression-test.log"
 printf 'run_id=%s\nrun_attempt=%s\nimage=%s\nimage_id=%s\nsource_artifact_sha256=%s\n' \
   "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$image" "$image_id" "$source_sha" \
   > "$evidence_dir/candidate-identity.txt"
