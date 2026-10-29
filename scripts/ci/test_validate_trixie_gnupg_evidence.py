@@ -328,7 +328,7 @@ class EvidenceFixture:
             "kind": "reviewed-trixie-gnupg-candidate-lock",
             "approval": {
                 "state": "APPROVED_FOR_ISOLATED_CANDIDATE_BUILD_ONLY",
-                "reviewer": "apt_purge_lock_review", "reviewDate": "2026-10-29",
+                "reviewer": "package_index_refresh_review", "reviewDate": "2026-10-30",
                 "runtimeClearance": "NOT_EVALUATED", "cveClearance": "NOT_EVALUATED",
                 "productionUse": "NOT_AUTHORIZED",
             },

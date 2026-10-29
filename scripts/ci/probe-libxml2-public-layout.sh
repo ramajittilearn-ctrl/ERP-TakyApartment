@@ -57,9 +57,9 @@ int main(void) {
     puts("type\tmetric\tmember\tvalue");
     SIZE_ROW("xmlEntity", xmlEntity);
     OFFSET_ROW("xmlEntity", xmlEntity, owner);
-    OFFSET_ROW("xmlEntity", xmlEntity, flags);
-#ifdef ABI_CANDIDATE
     OFFSET_ROW("xmlEntity", xmlEntity, checked);
+#ifdef ABI_CANDIDATE
+    OFFSET_ROW("xmlEntity", xmlEntity, flags);
     OFFSET_ROW("xmlEntity", xmlEntity, expandedSize);
 #endif
     SIZE_ROW("xmlParserInput", xmlParserInput);
@@ -77,14 +77,17 @@ readonly orig_sha=$(sha256sum "$orig_tar" | awk '{print $1}')
 readonly patch_sha=$(sha256sum "$patch_file" | awk '{print $1}')
 readonly candidate_deb_sha=$(sha256sum "$candidate_deb" | awk '{print $1}')
 readonly -a flags=(-std=c11 -Wall -Wextra -Werror)
-readonly flags_text='-std=c11 -Wall -Wextra -Werror'
+readonly flags_text='-H -std=c11 -Wall -Wextra -Werror'
 
 compile_probe() {
   local label=$1 root=$2 candidate_define=$3
   local define_args=()
   [[ "$candidate_define" == true ]] && define_args=(-DABI_CANDIDATE=1)
-  cc "${flags[@]}" "${define_args[@]}" -I "$root" "$work_dir/abi-probe.c" -o "$work_dir/$label-probe" \
-    2> "$output_dir/$label-compiler-includes.txt" || die "$label ABI probe failed to compile"
+  if ! cc -H "${flags[@]}" "${define_args[@]}" -I "$root" "$work_dir/abi-probe.c" -o "$work_dir/$label-probe" \
+    2> "$output_dir/$label-compiler-includes.txt"; then
+    cat "$output_dir/$label-compiler-includes.txt" >&2
+    die "$label ABI probe failed to compile"
+  fi
   awk -v root="$root" 'index($0, "/libxml/") { line=$0; sub(/^[.]+ /, "", line); if (index(line, root "/") != 1) exit 1; found++ } END { if (!found) exit 1 }' \
     "$output_dir/$label-compiler-includes.txt" || die "$label compiler included libxml headers from outside its isolated header root"
   "$work_dir/$label-probe" > "$work_dir/$label-layout.tsv"

@@ -1648,8 +1648,8 @@ def validate_candidate_lock(evidence_dir: Path, lock_path: Path) -> dict[str, ob
     }, "candidate lock approval")
     if approval != {
         "state": "APPROVED_FOR_ISOLATED_CANDIDATE_BUILD_ONLY",
-        "reviewer": "apt_purge_lock_review",
-        "reviewDate": "2026-10-29",
+        "reviewer": "package_index_refresh_review",
+        "reviewDate": "2026-10-30",
         "runtimeClearance": "NOT_EVALUATED",
         "cveClearance": "NOT_EVALUATED",
         "productionUse": "NOT_AUTHORIZED",
