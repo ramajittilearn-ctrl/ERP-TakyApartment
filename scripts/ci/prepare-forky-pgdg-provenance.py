@@ -1165,8 +1165,6 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
             planned_origin, planned_filename = repo_and_filename(plan_item["uri"], [
                 ("debian-forky", debian_policy["uri"]), ("pgdg-forky", pgdg["uri"]),
             ])
-            if pathlib.PurePosixPath(planned_filename).name != deb.name:
-                raise ProvenanceError(f"APT URI filename does not match downloaded package name: {deb.name}")
             record, origins = find_index_record(
                 [(origin, records) for origin, records in package_indexes if origin == planned_origin],
                 fields.get("Package", ""), fields.get("Version", ""),

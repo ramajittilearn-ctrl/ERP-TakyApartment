@@ -491,6 +491,44 @@ class PackageClosureTests(unittest.TestCase):
         with self.assertRaisesRegex(module.ProvenanceError, "closure differs"):
             module.verify_dependency_filenames(plan, ["a.deb", "b.deb", "extra.deb"])
 
+    def test_epoch_encoded_apt_cache_name_binds_to_signed_repository_filename(self):
+        payload = b"authenticated libcrypt package"
+        digest = hashlib.sha256(payload).hexdigest()
+        local_name = "libcrypt1_1%3a4.5.2+20251210-1_amd64.deb"
+        repo_filename = "pool/main/libx/libcrypt1/libcrypt1_4.5.2+20251210-1_amd64.deb"
+        uri = "https://deb.debian.org/debian/" + repo_filename
+        plan = module.parse_apt_print_uris(f"'{uri}' {local_name} {len(payload)} SHA256:{digest}\n")
+
+        # APT's print-uris cache name carries the epoch; Debian's signed Filename does not.
+        module.verify_dependency_filenames(plan, [local_name])
+        with self.assertRaisesRegex(module.ProvenanceError, "closure differs"):
+            module.verify_dependency_filenames(plan, [pathlib.PurePosixPath(repo_filename).name])
+
+        origin, planned_filename = module.repo_and_filename(uri, [
+            ("debian-forky", "https://deb.debian.org/debian"),
+            ("pgdg-forky", "https://apt.postgresql.org/pub/repos/apt"),
+        ])
+        self.assertEqual(origin, "debian-forky")
+        self.assertEqual(planned_filename, repo_filename)
+        record_text = (
+            "Package: libcrypt1\nVersion: 1:4.5.2+20251210-1\nArchitecture: amd64\n"
+            f"Filename: {repo_filename}\nSize: {len(payload)}\nSHA256: {digest}\n\n"
+        )
+        record, origins = module.find_index_record(
+            [("debian-forky", module.parse_deb822(record_text))],
+            "libcrypt1", "1:4.5.2+20251210-1", "amd64", planned_filename,
+        )
+        verified = module.verify_package_metadata(record, {
+            "Package": "libcrypt1", "Version": "1:4.5.2+20251210-1", "Architecture": "amd64",
+        }, payload, expected_size=len(payload))
+        self.assertEqual(origins, ["debian-forky"])
+        self.assertEqual(verified["sha256"], digest)
+        with self.assertRaisesRegex(module.ProvenanceError, "no authenticated Packages stanza"):
+            module.find_index_record(
+                [("debian-forky", module.parse_deb822(record_text))],
+                "libcrypt1", "1:4.5.2+20251210-1", "amd64", "pool/main/other/wrong.deb",
+            )
+
     def test_binds_downloaded_package_bytes_and_control_to_signed_index(self):
         payload = b"package payload"
         digest = hashlib.sha256(payload).hexdigest()
