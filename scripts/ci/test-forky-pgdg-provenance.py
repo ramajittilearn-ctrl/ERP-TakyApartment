@@ -149,13 +149,27 @@ class SignatureTests(unittest.TestCase):
 
 
 class PackageClosureTests(unittest.TestCase):
-    def test_resolves_apt_helper_from_path_as_an_absolute_executable(self):
+    def test_prefers_standard_apt_helper_over_path_shadow(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            executable = pathlib.Path(temp_dir) / "apt-helper"
-            executable.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-            executable.chmod(0o755)
-            with mock.patch.object(module.shutil, "which", return_value=str(executable)):
-                self.assertEqual(module.resolve_command("apt-helper"), str(executable.resolve()))
+            path_executable = pathlib.Path(temp_dir) / "apt-helper-shadow"
+            system_executable = pathlib.Path(temp_dir) / "apt-helper-system"
+            for executable in (path_executable, system_executable):
+                executable.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+                executable.chmod(0o755)
+            with mock.patch.object(module.shutil, "which", return_value=str(path_executable)), mock.patch.object(
+                module, "APT_HELPER_FALLBACKS", (system_executable,)
+            ):
+                self.assertEqual(module.resolve_command("apt-helper"), str(system_executable.resolve()))
+
+    def test_fails_closed_when_standard_apt_helper_is_missing_even_if_path_has_shadow(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path_shadow = pathlib.Path(temp_dir) / "apt-helper-shadow"
+            path_shadow.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            path_shadow.chmod(0o755)
+            with mock.patch.object(module.shutil, "which", return_value=str(path_shadow)), mock.patch.object(
+                module, "APT_HELPER_FALLBACKS", ()
+            ), self.assertRaisesRegex(module.ProvenanceError, "required command is unavailable: apt-helper"):
+                module.resolve_command("apt-helper")
 
     def test_resolves_apt_helper_from_standard_install_location_when_not_on_path(self):
         with tempfile.TemporaryDirectory() as temp_dir:

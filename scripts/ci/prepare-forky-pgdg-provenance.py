@@ -400,11 +400,13 @@ def parse_dpkg_fields(text: str) -> dict[str, str]:
 
 def resolve_command(name: str) -> str:
     candidates = []
-    path_candidate = shutil.which(name)
-    if path_candidate is not None:
-        candidates.append(pathlib.Path(path_candidate))
     if name == "apt-helper":
+        # Use only the OS-managed helper; never trust a PATH shadow for APT metadata checks.
         candidates.extend(APT_HELPER_FALLBACKS)
+    else:
+        path_candidate = shutil.which(name)
+        if path_candidate is not None:
+            candidates.append(pathlib.Path(path_candidate))
     for candidate in candidates:
         try:
             resolved = candidate.resolve(strict=True)
