@@ -116,6 +116,9 @@ function compose(args, options = {}) {
   const composeArgs = [...args];
   if (composeArgs[0] === "build" && !composeArgs.includes("--progress"))
     composeArgs.splice(1, 0, "--progress", "plain");
+  const candidateOverride = process.env.STAGE5_FORKY_CANDIDATE_IMAGE
+    ? ["-f", "docker-compose.stage5-forky-candidate.yml"]
+    : [];
   return docker(
     [
       "compose",
@@ -131,6 +134,7 @@ function compose(args, options = {}) {
       "docker-compose.stage5-runtime.yml",
       "-f",
       "docker-compose.stage5-runtime-networks.yml",
+      ...candidateOverride,
       ...composeArgs,
     ],
     options,
@@ -317,21 +321,35 @@ function verifyComposeConfig(config, env, revision, tree) {
     assertRenderedLabels(volume.labels, runLabels, `${name} volume`);
 
   const db = config.services.db;
-  assertRenderedEqual(
-    db.image,
-    "taky-erp-postgres:17.11-alpine3.24-gosu-1.19-user-0.4.1-xsys-0.44.0",
-    "patched Alpine database image",
-  );
-  assertRenderedEqual(
-    db.build?.args?.POSTGRES_BASE_IMAGE,
-    "postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b",
-    "digest-pinned PostgreSQL base image",
-  );
-  assertRenderedEqual(
-    db.build?.dockerfile,
-    "docker/postgres/Dockerfile",
-    "patched PostgreSQL Dockerfile",
-  );
+  if (env.STAGE5_FORKY_CANDIDATE_IMAGE) {
+    assert.match(
+      env.STAGE5_FORKY_CANDIDATE_IMAGE,
+      /^taky-erp-postgres:17\.11-forky-pgdg-candidate-[a-f0-9]{12}$/,
+      "Forky candidate image must use the source-bound candidate tag",
+    );
+    assertRenderedEqual(
+      db.image,
+      env.STAGE5_FORKY_CANDIDATE_IMAGE,
+      "source-bound Forky candidate image",
+    );
+    assert.equal(db.build, undefined, "candidate image must not be rebuilt by Compose");
+  } else {
+    assertRenderedEqual(
+      db.image,
+      "taky-erp-postgres:17.11-alpine3.24-gosu-1.19-user-0.4.1-xsys-0.44.0",
+      "patched Alpine database image",
+    );
+    assertRenderedEqual(
+      db.build?.args?.POSTGRES_BASE_IMAGE,
+      "postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b",
+      "digest-pinned PostgreSQL base image",
+    );
+    assertRenderedEqual(
+      db.build?.dockerfile,
+      "docker/postgres/Dockerfile",
+      "patched PostgreSQL Dockerfile",
+    );
+  }
   assert.deepEqual(db.ports ?? [], [], "database must not publish a host port");
   assert.deepEqual(Object.keys(db.networks ?? {}), ["db-private"]);
   assertMounts(
@@ -817,6 +835,8 @@ try {
     STAGE5_ADMIN_USERNAME: adminUsername,
     STAGE5_STAFF_USERNAME: staffUsername,
   };
+  if (process.env.STAGE5_FORKY_CANDIDATE_IMAGE)
+    env.STAGE5_FORKY_CANDIDATE_IMAGE = process.env.STAGE5_FORKY_CANDIDATE_IMAGE;
   await mkdir(artifactDir, { recursive: true, mode: 0o700 });
   envDirectory = await mkdtemp(join(tmpdir(), "taky-stage5-env-"));
   await chmod(envDirectory, 0o700);

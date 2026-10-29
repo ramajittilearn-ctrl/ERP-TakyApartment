@@ -102,6 +102,9 @@ jobs:
     permissions:
       actions: read
       contents: read
+    outputs:
+      artifact_id: ${{ steps.upload-forky.outputs.artifact-id }}
+      artifact_digest: ${{ steps.upload-forky.outputs.artifact-digest }}
     env:
       PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
       QUALITY_RESULT: ${{ needs.required-quality.result }}
@@ -161,11 +164,92 @@ jobs:
         run: python3 scripts/ci/prepare-forky-pgdg-provenance.py "$OUTPUT_DIR"
 
       - name: Upload optional Forky and PGDG provenance evidence
+        id: upload-forky
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: forky-pgdg-provenance-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/phase4-forky-pgdg-provenance/
+          if-no-files-found: warn
+          retention-days: 30
+
+  forky-pgdg-artifact-verification:
+    name: forky-pgdg-artifact-verification
+    runs-on: ubuntu-24.04
+    needs: [required-quality, forky-pgdg-provenance]
+    if: always() && needs.required-quality.result == 'success' && needs.forky-pgdg-provenance.result == 'success'
+    timeout-minutes: 90
+    permissions:
+      actions: read
+      contents: read
+    env:
+      PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: Verify consumer and fail-closed package artifact contract
+        run: |
+          node --check scripts/ci/consume-forky-pgdg-provenance.mjs
+          node --test scripts/ci/consume-forky-pgdg-provenance.test.mjs
+          python3 scripts/ci/test-forky-pgdg-provenance.py -v
+          bash -n scripts/ci/build-forky-pgdg-candidate.sh
+          node --check scripts/ci/finalize-forky-pgdg-candidate-evidence.mjs
+          node --test scripts/ci/finalize-forky-pgdg-candidate-evidence.test.mjs
+          python3 -m json.tool scripts/ci/forky-pgdg-provenance-policy.json >/dev/null
+
+      - name: Download and validate exact same-run Forky package provenance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_ARTIFACT_ID: ${{ needs.forky-pgdg-provenance.outputs.artifact_id }}
+          SOURCE_ARTIFACT_DIGEST: ${{ needs.forky-pgdg-provenance.outputs.artifact_digest }}
+          OUTPUT_DIR: ${{ runner.temp }}/phase4-forky-pgdg-verified-inputs
+        run: node scripts/ci/consume-forky-pgdg-provenance.mjs
+
+      - name: Build and verify isolated Forky PostgreSQL runtime candidate
+        run: bash scripts/ci/build-forky-pgdg-candidate.sh "$RUNNER_TEMP/phase4-forky-pgdg-verified-inputs" "$RUNNER_TEMP/phase4-forky-pgdg-candidate-evidence"
+
+      - name: Install locked dependencies and Stage 5 browser/PDF tools
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/forky-candidate-playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libnss3-tools qpdf poppler-utils tesseract-ocr tesseract-ocr-tha
+
+      - name: Run full ERP Stage 5 against the Forky PostgreSQL candidate
+        id: forky-stage5
+        env:
+          CI: "true"
+          NEXT_TELEMETRY_DISABLED: "1"
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          STAGE5_ARTIFACT_ROOT: ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence/stage5-runtime
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/forky-candidate-playwright
+        run: |
+          candidate_image="taky-erp-postgres:17.11-forky-pgdg-candidate-${GITHUB_SHA:0:12}"
+          export STAGE5_FORKY_CANDIDATE_IMAGE="$candidate_image"
+          node scripts/verify-stage5-runtime.mjs
+
+      - name: Finalize candidate and ERP integration evidence
+        if: always()
+        env:
+          STAGE5_RUN_RESULT: ${{ steps.forky-stage5.outcome }}
+        run: node scripts/ci/finalize-forky-pgdg-candidate-evidence.mjs "$RUNNER_TEMP/phase4-forky-pgdg-candidate-evidence" "$RUNNER_TEMP/phase4-forky-pgdg-candidate-evidence/stage5-runtime"
+
+      - name: Upload Forky candidate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forky-pgdg-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence/
           if-no-files-found: warn
           retention-days: 30
 
