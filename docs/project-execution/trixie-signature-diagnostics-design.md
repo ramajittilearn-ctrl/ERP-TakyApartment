@@ -6,6 +6,12 @@ The exact-head hosted run 40856630605 completed all four isolated APT updates an
 
 The accepted signature policy is strict: `gpgv` must exit zero, produce at least one `VALIDSIG`, and produce none of `BADSIG`, `ERRSIG`, `NO_PUBKEY`, `EXPKEYSIG`, `REVKEYSIG`, or `NODATA`. This policy is unchanged by the diagnostic work.
 
+## Hosted diagnosis — 2026-10-29
+
+PR run `40861973473`, artifact `12893140228`, confirms the diagnostic output works. The host `gpgv` 2.4.4 checks for Debian Trixie main, updates, and security all pass. Only `trixie-pgdg` fails: source-bound keyring `/usr/local/share/keyrings/postgres.gpg.asc` is passed byte-for-byte to `gpgv` after being copied to a `.gpg` temporary name. The verifier reports `ERRSIG`/`NO_PUBKEY`; stderr begins with `invalid packet (ctb=2d)` and `keydb_search failed: Invalid packet`. `0x2d` is the ASCII `-` in an armored OpenPGP header, so evidence strongly indicates an ASCII-armor/binary-keyring format mismatch in the independent verifier adapter. APT's successful PGDG metadata acquisition is separate evidence: the image records `sqv` as its configured verifier and does not establish that its adapter is interchangeable with host `gpgv`.
+
+The correction must retain the original source-bound armored keyring and hash unchanged, then dearmor only that private copy with identified, bounded GnuPG into a private binary snapshot for `gpgv`. Record original and derived sizes/hashes, format and transformation tool details. Recheck both original and derived bytes before and after signature verification. Binary keyrings pass through unchanged. Do not import keys, use ambient trust, replace the source key, combine per-suite trust, or change the strict `gpgv` acceptance predicate. The independent cross-review approved this design; exact-head hosted verification must demonstrate that the dearmored source-bound PGDG key makes the original captured Release pass.
+
 ## Synthesis decision
 
 Use candidate A's separate, structured, per-suite diagnostics artifact. Keep the discovery evidence immutable because its `evidenceSha256` inventory is finalized before proposal validation. The validator writes per-attempt diagnostics and a terminal validation manifest to a fresh sibling directory supplied by CI. A failed diagnostic write remains a validation failure.

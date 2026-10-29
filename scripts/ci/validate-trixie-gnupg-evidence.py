@@ -35,6 +35,19 @@ EXPECTED_ORIGINS = {
     "trixie-pgdg": ("trixie-pgdg", "apt.postgresql.org", "/pub/repos/apt"),
 }
 GPGV_OUTPUT_LIMIT = 65536
+ASCII_ARMORED_PUBLIC_KEY = b"-----BEGIN PGP PUBLIC KEY BLOCK-----"
+
+
+def is_armored_public_key(raw: bytes) -> bool:
+    if not raw.startswith(ASCII_ARMORED_PUBLIC_KEY):
+        return False
+    try:
+        text = raw.decode("ascii")
+    except UnicodeDecodeError:
+        fail("armored source keyring is not valid ASCII")
+    if "-----END PGP PUBLIC KEY BLOCK-----" not in text or not text.split(ASCII_ARMORED_PUBLIC_KEY.decode(), 1)[1].strip():
+        fail("armored source keyring has malformed public-key framing")
+    return True
 
 
 def run_bounded(command: list[str], *, env: dict[str, str], timeout: int) -> tuple[int, bytes, bytes, bool]:
@@ -89,6 +102,25 @@ def redact_diagnostic_text(stderr: str, evidence_dir: Path, temp_root: Path) -> 
     if len(stderr) > 16000:
         redacted += "\n[TRUNCATED]"
     return redacted
+
+
+def normalized_private_argv(
+    command: list[str], homedir: str, private_release: Path, private_paths: list[Path],
+    armored_source: Path | None = None,
+) -> list[str]:
+    normalized = []
+    for argument in command:
+        if argument == homedir:
+            normalized.append("$PRIVATE_HOMEDIR")
+        elif argument == str(private_release):
+            normalized.append("$PRIVATE_INRELEASE")
+        elif armored_source is not None and argument == str(armored_source):
+            normalized.append("$PRIVATE_ARMORED_KEYRING")
+        elif argument in {str(item) for item in private_paths}:
+            normalized.append("$PRIVATE_KEYRING")
+        else:
+            normalized.append(argument)
+    return normalized
 
 
 @dataclass(frozen=True)
@@ -798,7 +830,7 @@ def verify_inrelease_signature(
         "suite": request.suite,
         "source": {"file": request.source_file, "stanzaSha256": request.source_stanza_sha256},
         "release": {"file": request.inrelease_file, "sha256": request.inrelease_sha256, "sizeBytes": request.inrelease_size_bytes},
-        "keyrings": [{"path": item["path"], "sha256": item["sha256"], "capturedFile": item["capturedFile"]} for item in request.keyrings],
+        "keyrings": [],
         "verifier": {"path": str(Path(verifier).resolve()), "sha256": sha256_file(Path(verifier)), "version": "unavailable"},
         "argv": [], "returncode": None, "termination": None, "statuses": [],
         "stdoutSha256": None, "stderrSha256": None, "accepted": False, "failureReason": None,
@@ -815,6 +847,7 @@ def verify_inrelease_signature(
     try:
         private_release = temp_root / "InRelease"
         private_keys: list[Path] = []
+        keyring_observations: list[dict[str, object]] = []
         bound_inputs = [(path, request.inrelease_sha256, request.inrelease_size_bytes)]
         if len(keyrings) != len(request.keyrings):
             fail("signature keyring paths differ from bound keyring records")
@@ -830,18 +863,160 @@ def verify_inrelease_signature(
                 raw = source.read()
             if sha256_bytes(raw) != expected_hash or (expected_size is not None and len(raw) != expected_size):
                 fail("signature input changed from its bound evidence hash")
-            snapshot = private_release if index == 0 else temp_root / f"keyring-{index}.gpg"
+            armored = index > 0 and is_armored_public_key(raw)
+            snapshot = private_release if index == 0 else temp_root / f"keyring-{index}.asc" if armored else temp_root / f"keyring-{index}.gpg"
             with snapshot.open("xb") as target:
                 target.write(raw)
             os.chmod(snapshot, 0o600)
             if index:
                 private_keys.append(snapshot)
+                keyring_observations.append({
+                    "path": request.keyrings[index - 1]["path"],
+                    "sourceSha256": expected_hash,
+                    "sourceSizeBytes": len(raw),
+                    "capturedFile": request.keyrings[index - 1]["capturedFile"],
+                    "sourceFormat": "ASCII_ARMORED_PUBLIC_KEY" if armored else "BINARY",
+                    "verificationFormat": "OPENPGP_BINARY" if not armored else "PENDING",
+                    "transformation": "PENDING" if armored else "BYTE_FOR_BYTE_PASSTHROUGH",
+                })
+                attempt["keyrings"] = keyring_observations
         with tempfile.TemporaryDirectory(prefix="gpgv-home-", dir=temp_root) as homedir:
+            verification_keys: list[Path] = []
+            def record_conversion_failure(
+                reason: str, tool: dict[str, object], command: list[str] | None,
+                returncode: int | None, termination: str, stdout: bytes = b"", stderr: bytes = b"",
+                overflow: bool = False, output_keyring: Path | None = None,
+                armored_snapshot: Path | None = None,
+            ) -> None:
+                attempt["conversionTool"] = tool
+                attempt["conversionArgv"] = (
+                    normalized_private_argv(command, homedir, private_release,
+                                            [*private_keys, *( [output_keyring] if output_keyring else [])], armored_snapshot)
+                    if command else []
+                )
+                attempt["returncode"] = returncode
+                attempt["termination"] = "OUTPUT_LIMIT" if overflow else termination
+                attempt["stdoutSha256"] = sha256_bytes(stdout)
+                attempt["stderrSha256"] = sha256_bytes(stderr)
+                attempt["accepted"] = False
+                attempt["failureReason"] = reason
+                if output_keyring is not None and output_keyring.exists() and not output_keyring.is_symlink() and output_keyring.is_file():
+                    attempt["conversionOutput"] = {
+                        "sha256": sha256_file(output_keyring),
+                        "sizeBytes": output_keyring.stat().st_size,
+                    }
+                diagnostics.record(
+                    request.suite, attempt,
+                    redact_diagnostic_text(stderr.decode("utf-8", errors="replace"), evidence_dir, temp_root),
+                )
+                fail(reason)
+
+            for source_snapshot, observation in zip(private_keys, keyring_observations):
+                if observation["sourceFormat"] == "BINARY":
+                    observation["verificationFile"] = "$PRIVATE_KEYRING"
+                    observation["verificationSha256"] = observation["sourceSha256"]
+                    observation["verificationSizeBytes"] = observation["sourceSizeBytes"]
+                    observation["transformation"] = "BYTE_FOR_BYTE_PASSTHROUGH"
+                    verification_keys.append(source_snapshot)
+                    continue
+                gpg = shutil.which("gpg")
+                if not gpg:
+                    attempt["keyrings"] = keyring_observations
+                    record_conversion_failure(
+                        "gpg is unavailable for armored source keyring conversion",
+                        {"available": False, "path": None, "sha256": None, "version": "unavailable"},
+                        None, None, "UNAVAILABLE", armored_snapshot=source_snapshot,
+                    )
+                gpg_path = Path(gpg).resolve()
+                gpg_tool = {"available": True, "path": str(gpg_path), "sha256": sha256_file(gpg_path), "version": "unavailable"}
+                try:
+                    gpg_version_rc, gpg_version_out, gpg_version_err, gpg_version_overflow = run_bounded(
+                        [gpg, "--version"], env=env, timeout=5,
+                    )
+                except OSError as error:
+                    record_conversion_failure("gpg version command could not be launched", gpg_tool, [gpg, "--version"],
+                                              None, "LAUNCH_ERROR", stderr=str(error).encode(), armored_snapshot=source_snapshot)
+                gpg_version_text = (gpg_version_out or gpg_version_err).decode("utf-8", errors="replace")
+                if gpg_version_text.strip():
+                    gpg_tool["version"] = gpg_version_text.splitlines()[0][:300]
+                if gpg_version_rc != 0 or gpg_version_overflow or not gpg_version_text.strip():
+                    record_conversion_failure("gpg identity/version check failed for armored source keyring conversion",
+                                              gpg_tool, [gpg, "--version"], gpg_version_rc,
+                                              "OUTPUT_LIMIT" if gpg_version_overflow else "TIMEOUT" if gpg_version_rc == -1 else "VERSION_ERROR",
+                                              gpg_version_out, gpg_version_err, gpg_version_overflow,
+                                              armored_snapshot=source_snapshot)
+                output_keyring = temp_root / f"keyring-{len(verification_keys) + 1}-dearmored.gpg"
+                conversion_argv = [gpg, "--homedir", homedir, "--batch", "--yes", "--dearmor", "--output", str(output_keyring), str(source_snapshot)]
+                try:
+                    conversion_rc, conversion_stdout, conversion_stderr, conversion_overflow = run_bounded(
+                        conversion_argv, env=env, timeout=15,
+                    )
+                except OSError as error:
+                    record_conversion_failure("gpg dearmor command could not be launched", gpg_tool, conversion_argv,
+                                              None, "LAUNCH_ERROR", stderr=str(error).encode(),
+                                              output_keyring=output_keyring, armored_snapshot=source_snapshot)
+                if conversion_rc != 0 or conversion_overflow or not output_keyring.is_file() or output_keyring.is_symlink():
+                    record_conversion_failure("gpg failed to dearmor the bound source keyring", gpg_tool, conversion_argv,
+                                              conversion_rc, "OUTPUT_LIMIT" if conversion_overflow else "TIMEOUT" if conversion_rc == -1 else "CONVERSION_ERROR",
+                                              conversion_stdout, conversion_stderr, conversion_overflow,
+                                              output_keyring, source_snapshot)
+                output_stat = output_keyring.stat()
+                if not stat.S_ISREG(output_stat.st_mode) or output_stat.st_size <= 0 or output_stat.st_size >= GPGV_OUTPUT_LIMIT:
+                    record_conversion_failure("gpg produced an empty, oversized, or malformed dearmored keyring", gpg_tool,
+                                              conversion_argv, conversion_rc, "MALFORMED_OUTPUT", conversion_stdout,
+                                              conversion_stderr, output_keyring=output_keyring, armored_snapshot=source_snapshot)
+                with output_keyring.open("rb") as derived_stream:
+                    first_packet_octet = derived_stream.read(1)
+                if not first_packet_octet or not first_packet_octet[0] & 0x80:
+                    record_conversion_failure("gpg produced malformed non-OpenPGP output for the armored source keyring",
+                                              gpg_tool, conversion_argv, conversion_rc, "MALFORMED_OUTPUT",
+                                              conversion_stdout, conversion_stderr, output_keyring=output_keyring,
+                                              armored_snapshot=source_snapshot)
+                os.chmod(output_keyring, 0o600)
+                observation.update({
+                    "transformation": "gpg --dearmor",
+                    "verificationFormat": "OPENPGP_BINARY",
+                    "verificationFile": "$PRIVATE_KEYRING",
+                    "verificationSha256": sha256_file(output_keyring),
+                    "verificationSizeBytes": output_stat.st_size,
+                    "conversionReturnCode": conversion_rc,
+                    "conversionTermination": "EXITED",
+                    "conversionStdoutSha256": sha256_bytes(conversion_stdout),
+                    "conversionStderrSha256": sha256_bytes(conversion_stderr),
+                    "conversionTool": {
+                        "path": str(gpg_path),
+                        "sha256": sha256_file(gpg_path),
+                        "version": gpg_version_text.splitlines()[0][:300],
+                        "argv": [str(gpg_path), "--homedir", "$PRIVATE_HOMEDIR", "--batch", "--yes", "--dearmor", "--output", "$PRIVATE_KEYRING", "$PRIVATE_ARMORED_KEYRING"],
+                    },
+                })
+                verification_keys.append(output_keyring)
+            attempt["keyrings"] = keyring_observations
+            expected_private = [(private_release, request.inrelease_sha256), *zip(private_keys, (str(item["sha256"]) for item in request.keyrings)),
+                                *zip(verification_keys, (str(item["verificationSha256"]) for item in keyring_observations))]
+            for private_path, expected_hash in expected_private:
+                try:
+                    private_stat = private_path.lstat()
+                except OSError as error:
+                    fail(f"private signature snapshot is unavailable before gpgv: {error}")
+                if (not stat.S_ISREG(private_stat.st_mode) or private_path.is_symlink()
+                        or stat.S_IMODE(private_stat.st_mode) != 0o600 or sha256_file(private_path) != expected_hash):
+                    fail("private signature snapshot hash, type, or mode changed before gpgv")
             command = [verifier, "--homedir", homedir, "--status-fd", "1", "--output", os.devnull]
-            for keyring in private_keys:
+            for keyring in verification_keys:
                 command.extend(("--keyring", str(keyring)))
             command.append(str(private_release))
-            attempt["argv"] = [str(Path(verifier).resolve()), "--homedir", "$PRIVATE_HOMEDIR", *command[2:-1], "$PRIVATE_INRELEASE"]
+            normalized_argv = []
+            for argument in command:
+                if argument == homedir:
+                    normalized_argv.append("$PRIVATE_HOMEDIR")
+                elif argument == str(private_release):
+                    normalized_argv.append("$PRIVATE_INRELEASE")
+                elif argument in {str(item) for item in verification_keys}:
+                    normalized_argv.append("$PRIVATE_KEYRING")
+                else:
+                    normalized_argv.append(argument)
+            attempt["argv"] = normalized_argv
             stdout_bytes, stderr_bytes, overflow = b"", b"", False
             try:
                 returncode, stdout_bytes, stderr_bytes, overflow = run_bounded(command, env=env, timeout=30)
@@ -857,8 +1032,18 @@ def verify_inrelease_signature(
             stderr = stderr_bytes.decode("utf-8", errors="replace")
             expected_snapshot_hashes = [request.inrelease_sha256, *(str(item["sha256"]) for item in request.keyrings)]
             snapshot_paths = [private_release, *private_keys]
-            if any(sha256_file(snapshot) != expected for snapshot, expected in zip(snapshot_paths, expected_snapshot_hashes)):
-                fail("private signature snapshot changed during gpgv verification")
+            for snapshot, expected in zip(snapshot_paths, expected_snapshot_hashes):
+                if (snapshot.is_symlink() or not snapshot.is_file() or stat.S_IMODE(snapshot.stat().st_mode) != 0o600
+                        or sha256_file(snapshot) != expected):
+                    fail("private signature snapshot changed during gpgv verification")
+            for verification_key, observation in zip(verification_keys, keyring_observations):
+                if (verification_key.is_symlink() or not verification_key.is_file()
+                        or stat.S_IMODE(verification_key.stat().st_mode) != 0o600
+                        or sha256_file(verification_key) != observation["verificationSha256"]):
+                    fail("private verification keyring changed during gpgv verification")
+            for source_path, key_record in zip(keyrings, request.keyrings):
+                if sha256_file(source_path) != key_record["sha256"]:
+                    fail("bound source keyring changed during gpgv verification")
             attempt["stdoutSha256"] = sha256_bytes(stdout_bytes)
             attempt["stderrSha256"] = sha256_bytes(stderr_bytes)
             statuses, tokens = structured_gpg_statuses(stdout_bytes)

@@ -3,6 +3,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -444,11 +445,244 @@ class EvidenceValidationTests(unittest.TestCase):
                 self.assertEqual([status["token"] for status in record["statuses"]], [line.split()[1] for line in stdout.splitlines()])
                 self.assertEqual(record["stdoutSha256"], digest(raw_stdout))
                 self.assertIn("$PRIVATE_HOMEDIR", record["argv"])
+                keyring_record = record["keyrings"][0]
+                self.assertEqual(keyring_record["sourceFormat"], "BINARY")
+                self.assertEqual(keyring_record["transformation"], "BYTE_FOR_BYTE_PASSTHROUGH")
+                self.assertEqual(keyring_record["sourceSha256"], keyring_record["verificationSha256"])
                 stderr = (base / "diagnostics" / "trixie.stderr.txt").read_text()
                 self.assertNotIn("Alice Example", stderr)
                 self.assertNotIn("/private/path", stderr)
                 self.assertNotIn("user@", stderr)
                 self.assertNotIn("secret@", stderr)
+
+    def test_armored_source_key_is_dearmored_privately_and_bound_in_report(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            armored = b"-----BEGIN PGP PUBLIC KEY BLOCK-----\nYWJj\n-----END PGP PUBLIC KEY BLOCK-----\n"
+            release, keyring = base / "InRelease", base / "postgres.gpg.asc"
+            release.write_bytes(b"signed metadata")
+            keyring.write_bytes(armored)
+            evidence = base / "evidence"; evidence.mkdir()
+            diagnostics = MODULE.ValidationDiagnostics(base / "diagnostics", evidence)
+            fake_gpgv, fake_gpg = base / "gpgv", base / "gpg"
+            fake_gpgv.write_bytes(b"gpgv fake executable")
+            fake_gpg.write_bytes(b"gpg fake executable")
+            request = MODULE.SignatureRequest(
+                "trixie-pgdg", "sources.list", "a" * 64, "isolated-releases/trixie-pgdg/InRelease",
+                digest(b"signed metadata"), len(b"signed metadata"),
+                ({"path": "/postgres.gpg.asc", "sha256": digest(armored), "capturedFile": "apt-keyrings/key"},),
+            )
+            derived = b"\x99binary-openpgp-public-key"
+            calls = []
+            def fake_bounded(command, *, env, timeout):
+                calls.append(command)
+                if command[-1] == "--version":
+                    return 0, (b"gpg (GnuPG) fixture\n" if command[0] == str(fake_gpg) else b"gpgv fixture\n"), b"", False
+                if "--dearmor" in command:
+                    out_path = Path(command[command.index("--output") + 1])
+                    out_path.write_bytes(derived)
+                    return 0, b"", b"", False
+                return 0, b"[GNUPG:] VALIDSIG fingerprint\n", b"", False
+            with patch.object(MODULE.shutil, "which", side_effect=lambda name: str(fake_gpg if name == "gpg" else fake_gpgv)), patch.object(
+                MODULE, "run_bounded", side_effect=fake_bounded,
+            ):
+                REAL_VERIFY_SIGNATURE(release, [keyring], request=request, evidence_dir=evidence, diagnostics=diagnostics)
+            conversion = next(command for command in calls if "--dearmor" in command)
+            self.assertIn("--homedir", conversion)
+            self.assertTrue(Path(conversion[conversion.index("--homedir") + 1]).is_absolute())
+            report = json.loads((base / "diagnostics" / "trixie-pgdg.json").read_text())
+            key_record = report["keyrings"][0]
+            self.assertEqual(key_record["sourceSha256"], digest(armored))
+            self.assertEqual(key_record["sourceSizeBytes"], len(armored))
+            self.assertEqual(key_record["verificationSha256"], digest(derived))
+            self.assertEqual(key_record["verificationSizeBytes"], len(derived))
+            self.assertEqual(key_record["transformation"], "gpg --dearmor")
+            self.assertEqual(key_record["conversionTool"]["sha256"], digest(b"gpg fake executable"))
+            self.assertIn("$PRIVATE_HOMEDIR", key_record["conversionTool"]["argv"])
+            self.assertIn("$PRIVATE_KEYRING", report["argv"])
+
+    def test_armored_conversion_failure_fails_closed_before_gpgv(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            armored = b"-----BEGIN PGP PUBLIC KEY BLOCK-----\nYWJj\n-----END PGP PUBLIC KEY BLOCK-----\n"
+            release, keyring = base / "InRelease", base / "postgres.gpg.asc"
+            release.write_bytes(b"signed metadata"); keyring.write_bytes(armored)
+            evidence = base / "evidence"; evidence.mkdir()
+            diagnostics = MODULE.ValidationDiagnostics(base / "diagnostics", evidence)
+            fake_gpgv, fake_gpg = base / "gpgv", base / "gpg"
+            fake_gpgv.write_bytes(b"gpgv"); fake_gpg.write_bytes(b"gpg")
+            request = MODULE.SignatureRequest(
+                "trixie-pgdg", "sources.list", "a" * 64, "isolated-releases/trixie-pgdg/InRelease",
+                digest(b"signed metadata"), len(b"signed metadata"),
+                ({"path": "/postgres.gpg.asc", "sha256": digest(armored), "capturedFile": "apt-keyrings/key"},),
+            )
+            calls = []
+            def fail_conversion(command, *, env, timeout):
+                calls.append(command)
+                if command[-1] == "--version":
+                    return 0, b"tool version\n", b"", False
+                if "--dearmor" in command:
+                    return 2, b"", b"bad armor from <Hidden Owner> https://user:secret@example.test", False
+                return 0, b"[GNUPG:] VALIDSIG fingerprint\n", b"", False
+            with patch.object(MODULE.shutil, "which", side_effect=lambda name: str(fake_gpg if name == "gpg" else fake_gpgv)), patch.object(
+                MODULE, "run_bounded", side_effect=fail_conversion,
+            ):
+                with self.assertRaisesRegex(ValueError, "failed to dearmor"):
+                    REAL_VERIFY_SIGNATURE(release, [keyring], request=request, evidence_dir=evidence, diagnostics=diagnostics)
+            self.assertFalse(any("--status-fd" in command for command in calls))
+            report = json.loads((base / "diagnostics" / "trixie-pgdg.json").read_text())
+            self.assertEqual(report["returncode"], 2)
+            self.assertEqual(report["termination"], "CONVERSION_ERROR")
+            self.assertEqual(report["stderrSha256"], digest(b"bad armor from <Hidden Owner> https://user:secret@example.test"))
+            redacted = (base / "diagnostics" / "trixie-pgdg.stderr.txt").read_text()
+            self.assertNotIn("Hidden Owner", redacted)
+            self.assertNotIn("secret", redacted)
+            self.assertIn("$PRIVATE_HOMEDIR", report["conversionArgv"])
+            self.assertIn("$PRIVATE_ARMORED_KEYRING", report["conversionArgv"])
+
+    def test_missing_gpg_converter_records_suite_diagnostic_before_rejection(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            armored = b"-----BEGIN PGP PUBLIC KEY BLOCK-----\nYWJj\n-----END PGP PUBLIC KEY BLOCK-----\n"
+            release, keyring = base / "InRelease", base / "postgres.gpg.asc"
+            release.write_bytes(b"signed metadata"); keyring.write_bytes(armored)
+            evidence = base / "evidence"; evidence.mkdir()
+            diagnostics = MODULE.ValidationDiagnostics(base / "diagnostics", evidence)
+            fake_gpgv = base / "gpgv"; fake_gpgv.write_bytes(b"gpgv")
+            request = MODULE.SignatureRequest(
+                "trixie-pgdg", "sources.list", "a" * 64, "isolated-releases/trixie-pgdg/InRelease",
+                digest(b"signed metadata"), len(b"signed metadata"),
+                ({"path": "/postgres.gpg.asc", "sha256": digest(armored), "capturedFile": "apt-keyrings/key"},),
+            )
+            with patch.object(MODULE.shutil, "which", side_effect=lambda name: str(fake_gpgv) if name == "gpgv" else None), patch.object(
+                MODULE, "run_bounded", return_value=(0, b"gpgv version\n", b"", False),
+            ):
+                with self.assertRaisesRegex(ValueError, "gpg is unavailable"):
+                    REAL_VERIFY_SIGNATURE(release, [keyring], request=request, evidence_dir=evidence, diagnostics=diagnostics)
+            report = json.loads((base / "diagnostics" / "trixie-pgdg.json").read_text())
+            self.assertEqual(report["termination"], "UNAVAILABLE")
+            self.assertEqual(report["conversionTool"]["available"], False)
+            self.assertEqual(report["stderrSha256"], digest(b""))
+
+    def test_gpg_version_timeout_overflow_and_malformed_output_are_recorded(self):
+        cases = (
+            ("version_error", (1, b"", b"version failed", False), None),
+            ("version_timeout", (-1, b"", b"version timed out", False), None),
+            ("version_overflow", (0, b"", b"", True), None),
+            ("conversion_timeout", (0, b"", b"", False), (-1, b"", b"dearmor timed out", False)),
+            ("conversion_overflow", (0, b"", b"", False), (0, b"", b"", True)),
+            ("empty_output", (0, b"", b"", False), (0, b"", b"", False, b"")),
+            ("malformed_output", (0, b"", b"", False), (0, b"", b"", False, b"not an OpenPGP packet")),
+        )
+        for label, version_result, conversion_result in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as temp:
+                base = Path(temp)
+                armored = b"-----BEGIN PGP PUBLIC KEY BLOCK-----\nYWJj\n-----END PGP PUBLIC KEY BLOCK-----\n"
+                release, keyring = base / "InRelease", base / "postgres.gpg.asc"
+                release.write_bytes(b"signed metadata"); keyring.write_bytes(armored)
+                evidence = base / "evidence"; evidence.mkdir()
+                diagnostics = MODULE.ValidationDiagnostics(base / "diagnostics", evidence)
+                fake_gpgv, fake_gpg = base / "gpgv", base / "gpg"
+                fake_gpgv.write_bytes(b"gpgv"); fake_gpg.write_bytes(b"gpg")
+                request = MODULE.SignatureRequest(
+                    f"trixie-pgdg-{label.replace('_', '-')}", "sources.list", "a" * 64, "isolated-releases/trixie-pgdg/InRelease",
+                    digest(b"signed metadata"), len(b"signed metadata"),
+                    ({"path": "/postgres.gpg.asc", "sha256": digest(armored), "capturedFile": "apt-keyrings/key"},),
+                )
+                def fake_bounded(command, *, env, timeout):
+                    if command[0] == str(fake_gpgv):
+                        return 0, b"gpgv version\n", b"", False
+                    if command[-1] == "--version":
+                        return version_result
+                    if conversion_result is None:
+                        raise AssertionError("conversion should not run after failed gpg version check")
+                    result = conversion_result
+                    if len(result) == 5:
+                        output_key = Path(command[command.index("--output") + 1])
+                        output_key.write_bytes(result[4])
+                        return result[:4]
+                    output_key = Path(command[command.index("--output") + 1])
+                    output_key.write_bytes(b"\x99binary key")
+                    return result
+                with patch.object(MODULE.shutil, "which", side_effect=lambda name: str(fake_gpg if name == "gpg" else fake_gpgv)), patch.object(
+                    MODULE, "run_bounded", side_effect=fake_bounded,
+                ):
+                    with self.assertRaises(ValueError):
+                        REAL_VERIFY_SIGNATURE(release, [keyring], request=request, evidence_dir=evidence, diagnostics=diagnostics)
+                report = json.loads((base / "diagnostics" / f"{request.suite}.json").read_text())
+                self.assertFalse(report["accepted"])
+                self.assertIn(report["termination"], {"OUTPUT_LIMIT", "TIMEOUT", "VERSION_ERROR", "MALFORMED_OUTPUT"})
+                self.assertIn("stderrSha256", report)
+                self.assertTrue((base / "diagnostics" / f"{request.suite}.stderr.txt").is_file())
+
+    def test_private_snapshot_tampering_is_rejected_before_gpgv_launch(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            armored = b"-----BEGIN PGP PUBLIC KEY BLOCK-----\nYWJj\n-----END PGP PUBLIC KEY BLOCK-----\n"
+            release, keyring = base / "InRelease", base / "postgres.gpg.asc"
+            release.write_bytes(b"signed metadata"); keyring.write_bytes(armored)
+            evidence = base / "evidence"; evidence.mkdir()
+            diagnostics = MODULE.ValidationDiagnostics(base / "diagnostics", evidence)
+            fake_gpgv, fake_gpg = base / "gpgv", base / "gpg"
+            fake_gpgv.write_bytes(b"gpgv"); fake_gpg.write_bytes(b"gpg")
+            request = MODULE.SignatureRequest(
+                "trixie-pgdg", "sources.list", "a" * 64, "isolated-releases/trixie-pgdg/InRelease",
+                digest(b"signed metadata"), len(b"signed metadata"),
+                ({"path": "/postgres.gpg.asc", "sha256": digest(armored), "capturedFile": "apt-keyrings/key"},),
+            )
+            calls = []
+            def tamper_private_release(command, *, env, timeout):
+                calls.append(command)
+                if command[0] == str(fake_gpgv):
+                    return 0, b"gpgv version\n", b"", False
+                if command[-1] == "--version":
+                    return 0, b"gpg version\n", b"", False
+                output_key = Path(command[command.index("--output") + 1])
+                output_key.write_bytes(b"\x99derived key")
+                private_release = Path(command[command.index("--homedir") + 1]).parent / "InRelease"
+                private_release.write_bytes(b"tampered private data")
+                return 0, b"", b"", False
+            with patch.object(MODULE.shutil, "which", side_effect=lambda name: str(fake_gpg if name == "gpg" else fake_gpgv)), patch.object(
+                MODULE, "run_bounded", side_effect=tamper_private_release,
+            ):
+                with self.assertRaisesRegex(ValueError, "changed before gpgv"):
+                    REAL_VERIFY_SIGNATURE(release, [keyring], request=request, evidence_dir=evidence, diagnostics=diagnostics)
+            self.assertFalse(any(command[0] == str(fake_gpgv) and "--status-fd" in command for command in calls))
+
+    @unittest.skipUnless(shutil.which("gpg") and shutil.which("gpgv"), "local gpg/gpgv unavailable")
+    def test_real_gpg_dearmor_and_gpgv_accepts_ephemeral_armored_signing_key(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            home = base / "signer-home"; home.mkdir(mode=0o700)
+            env = {**os.environ, "GNUPGHOME": str(home), "LC_ALL": "C", "LANG": "C"}
+            generated = subprocess.run(
+                [shutil.which("gpg"), "--batch", "--pinentry-mode", "loopback", "--passphrase", "",
+                 "--quick-generate-key", "ERP Fixture <fixture@example.invalid>", "ed25519", "sign", "0"],
+                env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20, check=True,
+            )
+            listing = subprocess.run([shutil.which("gpg"), "--batch", "--with-colons", "--list-keys"],
+                                     env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10, check=True)
+            fingerprint = next(line.split(":")[9] for line in listing.stdout.decode().splitlines() if line.startswith("fpr:"))
+            exported = subprocess.run([shutil.which("gpg"), "--batch", "--armor", "--export", fingerprint],
+                                      env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10, check=True).stdout
+            message = base / "message.txt"; message.write_text("Trixie signature fixture\n")
+            release = base / "InRelease"
+            subprocess.run([shutil.which("gpg"), "--batch", "--yes", "--pinentry-mode", "loopback", "--passphrase", "",
+                            "--local-user", fingerprint, "--clearsign", "--output", str(release), str(message)],
+                           env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10, check=True)
+            keyring = base / "postgres.gpg.asc"; keyring.write_bytes(exported)
+            evidence = base / "evidence"; evidence.mkdir()
+            diagnostics = MODULE.ValidationDiagnostics(base / "diagnostics", evidence)
+            request = MODULE.SignatureRequest(
+                "trixie-pgdg", "sources.list", "a" * 64, "isolated-releases/trixie-pgdg/InRelease",
+                digest(release.read_bytes()), release.stat().st_size,
+                ({"path": "/postgres.gpg.asc", "sha256": digest(exported), "capturedFile": "apt-keyrings/key"},),
+            )
+            REAL_VERIFY_SIGNATURE(release, [keyring], request=request, evidence_dir=evidence, diagnostics=diagnostics)
+            report = json.loads((base / "diagnostics" / "trixie-pgdg.json").read_text())
+            self.assertTrue(report["accepted"])
+            self.assertEqual(report["keyrings"][0]["sourceFormat"], "ASCII_ARMORED_PUBLIC_KEY")
+            self.assertEqual(report["keyrings"][0]["transformation"], "gpg --dearmor")
 
     def test_status_arguments_and_uri_userinfo_are_sanitized(self):
         raw = b"[GNUPG:] NEWSIG owner@example.test\n[GNUPG:] EXPSIG 1234 owner@example.test\n[GNUPG:] FUTURE_SECRET private-user@example.test\n"
