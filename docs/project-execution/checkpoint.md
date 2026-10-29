@@ -1,3 +1,13 @@
+## Latest continuation checkpoint — 2026-10-30 Asia/Bangkok
+
+- PR #2 remains OPEN/unmerged at head `fef235432e6408a776f406f324a93eac6584f96f` on `codex/phase4-current-source-20261026`, targeting protected `release/phase4`. Push run [40936540480](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40936540480) and PR run [40936549649](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40936549649) both passed all 7 jobs.
+- Synthetic Agent UAT artifact [12925252768](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40936540480/artifacts/12925252768), digest `fd653ce2af042f51b3b41d589ddaa1965fa08b626f5cd42881fa7e95b780e33e`: 90 passed, 0 failed/skipped/flaky. This is not Owner acceptance.
+- Container artifact [12925338508](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40936540480/artifacts/12925338508), digest `c13e29d298c8494083eab6496aed7344378b1db747c3a1c828f8997ec1efdfe0). Independent cross-review verified 84/84 evidence hashes, all four signatures, 13 signed index variants, exact 14 removals, trust/tool/runtime invariants, and all six restore routes.
+- Libxml2 candidate artifact [12924459805](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40936540480/artifacts/12924459805), digest `f8523c2858029732f48cb293fe089b91c8bc86a2cbeba8a57fb9e3c88ad86cb3). Independent cross-review verified 48/48 nested source files, isolated header roots, four self-test groups, targeted CVE regression 1/1, one-package runtime delta, PostgreSQL XML/XPath/xml2 and dump/restore.
+- Public ABI probe found `INCOMPATIBLE_LAYOUT`: `xmlEntity` 136→152 bytes and `xmlParserInput` 104→120 bytes. Candidate/base scan comparisons show zero new Critical/High identities, but CVE-2026-6653 remains Critical, unresolved, and without fixed version.
+- Two root causes from run 40934392773 were fixed and independently reviewed: baseline-only ABI fields are used for the baseline compile; the refreshed signed security index rows and candidate lock hashes/provenance now match. CI validates the lock successfully.
+- Production remains **NO-GO**: unresolved Critical CVE and public-layout difference; no GitHub approval; production target, recovery/rollback, image publication, deployment, and post-deployment evidence are not verified. No environment was changed.
+
 ## Continuation checkpoint — 2026-10-29 20:57 Bangkok
 
 - PR #2 remains OPEN/Draft at `db4da16` (`db4da167b5cc2ec5e16db275af9e833668efde82`) against protected `release/phase4`; no merge, deployment, or Owner UAT/production environment change occurred.
