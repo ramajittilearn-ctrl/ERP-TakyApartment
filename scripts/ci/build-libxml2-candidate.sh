@@ -98,6 +98,8 @@ docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2
 docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/abi-layout.diff > "$evidence_dir/abi-layout.diff"
 docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/abi-disposition.txt > "$evidence_dir/abi-disposition.txt"
 docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/abi-provenance.txt > "$evidence_dir/abi-provenance.txt"
+docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/base-compiler-includes.txt > "$evidence_dir/abi-base-compiler-includes.txt"
+docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/candidate-compiler-includes.txt > "$evidence_dir/abi-candidate-compiler-includes.txt"
 docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/base-headers.sha256 > "$evidence_dir/abi-base-headers.sha256"
 docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/candidate-headers.sha256 > "$evidence_dir/abi-candidate-headers.sha256"
 grep -Fxq '## Parsing non-recursive huge case' "$evidence_dir/cve-regression-test.log"
