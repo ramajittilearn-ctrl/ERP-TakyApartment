@@ -68,6 +68,48 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(result["codename"], "forky")
         self.assertEqual(result["sha256IndexCount"], 2)
 
+    def test_accepts_historical_bookworm_release_only_when_snapshot_age_is_unbounded(self):
+        body = GOOD_RELEASE.replace("Suite: testing", "Suite: oldstable")
+        body = body.replace("Codename: forky", "Codename: bookworm")
+        body = body.replace("Date: Wed, 28 Oct 2026 20:22:33 UTC", "Date: Sat, 11 Jul 2026 10:16:37 UTC")
+        body = body.replace("Valid-Until: Wed, 04 Nov 2026 20:22:33 UTC\n", "")
+        accepted = module.validate_release(
+            body, expected_origin="Debian", expected_codename="bookworm", expected_component="main",
+            architecture="amd64", now=NOW, max_age_seconds=None, max_future_skew_seconds=300,
+            require_valid_until=False, expected_suite="oldstable",
+        )
+        self.assertEqual(accepted["date"], "2026-07-11T10:16:37Z")
+        with self.assertRaisesRegex(module.ProvenanceError, "freshness window"):
+            module.validate_release(
+                body, expected_origin="Debian", expected_codename="bookworm", expected_component="main",
+                architecture="amd64", now=NOW, max_age_seconds=7 * 24 * 60 * 60,
+                max_future_skew_seconds=300, require_valid_until=False, expected_suite="oldstable",
+            )
+
+    def test_historical_snapshot_age_exemption_still_rejects_future_dates(self):
+        body = GOOD_RELEASE.replace("Suite: testing", "Suite: oldstable")
+        body = body.replace("Codename: forky", "Codename: bookworm")
+        body = body.replace("Date: Wed, 28 Oct 2026 20:22:33 UTC", "Date: Thu, 29 Oct 2026 13:00:00 UTC")
+        body = body.replace("Valid-Until: Wed, 04 Nov 2026 20:22:33 UTC\n", "")
+        with self.assertRaisesRegex(module.ProvenanceError, "too far in the future"):
+            module.validate_release(
+                body, expected_origin="Debian", expected_codename="bookworm", expected_component="main",
+                architecture="amd64", now=NOW, max_age_seconds=None, max_future_skew_seconds=300,
+                require_valid_until=False, expected_suite="oldstable",
+            )
+
+    def test_historical_snapshot_age_exemption_still_rejects_expired_valid_until(self):
+        body = GOOD_RELEASE.replace("Suite: testing", "Suite: oldstable")
+        body = body.replace("Codename: forky", "Codename: bookworm")
+        body = body.replace("Date: Wed, 28 Oct 2026 20:22:33 UTC", "Date: Sat, 11 Jul 2026 10:16:37 UTC")
+        body = body.replace("Valid-Until: Wed, 04 Nov 2026 20:22:33 UTC", "Valid-Until: Fri, 10 Jul 2026 10:16:37 UTC")
+        with self.assertRaisesRegex(module.ProvenanceError, "has expired according to Valid-Until"):
+            module.validate_release(
+                body, expected_origin="Debian", expected_codename="bookworm", expected_component="main",
+                architecture="amd64", now=NOW, max_age_seconds=None, max_future_skew_seconds=300,
+                require_valid_until=False, expected_suite="oldstable",
+            )
+
     def test_allows_pgdd_style_missing_valid_until_only_with_bounded_age(self):
         body = GOOD_RELEASE.replace("Suite: testing", "Suite: forky-pgdg").replace("Codename: forky", "Codename: forky-pgdg")
         body = body.replace("Origin: Debian", "Origin: apt.postgresql.org").replace("Label: Debian", "Label: PostgreSQL for Debian/Ubuntu repository")

@@ -161,7 +161,7 @@ def validate_release(
     expected_component: str,
     architecture: str,
     now: dt.datetime,
-    max_age_seconds: int,
+    max_age_seconds: int | None,
     max_future_skew_seconds: int,
     require_valid_until: bool,
     expected_suite: str | None = None,
@@ -187,7 +187,7 @@ def validate_release(
     age = (now.astimezone(dt.timezone.utc) - release_date).total_seconds()
     if age < -max_future_skew_seconds:
         raise ProvenanceError("signed Release Date is too far in the future")
-    if age > max_age_seconds:
+    if max_age_seconds is not None and age > max_age_seconds:
         raise ProvenanceError("signed Release Date exceeds the configured freshness window")
     valid_until = fields.get("Valid-Until")
     if require_valid_until and not valid_until:
@@ -831,6 +831,11 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
         copy_evidence(bookworm_inrelease, output_dir / "metadata/source-bookworm.InRelease")
         recorded_bookworm_signers = set(bootstrap.get("inReleaseSignerFingerprints", []))
         bookworm_policy = policy["debianKeyringTransition"]
+        if "bookwormBootstrapMaxAgeSeconds" not in bookworm_policy:
+            raise ProvenanceError("policy does not define historical Bookworm snapshot freshness")
+        bookworm_max_age = bookworm_policy["bookwormBootstrapMaxAgeSeconds"]
+        if bookworm_max_age is not None and (type(bookworm_max_age) is not int or bookworm_max_age < 0):
+            raise ProvenanceError("policy contains an invalid historical Bookworm snapshot freshness")
         trusted_bookworm_primaries = set(bookworm_policy["bookwormBootstrapPrimaryFingerprints"])
         additional_bookworm_signers = set(bootstrap.get("unverifiedAdditionalSignerFingerprints", []))
         if not trusted_bookworm_primaries or not trusted_bookworm_primaries.issubset(recorded_bookworm_signers):
@@ -846,7 +851,7 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
             expected_component="main",
             architecture=policy["architecture"],
             now=dt.datetime.now(dt.timezone.utc),
-            max_age_seconds=policy["debianKeyringTransition"]["maxMetadataAgeSeconds"],
+            max_age_seconds=bookworm_max_age,
             max_future_skew_seconds=policy["debianKeyringTransition"]["maxFutureClockSkewSeconds"],
             require_valid_until=False,
             expected_suite="oldstable",
