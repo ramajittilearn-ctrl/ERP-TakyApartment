@@ -89,7 +89,7 @@ export function extractZip(zip) {
     if ((flags & 0x41) !== 0 || (method !== 0 && method !== 8)) fail('Encrypted or unsupported ZIP entry');
     if (size > MAX_ENTRY_BYTES || (total += size) > MAX_TOTAL_BYTES) fail('ZIP expands beyond configured size limits');
     let name;
-    try { name = new TextDecoder('utf-8', { fatal: true }).decode(zip.subarray(nameStart, nameStart + nameLength)); }
+    try { name = new globalThis.TextDecoder('utf-8', { fatal: true }).decode(zip.subarray(nameStart, nameStart + nameLength)); }
     catch { fail('ZIP entry filename is not valid UTF-8'); }
     const directory = safeName(name);
     if (names.has(name)) fail('Duplicate ZIP entry path: ' + name);
@@ -217,9 +217,9 @@ async function readLimited(response, limit, label) {
 }
 async function fetchLimited(url, headers, limit, label) {
   let current = new URL(url);
-  const h = new Headers(headers);
+  const h = new globalThis.Headers(headers);
   for (let i = 0; i <= 5; i += 1) {
-    const response = await fetch(current, { headers: h, redirect: 'manual', signal: AbortSignal.timeout(20000) });
+    const response = await fetch(current, { headers: h, redirect: 'manual', signal: globalThis.AbortSignal.timeout(20000) });
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       if (i === 5 || !response.headers.get('location')) fail(label + ' redirected too many times');
       const next = new URL(response.headers.get('location'), current);
