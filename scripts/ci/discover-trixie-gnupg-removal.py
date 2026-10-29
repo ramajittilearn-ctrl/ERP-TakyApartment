@@ -100,7 +100,7 @@ select_suite_source() {
     : > "$fragment"
     if [[ "$source_file" == *.sources ]]; then
       awk -v wanted="$wanted" '
-        BEGIN { RS=""; ORS="\n\n" }
+        BEGIN { RS=""; ORS="\n" }
         {
           n=split($0, lines, "\n"); types=""; suites=""; active=1
           for (i=1; i<=n; i++) {

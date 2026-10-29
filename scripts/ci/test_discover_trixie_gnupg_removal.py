@@ -41,6 +41,50 @@ class DiscoveryParsingTests(unittest.TestCase):
             self.assertEqual(selected.read_text(), source.read_text())
             self.assertEqual(Path(f"{selected}.origin").read_text(), "sources.list.d/pgdg.list\n")
 
+    def test_suite_source_selector_keeps_deb822_fields_in_one_stanza(self):
+        with tempfile.TemporaryDirectory() as temp:
+            evidence = Path(temp)
+            source_dir = evidence / "apt-sources" / "sources.list.d"
+            source_dir.mkdir(parents=True)
+            source = source_dir / "debian.sources"
+            source.write_text(
+                "Types: deb\n"
+                "# http://snapshot.debian.org/archive/debian/20261020T213255Z\n"
+                "URIs: http://deb.debian.org/debian\n"
+                "Suites: trixie trixie-updates\n"
+                "Components: main\n"
+                "Signed-By: /usr/share/keyrings/debian-archive-keyring.pgp\n\n"
+                "Types: deb\n"
+                "URIs: http://deb.debian.org/debian-security\n"
+                "Suites: trixie-security\n"
+                "Components: main\n"
+                "Signed-By: /usr/share/keyrings/debian-archive-keyring.pgp\n"
+            )
+            start = MODULE.CONTAINER_SCRIPT.index("select_suite_source() {")
+            end = MODULE.CONTAINER_SCRIPT.index("\nfor codename in trixie", start)
+            selector = MODULE.CONTAINER_SCRIPT[start:end]
+            selected = evidence / "source.selected"
+            result = subprocess.run(
+                [
+                    "bash", "-c",
+                    f'evidence="$1"\n{selector}\nselect_suite_source "$2" "$3"',
+                    "selector-test", str(evidence), "trixie", str(selected),
+                ],
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                selected.read_text(),
+                "Types: deb\n"
+                "# http://snapshot.debian.org/archive/debian/20261020T213255Z\n"
+                "URIs: http://deb.debian.org/debian\n"
+                "Suites: trixie\n"
+                "Components: main\n"
+                "Signed-By: /usr/share/keyrings/debian-archive-keyring.pgp\n\n",
+            )
+            self.assertEqual(Path(f"{selected}.origin").read_text(), "sources.list.d/debian.sources\n")
+
     def test_indextargets_format_uses_only_supported_nine_fields(self):
         line = next(item for item in MODULE.CONTAINER_SCRIPT.splitlines() if "apt-get indextargets --format" in item)
         self.assertEqual(line.count("$("), 9)
