@@ -12,6 +12,7 @@ ARG TRIXIE_CANDIDATE_LOCK_SHA256
 
 COPY release-evidence/trixie-gnupg-purge-lock.tsv /tmp/taky-trixie-candidate-lock/purge.tsv
 COPY release-evidence/trixie-gnupg-release-lock.tsv /tmp/taky-trixie-candidate-lock/releases.tsv
+COPY release-evidence/trixie-gnupg-package-index-lock.tsv /tmp/taky-trixie-candidate-lock/package-index.tsv
 COPY release-evidence/trixie-gnupg-trust-lock.tsv /tmp/taky-trixie-candidate-lock/trust.tsv
 COPY release-evidence/trixie-gnupg-candidate-lock.json /tmp/taky-trixie-candidate-lock/provenance.json
 
@@ -30,22 +31,68 @@ RUN set -eux; \
     . /etc/os-release; \
     test "$VERSION_CODENAME" = trixie; \
     tab="$(printf '\t')"; \
+    parse_utc_release_time() { \
+      value="$1"; \
+      printf '%s\n' "$value" | grep -Eq '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-3][0-9] (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4} ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9] UTC$' || return 1; \
+      parsed="$(date -u -d "$value" '+%a, %d %b %Y %H:%M:%S UTC' 2>/dev/null)" || return 1; \
+      test "$parsed" = "$value" || return 1; \
+      date -u -d "$value" +%s; \
+    }; \
     verify_release_set() { \
       stage="$1"; \
-      output="$evidence/inrelease-$stage.tsv"; \
+      output="$evidence/inrelease-freshness-$stage.tsv"; \
       : > "$output"; \
-      while IFS="$tab" read -r codename suite expected; do \
+      now="$(date -u +%s)"; \
+      total_release_count="$(find /var/lib/apt/lists -maxdepth 1 -type f -name '*_InRelease' -print | wc -l | tr -d '[:space:]')"; \
+      test "$total_release_count" = 4 || { echo "Expected exactly four APT InRelease files; found $total_release_count" >&2; exit 1; }; \
+      while IFS="$tab" read -r codename suite expected_origin base_uri max_age warn_age; do \
         release_glob="*_dists_${codename}_InRelease"; \
         count="$(find /var/lib/apt/lists -maxdepth 1 -type f -name "$release_glob" -print | wc -l | tr -d '[:space:]')"; \
         test "$count" = 1 || { echo "Expected exactly one APT InRelease for $codename/$suite; found $count" >&2; exit 1; }; \
         release_file="$(find /var/lib/apt/lists -maxdepth 1 -type f -name "$release_glob" -print -quit)"; \
-        actual="$(sha256sum "$release_file" | awk '{print $1}')"; \
-        test "$actual" = "$expected" || { echo "Authenticated InRelease changed for $codename/$suite" >&2; exit 1; }; \
-        printf '%s\t%s\t%s\n' "$codename" "$suite" "$actual" >> "$output"; \
+        metadata="$(awk 'BEGIN { FS=": " } /^(Codename|Suite|Origin|Date|Valid-Until):/ { key=$1; sub(/^[^:]*: /, ""); value=$0; if (key in seen) exit 2; seen[key]=value } END { if (!("Codename" in seen) || !("Suite" in seen) || !("Origin" in seen) || !("Date" in seen)) exit 3; printf "%s\t%s\t%s\t%s\t%s\n", seen["Codename"], seen["Suite"], seen["Origin"], seen["Date"], seen["Valid-Until"] }' "$release_file")"; \
+        actual_codename="$(printf '%s\n' "$metadata" | cut -f1)"; \
+        actual_suite="$(printf '%s\n' "$metadata" | cut -f2)"; \
+        actual_origin="$(printf '%s\n' "$metadata" | cut -f3)"; \
+        release_date="$(printf '%s\n' "$metadata" | cut -f4)"; \
+        valid_until="$(printf '%s\n' "$metadata" | cut -f5)"; \
+        test "$actual_codename" = "$codename" && test "$actual_suite" = "$suite" && test "$actual_origin" = "$expected_origin" || { echo "Authenticated Release identity mismatch for $codename/$suite" >&2; exit 1; }; \
+        release_epoch="$(parse_utc_release_time "$release_date")"; \
+        test -n "$release_epoch" || { echo "Malformed Release Date for $codename/$suite" >&2; exit 1; }; \
+        age="$((now - release_epoch))"; \
+        test "$age" -ge -300 || { echo "Release Date is more than 300 seconds in the future for $codename/$suite" >&2; exit 1; }; \
+        test "$age" -le "$max_age" || { echo "Release Date exceeds freshness cap for $codename/$suite" >&2; exit 1; }; \
+        if test -n "$valid_until"; then \
+          valid_until_epoch="$(parse_utc_release_time "$valid_until")"; \
+          test -n "$valid_until_epoch" && test "$valid_until_epoch" -gt "$now" && test "$valid_until_epoch" -ge "$release_epoch" || { echo "Invalid or expired Valid-Until for $codename/$suite" >&2; exit 1; }; \
+        else valid_until_epoch=; fi; \
+        freshness_warning=no; test "$age" -lt "$warn_age" || freshness_warning=yes; \
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$codename" "$suite" "$actual_origin" "$base_uri" "$release_date" "$release_epoch" "$age" "$max_age" "$warn_age" "$freshness_warning" "$valid_until_epoch" >> "$output"; \
       done < "$lock/releases.tsv"; \
       LC_ALL=C sort -o "$output" "$output"; \
-      cut -f1,2,3 "$lock/releases.tsv" | LC_ALL=C sort > "$evidence/expected-release-set.tsv"; \
-      cmp "$evidence/expected-release-set.tsv" "$output"; \
+      cp "$output" "$evidence/release-freshness-$stage.tsv"; \
+      awk -F '\t' '$10 == "yes" { print "Release freshness warning: " $1 "/" $2 " is " $7 " seconds old (warning threshold " $9 ")" > "/dev/stderr" }' "$output"; \
+      apt-get indextargets > "$evidence/apt-index-targets-$stage.control"; \
+      awk 'BEGIN { RS=""; FS="\n" } { id=code=suite=arch=file=uri=base=meta=component=""; for (i=1;i<=NF;i++) { line=$i; sub(/\r$/, "", line); if (line ~ /^Identifier: /) id=substr(line,13); else if (line ~ /^Codename: /) code=substr(line,11); else if (line ~ /^Suite: /) suite=substr(line,8); else if (line ~ /^Architecture: /) arch=substr(line,15); else if (line ~ /^Filename: /) file=substr(line,11); else if (line ~ /^URI: /) uri=substr(line,6); else if (line ~ /^Base-URI: /) base=substr(line,11); else if (line ~ /^MetaKey: /) meta=substr(line,10); else if (line ~ /^Component: /) component=substr(line,12) } if (id=="Packages") { if (code==""||suite==""||arch==""||file==""||uri==""||base==""||meta==""||component=="") exit 2; print code "\t" suite "\t" arch "\t" file "\t" uri "\t" base "\t" meta "\t" component } }' "$evidence/apt-index-targets-$stage.control" | LC_ALL=C sort > "$evidence/apt-index-targets-$stage.tsv"; \
+      awk -F '\t' 'FNR==NR { if (NF!=6) bad=1; release[$1]=$2 SUBSEP $3 SUBSEP $4; next } { if (NF!=10) { bad=1; next } n=split(release[$1], r, SUBSEP); if (n!=3 || r[1]!=$2 || r[2]!=$3 || r[3]!=$4) bad=1; key=$1 SUBSEP $2 SUBSEP $6 SUBSEP $4 SUBSEP $7 SUBSEP $5; targets[key]=$1 "\t" $2 "\t" $6 "\t" $4 "\t" $7 "\t" $5; if ($7==$8) canonical[key]=1 } END { count=0; for (key in targets) { count++; if (!canonical[key]) bad=1; print targets[key] } if (bad || count!=5) exit 1 }' "$lock/releases.tsv" "$lock/package-index.tsv" > "$evidence/expected-apt-index-targets-$stage.unsorted.tsv"; \
+      LC_ALL=C sort "$evidence/expected-apt-index-targets-$stage.unsorted.tsv" > "$evidence/expected-apt-index-targets-$stage.tsv"; \
+      test "$(wc -l < "$evidence/apt-index-targets-$stage.tsv" | tr -d '[:space:]')" = 5; \
+      : > "$evidence/observed-apt-index-targets-$stage.tsv"; \
+      while IFS="$tab" read -r target_codename target_suite target_arch target_file target_uri target_base target_meta target_component; do \
+        test "$target_uri" = "$target_base$target_meta" || { echo "APT target URI does not bind to locked Base-URI plus canonical MetaKey" >&2; exit 1; }; \
+        test -f "$target_file"; \
+        printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$target_codename" "$target_suite" "$target_arch" "$target_base" "$target_meta" "$target_component" >> "$evidence/observed-apt-index-targets-$stage.tsv"; \
+      done < "$evidence/apt-index-targets-$stage.tsv"; \
+      LC_ALL=C sort -o "$evidence/observed-apt-index-targets-$stage.tsv" "$evidence/observed-apt-index-targets-$stage.tsv"; \
+      cmp "$evidence/expected-apt-index-targets-$stage.tsv" "$evidence/observed-apt-index-targets-$stage.tsv"; \
+      awk -F '\t' 'NF!=10 { bad=1; next } { print $1 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 "\t" $7 "\t" $8 "\t" $9 "\t" $10 }' "$lock/package-index.tsv" | LC_ALL=C sort -u > "$evidence/expected-package-index-$stage.tsv"; \
+      : > "$evidence/observed-package-index-$stage.tsv"; \
+      while IFS="$tab" read -r ci cs co cb component arch canonical variant expected_sha expected_size; do \
+        release_glob="*_dists_${ci}_InRelease"; release_file="$(find /var/lib/apt/lists -maxdepth 1 -type f -name "$release_glob" -print -quit)"; \
+        awk -v c="$canonical" 'BEGIN { insha=0 } /^SHA256:/ { insha=1; next } insha && /^[A-Za-z0-9-]+:/ { insha=0 } insha && NF==3 { p=$3; keep=(p==c); if (index(p,c ".")==1) { suffix=substr(p,length(c)+2); keep=(suffix=="gz" || suffix=="xz" || suffix=="bz2" || suffix=="lz4" || suffix=="zst") } if (keep) print p "\t" $1 "\t" $2 }' "$release_file" | awk -F '\t' -v codename="$ci" -v suite="$cs" -v origin="$co" -v base="$cb" -v comp="$component" -v arch="$arch" -v canon="$canonical" '{ print codename "\t" suite "\t" origin "\t" base "\t" comp "\t" arch "\t" canon "\t" $1 "\t" $2 "\t" $3 }' >> "$evidence/observed-package-index-$stage.tsv"; \
+      done < "$lock/package-index.tsv"; \
+      LC_ALL=C sort -u -o "$evidence/observed-package-index-$stage.tsv" "$evidence/observed-package-index-$stage.tsv"; \
+      cmp "$evidence/expected-package-index-$stage.tsv" "$evidence/observed-package-index-$stage.tsv"; \
     }; \
     verify_trust_set() { \
       stage="$1"; \
@@ -94,6 +141,16 @@ RUN set -eux; \
     test -s /usr/share/keyrings/debian-archive-keyring.pgp; \
     test -s /usr/local/share/keyrings/postgres.gpg.asc; \
     test "$(sha256sum "$lock/provenance.json" | awk '{print $1}')" = "$TRIXIE_CANDIDATE_LOCK_SHA256"; \
+    package_index_sha="$(sha256sum "$lock/package-index.tsv" | awk '{print $1}')"; \
+    release_lock_sha="$(sha256sum "$lock/releases.tsv" | awk '{print $1}')"; \
+    package_lock_sha="$(sha256sum "$lock/purge.tsv" | awk '{print $1}')"; \
+    trust_lock_sha="$(sha256sum "$lock/trust.tsv" | awk '{print $1}')"; \
+    grep -F '"packageIndexLockPath": "release-evidence/trixie-gnupg-package-index-lock.tsv"' "$lock/provenance.json" >/dev/null; \
+    grep -F '"packageIndex": "'"$package_index_sha"'"' "$lock/provenance.json" >/dev/null; \
+    grep -F '"release": "'"$release_lock_sha"'"' "$lock/provenance.json" >/dev/null; \
+    grep -F '"package": "'"$package_lock_sha"'"' "$lock/provenance.json" >/dev/null; \
+    grep -F '"trust": "'"$trust_lock_sha"'"' "$lock/provenance.json" >/dev/null; \
+    grep -F '"maxFutureSkewSeconds": 300' "$lock/provenance.json" >/dev/null; \
     apt-get --version > "$evidence/apt-before.txt"; \
     dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\t${db:Status-Status}\n' | awk -F '\t' '$4 == "installed" { print $1 "\t" $2 "\t" $3 }' | LC_ALL=C sort > "$evidence/dpkg-before.tsv"; \
     awk -F '\t' '$1 ~ /^libapt-pkg/ { print }' "$evidence/dpkg-before.tsv" > "$evidence/libapt-pkg-family-before.tsv"; \
@@ -103,13 +160,17 @@ RUN set -eux; \
     test "$(wc -l < "$lock/purge.tsv" | tr -d '[:space:]')" = 14; \
     LC_ALL=C sort -u "$lock/purge.tsv" > "$evidence/unique-purge-lock.tsv"; \
     cmp "$lock/purge.tsv" "$evidence/unique-purge-lock.tsv"; \
+    awk -F '\t' 'NF != 10 || $1 == "" || $2 == "" || $3 == "" || $4 == "" || $5 == "" || $6 == "" || $7 == "" || $8 == "" || length($9) != 64 || $9 ~ /[^a-f0-9]/ || $10 !~ /^[0-9]+$/ { bad=1 } END { exit bad }' "$lock/package-index.tsv"; \
+    LC_ALL=C sort -c "$lock/package-index.tsv"; \
+    LC_ALL=C sort -u "$lock/package-index.tsv" > "$evidence/unique-package-index-lock.tsv"; \
+    cmp "$lock/package-index.tsv" "$evidence/unique-package-index-lock.tsv"; \
     awk -F '\t' '$1 == "gnupg" && NF == 3 { found=1 } END { exit !found }' "$lock/purge.tsv"; \
     LC_ALL=C comm -23 "$lock/purge.tsv" "$evidence/dpkg-before.tsv" > "$evidence/missing-locked-packages-before.tsv"; \
     test ! -s "$evidence/missing-locked-packages-before.tsv"; \
-    awk -F '\t' 'NF != 3 || !($1 ~ /^(trixie|trixie-updates|trixie-security|trixie-pgdg)$/) || $2 == "" || length($3) != 64 || $3 ~ /[^a-f0-9]/ { bad=1 } { print $1 "\t" $2 } END { if (NR != 4 || bad) exit 1 }' "$lock/releases.tsv" | LC_ALL=C sort > "$evidence/expected-release-hashes.tsv"; \
+    awk -F '\t' 'NF != 6 || $1 == "" || $2 == "" || $3 == "" || $4 == "" || $5 !~ /^[0-9]+$/ || $6 !~ /^[0-9]+$/ || $6 > $5 || ($1 == "trixie" && !($2 == "stable" && $3 == "Debian" && $4 == "http://deb.debian.org/debian/dists/trixie/" && $5 == 7776000 && $6 == 5184000)) || ($1 == "trixie-updates" && !($2 == "stable-updates" && $3 == "Debian" && $4 == "http://deb.debian.org/debian/dists/trixie-updates/" && $5 == 604800 && $6 == 518400)) || ($1 == "trixie-security" && !($2 == "stable-security" && $3 == "Debian" && $4 == "http://deb.debian.org/debian-security/dists/trixie-security/" && $5 == 604800 && $6 == 518400)) || ($1 == "trixie-pgdg" && !($2 == "trixie-pgdg" && $3 == "apt.postgresql.org" && $4 == "http://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/" && $5 == 604800 && $6 == 518400)) { bad=1 } { print $1 "\t" $2 } END { if (NR != 4 || bad) exit 1 }' "$lock/releases.tsv" > "$evidence/expected-release-identities.unsorted.tsv"; \
+    LC_ALL=C sort "$evidence/expected-release-identities.unsorted.tsv" > "$evidence/expected-release-identities.tsv"; \
     printf 'trixie\tstable\ntrixie-pgdg\ttrixie-pgdg\ntrixie-security\tstable-security\ntrixie-updates\tstable-updates\n' | LC_ALL=C sort > "$evidence/required-releases.tsv"; \
-    cut -f1,2 "$lock/releases.tsv" | LC_ALL=C sort > "$evidence/observed-locked-releases.tsv"; \
-    cmp "$evidence/required-releases.tsv" "$evidence/observed-locked-releases.tsv"; \
+    cmp "$evidence/required-releases.tsv" "$evidence/expected-release-identities.tsv"; \
     verify_trust_set before-purge; \
     sha256sum "$lock/purge.tsv" "$lock/releases.tsv" "$lock/trust.tsv" "$lock/provenance.json" > "$evidence/lock-inputs.sha256"; \
     rm -rf /var/lib/apt/lists/*; \

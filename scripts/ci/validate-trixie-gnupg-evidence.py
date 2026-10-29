@@ -16,7 +16,7 @@ import stat
 import sys
 import tempfile
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from urllib.parse import unquote, urlsplit
 
 
@@ -34,6 +34,17 @@ EXPECTED_ORIGINS = {
     "trixie-security": ("stable-security", "deb.debian.org", "/debian-security"),
     "trixie-pgdg": ("trixie-pgdg", "apt.postgresql.org", "/pub/repos/apt"),
 }
+EXPECTED_SIGNED_ORIGINS = {
+    "trixie": "Debian", "trixie-updates": "Debian", "trixie-security": "Debian",
+    "trixie-pgdg": "apt.postgresql.org",
+}
+FRESHNESS_POLICY = {
+    "trixie": (7776000, 5184000),
+    "trixie-updates": (604800, 518400),
+    "trixie-security": (604800, 518400),
+    "trixie-pgdg": (604800, 518400),
+}
+MAX_FUTURE_SKEW_SECONDS = 300
 GPGV_OUTPUT_LIMIT = 65536
 ASCII_ARMORED_PUBLIC_KEY = b"-----BEGIN PGP PUBLIC KEY BLOCK-----"
 
@@ -129,6 +140,8 @@ class ValidatedProposal:
     run: dict[str, object]
     proposal: dict[str, object]
     proposal_sha256: str
+    release_freshness: tuple[dict[str, object], ...]
+    release_metadata: dict[str, tuple[str, str, str, datetime, datetime | None, dict[str, tuple[str, int]]]]
 
 
 @dataclass(frozen=True)
@@ -365,7 +378,7 @@ def validate_file_record(
     return record
 
 
-def parse_inrelease(raw: bytes) -> tuple[str, str, dict[str, tuple[str, int]]]:
+def parse_inrelease(raw: bytes) -> tuple[str, str, str, datetime, datetime | None, dict[str, tuple[str, int]]]:
     try:
         lines = raw.decode("utf-8").splitlines()
     except UnicodeDecodeError as error:
@@ -389,12 +402,14 @@ def parse_inrelease(raw: bytes) -> tuple[str, str, dict[str, tuple[str, int]]]:
     for line in body:
         if ": " in line and not line[:1].isspace():
             key, value = line.split(": ", 1)
-            if key in {"Codename", "Suite"}:
+            if key in {"Codename", "Suite", "Origin", "Date", "Valid-Until"}:
                 if key in fields:
                     fail(f"InRelease has duplicate {key} fields")
                 fields[key] = value
-    if not fields.get("Codename") or not fields.get("Suite"):
-        fail("InRelease is missing Codename or Suite")
+    if not fields.get("Codename") or not fields.get("Suite") or not fields.get("Origin") or not fields.get("Date"):
+        fail("InRelease is missing Codename, Suite, Origin, or Date")
+    release_date = parse_release_date(fields["Date"], "Date")
+    valid_until = parse_release_date(fields["Valid-Until"], "Valid-Until") if fields.get("Valid-Until") else None
     rows: dict[str, tuple[str, int]] = {}
     in_sha256 = False
     found_sha256 = False
@@ -419,7 +434,33 @@ def parse_inrelease(raw: bytes) -> tuple[str, str, dict[str, tuple[str, int]]]:
             rows[path] = (digest.lower(), int(size_text))
     if not found_sha256 or not rows:
         fail("InRelease has no SHA256 index records")
-    return fields["Codename"], fields["Suite"], rows
+    return fields["Codename"], fields["Suite"], fields["Origin"], release_date, valid_until, rows
+
+
+def parse_release_date(value: str, label: str) -> datetime:
+    try:
+        parsed = datetime.strptime(value, "%a, %d %b %Y %H:%M:%S UTC").replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError, OverflowError) as error:
+        raise ValueError(f"InRelease {label} is malformed") from error
+    return parsed
+
+
+def validate_release_freshness(codename: str, release_date: datetime, valid_until: datetime | None, now: datetime) -> dict[str, object]:
+    if codename not in FRESHNESS_POLICY:
+        fail("Release freshness policy has no approved codename")
+    max_age, warn_age = FRESHNESS_POLICY[codename]
+    age_seconds = (now - release_date).total_seconds()
+    age = int(age_seconds)
+    if age_seconds < -MAX_FUTURE_SKEW_SECONDS:
+        fail(f"{codename} Release Date exceeds the approved future skew")
+    if valid_until is not None and (valid_until <= now or valid_until < release_date):
+        fail(f"{codename} Release Valid-Until is expired or precedes Date")
+    if age_seconds > max_age:
+        fail(f"{codename} Release Date exceeds its approved maximum age")
+    return {"codename": codename, "date": release_date.isoformat(),
+            "validUntil": valid_until.isoformat() if valid_until else None,
+            "ageSeconds": age, "maxAgeSeconds": max_age, "warnAgeSeconds": warn_age,
+            "warning": age_seconds >= warn_age}
 
 
 def validate_source_trust(evidence_dir: Path) -> dict[str, list[tuple[str, Path]]]:
@@ -582,7 +623,7 @@ def validate_isolated_release_acquisitions(
     diagnostics: ValidationDiagnostics | None,
     records: object,
     release_by_file: dict[str, dict[str, object]],
-    release_contents: dict[str, tuple[str, str, dict[str, tuple[str, int]]]],
+    release_contents: dict[str, tuple[str, str, str, datetime, datetime | None, dict[str, tuple[str, int]]]],
     source_keys: dict[str, list[tuple[str, Path]]],
     evidence_hashes: dict[str, str],
     run: dict[str, object],
@@ -598,6 +639,7 @@ def validate_isolated_release_acquisitions(
         "aptTargetEvidenceFile", "aptTargetEvidenceSha256", "sourceKeyrings", "exactInReleasePath",
         "inReleaseFile", "inReleaseSha256", "inReleaseSizeBytes", "combinedInReleaseFile",
         "combinedInReleaseSha256", "combinedInReleaseSizeBytes",
+        "signedOrigin", "releaseDate", "validUntil", "freshness",
         "runId", "runAttempt", "revision", "tree", "image", "imageId", "platform",
     }
     for index, value in enumerate(records):
@@ -722,6 +764,13 @@ def validate_isolated_release_acquisitions(
             fail("isolated InRelease file/hash/size differs from authenticated evidence")
         if release_contents[inrelease_file][:2] != (record["signedCodename"], record["signedSuite"]):
             fail("isolated Release signed identity differs from acquisition record")
+        signed_metadata = release_contents[inrelease_file]
+        generated_at = datetime.fromisoformat(str(run["generatedAt"]).replace("Z", "+00:00")).astimezone(timezone.utc)
+        if (record["signedOrigin"] != signed_metadata[2]
+            or record["releaseDate"] != signed_metadata[3].strftime("%a, %d %b %Y %H:%M:%S UTC")
+            or record["validUntil"] != (signed_metadata[4].strftime("%a, %d %b %Y %H:%M:%S UTC") if signed_metadata[4] else None)
+            or record["freshness"] != validate_release_freshness(codename, signed_metadata[3], signed_metadata[4], generated_at)):
+            fail("isolated signed Origin or freshness evidence differs from authenticated InRelease")
         if (record["signedCodename"], record["signedSuite"]) != (codename, expected_suite):
             fail("isolated Release signed identity differs from configured Dist and source suite")
 
@@ -1241,7 +1290,7 @@ def _validate_proposal(evidence_dir: Path, diagnostics: ValidationDiagnostics) -
     proposal_keys = {
         "schemaVersion", "kind", "revision", "tree", "runId", "runAttempt", "image", "imageId", "platform",
         "authenticatedInReleaseFiles", "signedReleaseIndexHashes", "packageIndexTargetBindings", "localAptIndexFiles",
-        "isolatedReleaseAcquisitions",
+        "isolatedReleaseAcquisitions", "releaseFreshnessEvidence",
         "aptSignatureConfigSha256", "aptTrustedPathsSha256", "sourceTrustEvidenceSha256", "purgeSimulationSha256",
         "removals", "runtimeClearance", "cveClearance", "approvalState",
     }
@@ -1304,16 +1353,26 @@ def _validate_proposal(evidence_dir: Path, diagnostics: ValidationDiagnostics) -
     }
     if {record["file"] for record in release_by_file.values()} != captured_inrelease_files:
         fail("proposal does not cover every combined and isolated InRelease acquisition")
-    release_contents: dict[str, tuple[str, str, dict[str, tuple[str, int]]]] = {}
+    release_contents: dict[str, tuple[str, str, str, datetime, datetime | None, dict[str, tuple[str, int]]]] = {}
+    freshness_evidence: dict[str, dict[str, object]] = {}
     for inrelease_file, record in release_by_file.items():
         raw = (evidence_dir / record["file"]).read_bytes()
-        codename, suite, index_rows = parse_inrelease(raw)
-        if codename not in EXPECTED_ORIGINS or suite != EXPECTED_ORIGINS[codename][0]:
+        codename, suite, signed_origin, release_date, valid_until, index_rows = parse_inrelease(raw)
+        if (codename not in EXPECTED_ORIGINS or suite != EXPECTED_ORIGINS[codename][0]
+            or signed_origin != EXPECTED_SIGNED_ORIGINS[codename]):
             fail(f"isolated authenticated InRelease has an unapproved identity: {inrelease_file}")
-        release_contents[inrelease_file] = (codename, suite, index_rows)
+        generated_at = datetime.fromisoformat(str(run["generatedAt"]).replace("Z", "+00:00")).astimezone(timezone.utc)
+        freshness_evidence[inrelease_file] = validate_release_freshness(codename, release_date, valid_until, generated_at)
+        release_contents[inrelease_file] = (codename, suite, signed_origin, release_date, valid_until, index_rows)
     isolated_acquisitions = validate_isolated_release_acquisitions(
         evidence_dir, diagnostics, proposal["isolatedReleaseAcquisitions"], release_by_file, release_contents, source_keys, hashes, run
     )
+    expected_freshness = [
+        {"codename": acquisition["codename"], "inReleaseFile": acquisition["inReleaseFile"], **freshness_evidence[acquisition["inReleaseFile"]]}
+        for acquisition in proposal["isolatedReleaseAcquisitions"]
+    ]
+    if proposal["releaseFreshnessEvidence"] != expected_freshness:
+        fail("proposal release freshness evidence differs from authenticated dates and discovery time")
 
     local_by_name: dict[str, dict[str, object]] = {}
     for index, item in enumerate(local_indices):
@@ -1409,7 +1468,7 @@ def _validate_proposal(evidence_dir: Path, diagnostics: ValidationDiagnostics) -
     }
     if set(signed_rows_by_release) != isolated_release_files:
         fail("signed Release index rows do not cover exactly the isolated authenticated InRelease files")
-    for release_file, (codename, suite, actual_rows) in release_contents.items():
+    for release_file, (codename, suite, _origin, _date, _valid_until, actual_rows) in release_contents.items():
         if release_file in isolated_release_files:
             if signed_rows_by_release[release_file] != actual_rows:
                 fail(f"proposal signed index rows differ from isolated InRelease SHA256 section: {release_file}")
@@ -1419,7 +1478,7 @@ def _validate_proposal(evidence_dir: Path, diagnostics: ValidationDiagnostics) -
                 if record["combinedInReleaseFile"] == release_file
             )
             isolated_identity = release_contents[acquisition["inReleaseFile"]]
-            if (codename, suite, actual_rows) != isolated_identity:
+            if (codename, suite, _origin, _date, _valid_until, actual_rows) != isolated_identity:
                 fail(f"combined InRelease differs from source-isolated signed metadata: {release_file}")
 
     binding_keys = {
@@ -1427,6 +1486,7 @@ def _validate_proposal(evidence_dir: Path, diagnostics: ValidationDiagnostics) -
         "releaseFile", "releaseSha256", "canonicalPackagesPath", "signedVariants", "localAptFile", "localAptSha256", "localAptSize",
     }
     seen_bindings: set[tuple[str, str, str, str]] = set()
+    bound_package_targets: set[tuple[str, ...]] = set()
     for index, item in enumerate(bindings):
         record = object_with_keys(item, binding_keys, f"packageIndexTargetBindings[{index}]")
         codename = record["codename"]
@@ -1460,13 +1520,15 @@ def _validate_proposal(evidence_dir: Path, diagnostics: ValidationDiagnostics) -
         expected_path = f"{component}/binary-{architecture}/Packages"
         if record["identifier"] != "Packages" or not isinstance(canonical, str) or canonical != expected_path or record["metaKey"] != canonical:
             fail("package target binding canonical path does not match component and architecture")
-        uri_prefix = expected_suite_base_path(codename) + "/"
-        uri_path = parsed_uri.path
-        if not uri_path.startswith(uri_prefix):
-            fail("package target URI is outside its approved Release path")
-        target_packages_path = uri_path[len(uri_prefix):]
-        if not target_packages_path.startswith(canonical):
-            fail("package target URI does not match its canonical Packages path")
+        base_path = parsed_origin.path.rstrip("/") + "/"
+        try:
+            decoded_base_path = unquote(base_path, errors="strict")
+            decoded_uri_path = unquote(parsed_uri.path, errors="strict")
+        except UnicodeDecodeError as error:
+            raise ValueError("package target URI path has invalid percent encoding") from error
+        if not decoded_uri_path.startswith(decoded_base_path):
+            fail("package target URI is outside its exact pinned BASE_URI")
+        target_packages_path = decoded_uri_path[len(decoded_base_path):]
         local_file = record["localAptFile"]
         if PurePosixPath(record["filename"]).name != local_file:
             fail("package target binding local filename differs from its APT target filename")
@@ -1481,6 +1543,8 @@ def _validate_proposal(evidence_dir: Path, diagnostics: ValidationDiagnostics) -
             variant_record = object_with_keys(variant, {"path", "sha256", "size"}, "signed Packages variant")
             if not isinstance(variant_record["path"], str) or variant_record["path"] in variant_paths:
                 fail("package target binding contains malformed or duplicate signed variants")
+            if variant_record["path"] not in {canonical, *(canonical + suffix for suffix in (".gz", ".xz", ".bz2", ".lz4", ".zst"))}:
+                fail("package target variant path is not a supported canonical Packages encoding")
             variant_paths.add(variant_record["path"])
             if (release_file, variant_record["path"]) not in signed_index_keys:
                 fail("package target variant is absent from signed Release index hashes")
@@ -1488,20 +1552,33 @@ def _validate_proposal(evidence_dir: Path, diagnostics: ValidationDiagnostics) -
                 fail("package target variant has malformed hash or size")
             if signed_index_map[(release_file, variant_record["path"])] != (variant_record["sha256"], variant_record["size"]):
                 fail("package target variant does not match signed Release metadata")
-        if target_packages_path not in {variant["path"] for variant in variants}:
-            fail("package target URI is not one of its authenticated signed variants")
+        if canonical not in variant_paths:
+            fail("package target binding lacks the canonical Packages variant")
         target_tuple = (
             record["identifier"], record["codename"], record["suite"], record["architecture"],
             record["filename"], record["uri"], record["baseUri"], record["metaKey"], record["component"],
         )
         if target_tuple not in parsed_targets:
             fail("package target binding does not match captured APT index-target fields")
+        if target_packages_path != canonical or target_packages_path != record["metaKey"]:
+            fail("package target URI path differs from its canonical MetaKey")
+        if target_tuple in bound_package_targets:
+            fail("captured APT package target is bound more than once")
+        bound_package_targets.add(target_tuple)
         key = (str(codename), str(component), str(architecture), str(canonical))
         if key in seen_bindings:
             fail("proposal contains duplicate package target bindings")
         seen_bindings.add(key)
 
-    return ValidatedProposal(evidence_dir, run, proposal, sha256_bytes(proposal_raw))
+    apt_package_targets = {row for row in parsed_targets if row[0] == "Packages"}
+    if bound_package_targets != apt_package_targets:
+        fail("authenticated package target bindings do not cover the exact active APT target set")
+
+    return ValidatedProposal(evidence_dir, run, proposal, sha256_bytes(proposal_raw), tuple(
+        {"inReleaseFile": filename, **value}
+        for filename, value in sorted(freshness_evidence.items())
+        if filename.startswith("isolated-releases/")
+    ), release_contents)
 
 
 def validate_proposal(evidence_dir: Path, diagnostics_dir: Path | None = None) -> ValidatedProposal:
@@ -1560,8 +1637,8 @@ def validate_candidate_lock(evidence_dir: Path, lock_path: Path) -> dict[str, ob
     lock_root = resolved_lock_path.parent.parent if resolved_lock_path.parent.name == "release-evidence" else resolved_lock_path.parent
     lock, _lock_raw = read_json(resolved_lock_path, "candidate lock")
     object_with_keys(lock, {
-        "schemaVersion", "kind", "approval", "discovery", "apt", "releases",
-        "packageLockPath", "releaseLockPath", "trustLockPath", "lockFileSha256",
+        "schemaVersion", "kind", "approval", "discovery", "apt", "releases", "releaseFreshnessPolicy",
+        "packageLockPath", "releaseLockPath", "trustLockPath", "packageIndexLockPath", "lockFileSha256",
     }, "candidate lock")
     if type(lock["schemaVersion"]) is not int or lock["schemaVersion"] != 1 or lock["kind"] != "reviewed-trixie-gnupg-candidate-lock":
         fail("candidate lock schema or kind is unsupported")
@@ -1596,13 +1673,14 @@ def validate_candidate_lock(evidence_dir: Path, lock_path: Path) -> dict[str, ob
     if validated.run["image"] != discovery["baseImage"] or validated.run["imageId"] != discovery["baseImageId"] or validated.run["platform"] != discovery["platform"]:
         fail("current discovery base image ID, digest, or platform differs from reviewed lock")
 
-    file_hashes = object_with_keys(lock["lockFileSha256"], {"package", "release", "trust"}, "candidate lock TSV hashes")
+    file_hashes = object_with_keys(lock["lockFileSha256"], {"package", "release", "trust", "packageIndex"}, "candidate lock TSV hashes")
     expected_lock_paths = {
         "packageLockPath": "release-evidence/trixie-gnupg-purge-lock.tsv",
         "releaseLockPath": "release-evidence/trixie-gnupg-release-lock.tsv",
         "trustLockPath": "release-evidence/trixie-gnupg-trust-lock.tsv",
+        "packageIndexLockPath": "release-evidence/trixie-gnupg-package-index-lock.tsv",
     }
-    for key, path_key in (("package", "packageLockPath"), ("release", "releaseLockPath"), ("trust", "trustLockPath")):
+    for key, path_key in (("package", "packageLockPath"), ("release", "releaseLockPath"), ("trust", "trustLockPath"), ("packageIndex", "packageIndexLockPath")):
         if not isinstance(file_hashes[key], str) or not HEX_SHA256.fullmatch(file_hashes[key]):
             fail(f"candidate lock {key} TSV hash is malformed")
         if lock[path_key] != expected_lock_paths[path_key]:
@@ -1675,38 +1753,57 @@ def validate_candidate_lock(evidence_dir: Path, lock_path: Path) -> dict[str, ob
     if expected_keyrings != observed_keyrings:
         fail("current Debian/PGDG Signed-By keyring path/hash pairs differ from reviewed lock")
 
+    freshness_policy = object_with_keys(lock["releaseFreshnessPolicy"], {"maxFutureSkewSeconds"}, "candidate release freshness policy")
+    if freshness_policy["maxFutureSkewSeconds"] != MAX_FUTURE_SKEW_SECONDS:
+        fail("candidate lock future-skew policy differs from the reviewed value")
     releases = lock["releases"]
-    release_rows = _read_locked_tsv(lock_root, lock["releaseLockPath"], file_hashes["release"], 3, "release lock")
+    release_rows = _read_locked_tsv(lock_root, lock["releaseLockPath"], file_hashes["release"], 6, "release lock")
     if not isinstance(releases, list) or len(releases) != 4 or len(release_rows) != 4:
         fail("candidate lock must contain exactly four signed Release identities")
-    expected_releases: dict[str, dict[str, str]] = {}
+    expected_releases: dict[str, dict[str, object]] = {}
     for index, item in enumerate(releases):
-        record = object_with_keys(item, {"codename", "suite", "baseUri", "inReleaseFile", "sha256"}, f"candidate lock releases[{index}]")
-        for field in ("codename", "suite", "baseUri", "inReleaseFile", "sha256"):
+        record = object_with_keys(item, {"codename", "suite", "signedOrigin", "baseUri", "maxAgeSeconds", "warnAgeSeconds"}, f"candidate lock releases[{index}]")
+        for field in ("codename", "suite", "signedOrigin", "baseUri"):
             if not isinstance(record[field], str) or not record[field]:
                 fail("candidate lock Release identity is malformed")
-        if not HEX_SHA256.fullmatch(record["sha256"]) or record["codename"] in expected_releases:
-            fail("candidate lock Release identity has an invalid hash or duplicate codename")
+        max_age, warn_age = FRESHNESS_POLICY.get(record["codename"], (None, None))
+        if (record["codename"] in expected_releases or record["suite"] != EXPECTED_ORIGINS.get(record["codename"], (None,))[0]
+            or record["signedOrigin"] != EXPECTED_SIGNED_ORIGINS.get(record["codename"])
+            or record["maxAgeSeconds"] != max_age or record["warnAgeSeconds"] != warn_age):
+            fail("candidate lock Release identity or freshness bounds differ from reviewed policy")
         expected_releases[record["codename"]] = record
-    tsv_releases = {row[0]: (row[1], row[2]) for row in release_rows}
-    if len(tsv_releases) != 4 or any(
-        code not in expected_releases or tsv_releases[code] != (expected_releases[code]["suite"], expected_releases[code]["sha256"])
-        for code in tsv_releases
-    ):
+    expected_release_rows = sorted([[item["codename"], item["suite"], item["signedOrigin"], item["baseUri"], str(item["maxAgeSeconds"]), str(item["warnAgeSeconds"])] for item in expected_releases.values()])
+    if len(expected_releases) != 4 or release_rows != expected_release_rows:
         fail("release TSV rows differ from the candidate lock JSON")
-    observed_releases: dict[str, dict[str, str]] = {}
-    authenticated_files = {item["file"]: item["sha256"] for item in validated.proposal["authenticatedInReleaseFiles"]}
+    observed_releases: dict[str, dict[str, object]] = {}
+    freshness_by_code: dict[str, dict[str, object]] = {}
     for acquisition in validated.proposal["isolatedReleaseAcquisitions"]:
         code = acquisition["codename"]
+        release = validated.release_metadata.get(acquisition["inReleaseFile"])
+        if release is None:
+            fail("isolated acquisition has no authenticated Release metadata")
+        actual_code, actual_suite, actual_origin, release_date, valid_until, _rows = release
+        freshness_by_code[code] = validate_release_freshness(code, release_date, valid_until, datetime.now(timezone.utc))
         observed_releases[code] = {
-            "codename": acquisition["signedCodename"],
-            "suite": acquisition["signedSuite"],
+            "codename": actual_code,
+            "suite": actual_suite,
+            "signedOrigin": actual_origin,
             "baseUri": acquisition["baseUri"],
-            "inReleaseFile": acquisition["inReleaseFile"],
-            "sha256": acquisition["inReleaseSha256"],
+            "maxAgeSeconds": FRESHNESS_POLICY[code][0], "warnAgeSeconds": FRESHNESS_POLICY[code][1],
         }
-    if observed_releases != expected_releases or any(authenticated_files.get(item["inReleaseFile"]) != item["sha256"] for item in releases):
-        fail("current signed Release identities or hashes differ from reviewed lock")
+    if observed_releases != expected_releases:
+        fail("current signed Release identities differ from reviewed lock")
+
+    index_rows = _read_locked_tsv(lock_root, lock["packageIndexLockPath"], file_hashes["packageIndex"], 10, "package-index lock")
+    observed_index_rows: list[list[str]] = []
+    for binding in validated.proposal["packageIndexTargetBindings"]:
+        code = binding["codename"]
+        signed_origin = EXPECTED_SIGNED_ORIGINS[code]
+        for variant in binding["signedVariants"]:
+            observed_index_rows.append([code, binding["suite"], signed_origin, binding["baseUri"], binding["component"], binding["architecture"], binding["canonicalPackagesPath"], variant["path"], variant["sha256"], str(variant["size"])])
+    observed_index_rows.sort()
+    if index_rows != observed_index_rows:
+        fail("current authenticated active Packages variant map differs from the exact reviewed lock")
 
     trust_rows = _read_locked_tsv(lock_root, lock["trustLockPath"], file_hashes["trust"], 3, "trust lock")
     expected_trust_rows = [
@@ -1724,6 +1821,7 @@ def validate_candidate_lock(evidence_dir: Path, lock_path: Path) -> dict[str, ob
         "currentProposalSha256": validated.proposal_sha256,
         "packageCount": len(package_tuples),
         "releaseCount": len(expected_releases),
+        "releaseFreshness": [freshness_by_code[code] for code in sorted(freshness_by_code)],
         "candidateOnly": True,
         "runtimeClearance": "NOT_EVALUATED",
         "cveClearance": "NOT_EVALUATED",

@@ -10,13 +10,13 @@
     "productionUse": "NOT_AUTHORIZED"
   },
   "discovery": {
-    "runId": 40903022919,
+    "runId": 40909208002,
     "runAttempt": 1,
-    "revision": "03a63682ecb9ddf2553b6467e8a23d3d300e188a",
-    "tree": "c70726f9e54212f3636202cc5a69d5b015f51142",
-    "proposalSha256": "ccb31b114655be6e4c1fdccdafa5fb0bd8828471bff15cdb76c43cc92a74876e",
-    "evidenceArtifactId": 12909992992,
-    "evidenceArtifactSha256": "b02ee008e5d4844cb06078407144d3f6e1086e82bd990ac3922e616822923489",
+    "revision": "a3b89afae140a78a0f329896647d49f20dd24035",
+    "tree": "b1f35ba48e6ca4dfb0ad3eb6b9103eadc7f284b1",
+    "proposalSha256": "ed6b0d24a278b78d03a6677833d45d806837469907d80cc3572ae5aa7d3f8189",
+    "evidenceArtifactId": 12912128356,
+    "evidenceArtifactSha256": "c6b0ec0c42665d27480be56750bc83a5c4d4e75312a5056dacc60e85ee2dc7d1",
     "proposalPath": "trixie-gnupg-discovery/gnupg-removal-lock-proposal.json",
     "baseImage": "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe",
     "baseImageId": "sha256:82903352d6faf8f8a318bc4353d1cb1db67d4a5ff968d2799b2718e2cb00afa2",
@@ -58,30 +58,34 @@
     {
       "codename": "trixie",
       "suite": "stable",
+      "signedOrigin": "Debian",
       "baseUri": "http://deb.debian.org/debian/dists/trixie/",
-      "inReleaseFile": "isolated-releases/trixie/InRelease",
-      "sha256": "0584fba32e13e0ab8285fb16c27adea1ec03a73669c18702821094fd6ca86675"
-    },
-    {
-      "codename": "trixie-updates",
-      "suite": "stable-updates",
-      "baseUri": "http://deb.debian.org/debian/dists/trixie-updates/",
-      "inReleaseFile": "isolated-releases/trixie-updates/InRelease",
-      "sha256": "8bc39bced3d37fc871156566fe133ab928a2ab4631f6d7a7503f53a26dd57ed7"
-    },
-    {
-      "codename": "trixie-security",
-      "suite": "stable-security",
-      "baseUri": "http://deb.debian.org/debian-security/dists/trixie-security/",
-      "inReleaseFile": "isolated-releases/trixie-security/InRelease",
-      "sha256": "dd02c5cba2fe501ce3e2d4d74638f8c34f2ec6910ecc7e1d1bd2489e461988e3"
+      "maxAgeSeconds": 7776000,
+      "warnAgeSeconds": 5184000
     },
     {
       "codename": "trixie-pgdg",
       "suite": "trixie-pgdg",
+      "signedOrigin": "apt.postgresql.org",
       "baseUri": "http://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/",
-      "inReleaseFile": "isolated-releases/trixie-pgdg/InRelease",
-      "sha256": "4e4d99286dac9cbddc5ff01abb59e217347f5cccebfebeab15734bb36a583e81"
+      "maxAgeSeconds": 604800,
+      "warnAgeSeconds": 518400
+    },
+    {
+      "codename": "trixie-security",
+      "suite": "stable-security",
+      "signedOrigin": "Debian",
+      "baseUri": "http://deb.debian.org/debian-security/dists/trixie-security/",
+      "maxAgeSeconds": 604800,
+      "warnAgeSeconds": 518400
+    },
+    {
+      "codename": "trixie-updates",
+      "suite": "stable-updates",
+      "signedOrigin": "Debian",
+      "baseUri": "http://deb.debian.org/debian/dists/trixie-updates/",
+      "maxAgeSeconds": 604800,
+      "warnAgeSeconds": 518400
     }
   ],
   "packageLockPath": "release-evidence/trixie-gnupg-purge-lock.tsv",
@@ -89,7 +93,12 @@
   "trustLockPath": "release-evidence/trixie-gnupg-trust-lock.tsv",
   "lockFileSha256": {
     "package": "358f19903c7e83abb32750ac7e6b882ebafa4b8abfe2b2658754e483f1e320df",
-    "release": "deca129d8a28387ad161d88454db51a37ec56a839381c7caacd428cecc524718",
-    "trust": "b1aea0a58116e60daa4aca97b99d65ffba7f85d77ad6c83596b12cbe5da5c519"
-  }
+    "release": "c1ffc96ace74f18569a49a4bc41bdcf3f9e059a5fbd4e638b68f6d5c2876e712",
+    "trust": "b1aea0a58116e60daa4aca97b99d65ffba7f85d77ad6c83596b12cbe5da5c519",
+    "packageIndex": "fa6b2c7afe04b12386874fc0b2c83ae537a7606768bed7e4dbdb56eebeab93ca"
+  },
+  "releaseFreshnessPolicy": {
+    "maxFutureSkewSeconds": 300
+  },
+  "packageIndexLockPath": "release-evidence/trixie-gnupg-package-index-lock.tsv"
 }

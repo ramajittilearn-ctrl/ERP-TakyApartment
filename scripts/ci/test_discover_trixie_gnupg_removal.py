@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from datetime import datetime, timezone, timedelta
 
 
 SCRIPT = Path(__file__).with_name("discover-trixie-gnupg-removal.py")
@@ -15,6 +16,28 @@ SPEC.loader.exec_module(MODULE)
 
 
 class DiscoveryParsingTests(unittest.TestCase):
+    def test_release_freshness_enforces_suite_caps_utc_future_skew_and_valid_until(self):
+        now = datetime(2026, 10, 29, 12, 0, tzinfo=timezone.utc)
+        def metadata(code, date, valid=None):
+            record = {"Codename": code, "Suite": {"trixie": "stable", "trixie-updates": "stable-updates", "trixie-security": "stable-security", "trixie-pgdg": "trixie-pgdg"}[code],
+                      "Origin": MODULE.EXPECTED_RELEASE_ORIGINS[code], "Date": date.strftime("%a, %d %b %Y %H:%M:%S UTC")}
+            if valid is not None: record["Valid-Until"] = valid.strftime("%a, %d %b %Y %H:%M:%S UTC")
+            return record
+        allowed = metadata("trixie", now - timedelta(seconds=7776000))
+        self.assertTrue(MODULE.release_freshness(allowed, now)["warning"])
+        self.assertFalse(MODULE.release_freshness(metadata("trixie", now - timedelta(seconds=5183999)), now)["warning"])
+        with self.assertRaisesRegex(ValueError, "freshness bound"):
+            MODULE.release_freshness(metadata("trixie", now - timedelta(seconds=7776001)), now)
+        self.assertTrue(MODULE.release_freshness(metadata("trixie-updates", now - timedelta(seconds=518400)), now)["warning"])
+        with self.assertRaisesRegex(ValueError, "freshness bound"):
+            MODULE.release_freshness(metadata("trixie-updates", now + timedelta(seconds=301)), now)
+        with self.assertRaisesRegex(ValueError, "Valid-Until"):
+            MODULE.release_freshness(metadata("trixie-pgdg", now, now), now)
+        malformed = metadata("trixie", now)
+        malformed["Date"] = "Thu, 29 Oct 2026 12:00:00 +0100"
+        with self.assertRaisesRegex(ValueError, "malformed"):
+            MODULE.release_freshness(malformed, now)
+
     def test_suite_source_selector_accepts_spaced_one_line_options(self):
         with tempfile.TemporaryDirectory() as temp:
             evidence = Path(temp)
@@ -215,7 +238,7 @@ class DiscoveryParsingTests(unittest.TestCase):
                 (metadata / Path(filename).name).write_text("authenticated by the test fixture\n")
                 (metadata / release_name).write_text(
                     "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n"
-                    f"Codename: {codename}\nSuite: {suite}\n"
+                    f"Codename: {codename}\nSuite: {suite}\nOrigin: {MODULE.EXPECTED_RELEASE_ORIGINS[codename]}\nDate: Thu, 29 Oct 2026 01:00:00 UTC\n"
                     "-----BEGIN PGP SIGNATURE-----\nfixture\n=abcd\n-----END PGP SIGNATURE-----\n"
                 )
                 host, origin_path = MODULE.EXPECTED_ORIGINS[codename]
@@ -338,7 +361,7 @@ class DiscoveryParsingTests(unittest.TestCase):
                 (metadata / Path(filename).name).write_text("authenticated by the test fixture\n")
                 (metadata / release_file).write_text(
                     "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n"
-                    f"Codename: {codename}\nSuite: {suite}\n"
+                    f"Codename: {codename}\nSuite: {suite}\nOrigin: {MODULE.EXPECTED_RELEASE_ORIGINS[codename]}\nDate: Thu, 29 Oct 2026 01:00:00 UTC\n"
                     "-----BEGIN PGP SIGNATURE-----\nfixture\n=abcd\n-----END PGP SIGNATURE-----\n"
                 )
                 host, origin_path = MODULE.EXPECTED_ORIGINS[codename]
@@ -381,7 +404,7 @@ class DiscoveryParsingTests(unittest.TestCase):
         bz2_digest = hashlib.sha256(bz2_bytes).hexdigest()
         release = (
             "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n"
-            f"Origin: Debian\nCodename: trixie\nSuite: stable\nSHA256:\n {digest} {len(upstream)} {path}\n"
+            f"Origin: Debian\nCodename: trixie\nSuite: stable\nDate: Thu, 29 Oct 2026 01:00:00 UTC\nSHA256:\n {digest} {len(upstream)} {path}\n"
             f" {xz_digest} {len(upstream_xz)} {path}.xz\n"
             f" {bz2_digest} {len(bz2_bytes)} {path}.bz2\n"
             f" {alternate_digest} {len(alternate)} {path}.gz\n"
@@ -442,7 +465,7 @@ class DiscoveryParsingTests(unittest.TestCase):
             )
             release = (
                 "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n"
-                f"Codename: trixie\nSuite: stable\nSHA256:\n{rows}"
+                f"Codename: trixie\nSuite: stable\nOrigin: Debian\nDate: Thu, 29 Oct 2026 01:00:00 UTC\nSHA256:\n{rows}"
                 "-----BEGIN PGP SIGNATURE-----\nZmFrZQ==\n=abcd\n-----END PGP SIGNATURE-----\n"
             ).encode()
             (metadata / "trixie_InRelease").write_bytes(release)
@@ -560,7 +583,7 @@ class DiscoveryParsingTests(unittest.TestCase):
     def test_unlisted_upstream_packages_path_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             metadata = Path(temp)
-            body = "Origin: Debian\nCodename: trixie\nSuite: stable\nSHA256:\n " + "a" * 64 + " 1 main/binary-amd64/Packages.xz\n"
+            body = "Origin: Debian\nCodename: trixie\nSuite: stable\nDate: Thu, 29 Oct 2026 01:00:00 UTC\nSHA256:\n " + "a" * 64 + " 1 main/binary-amd64/Packages.xz\n"
             release = f"-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n{body}-----BEGIN PGP SIGNATURE-----\nZmFrZQ==\n=abcd\n-----END PGP SIGNATURE-----\n".encode()
             (metadata / "trixie_InRelease").write_bytes(release)
             (metadata / "local_Packages.lz4").write_bytes(b"local")
@@ -580,7 +603,7 @@ class DiscoveryParsingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             metadata = Path(temp)
             body = (
-                "Codename: trixie\nSuite: stable\nSHA256:\n "
+                "Codename: trixie\nSuite: stable\nOrigin: Debian\nDate: Thu, 29 Oct 2026 01:00:00 UTC\nSHA256:\n "
                 + "a" * 64 + " 1 main/binary-amd64/Packages.xz\n"
             )
             release = (

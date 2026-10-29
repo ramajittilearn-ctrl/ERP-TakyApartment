@@ -12,6 +12,7 @@ import subprocess
 import sys
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
+from datetime import timedelta
 
 
 IMAGE = "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
@@ -400,18 +401,55 @@ def parse_release_sha256(raw: bytes) -> dict[str, tuple[str, int]]:
     return records
 
 
-def parse_release_identity(raw: bytes) -> tuple[str, str]:
+FRESHNESS_POLICY = {
+    "trixie": (7776000, 5184000), "trixie-updates": (604800, 518400),
+    "trixie-security": (604800, 518400), "trixie-pgdg": (604800, 518400),
+}
+EXPECTED_RELEASE_ORIGINS = {"trixie": "Debian", "trixie-updates": "Debian", "trixie-security": "Debian", "trixie-pgdg": "apt.postgresql.org"}
+
+
+def parse_release_metadata(raw: bytes) -> dict[str, str]:
     values: dict[str, str] = {}
     for line in cleartext_release_body(raw).splitlines():
-        for field in ("Codename", "Suite"):
+        for field in ("Codename", "Suite", "Origin", "Date", "Valid-Until"):
             prefix = field + ": "
             if line.startswith(prefix):
                 if field in values:
                     raise ValueError(f"InRelease contains duplicate {field} fields")
                 values[field] = line[len(prefix) :]
-    if "Codename" not in values or "Suite" not in values:
-        raise ValueError("InRelease is missing Codename or Suite identity")
+    if not {"Codename", "Suite", "Origin", "Date"}.issubset(values):
+        raise ValueError("InRelease is missing Codename, Suite, Origin, or Date")
+    return values
+
+
+def parse_release_identity(raw: bytes) -> tuple[str, str]:
+    values = parse_release_metadata(raw)
     return values["Codename"], values["Suite"]
+
+
+def release_freshness(metadata: dict[str, str], now: datetime | None = None) -> dict[str, object]:
+    codename = metadata["Codename"]
+    if codename not in FRESHNESS_POLICY or metadata["Origin"] != EXPECTED_RELEASE_ORIGINS[codename]:
+        raise ValueError("InRelease signed Origin is outside the approved source identity")
+    def parse_date(field: str) -> datetime:
+        try:
+            parsed = datetime.strptime(metadata[field], "%a, %d %b %Y %H:%M:%S UTC").replace(tzinfo=timezone.utc)
+        except (KeyError, TypeError, ValueError, OverflowError) as error:
+            raise ValueError(f"InRelease {field} is malformed") from error
+        return parsed
+    date = parse_date("Date")
+    valid_until = parse_date("Valid-Until") if "Valid-Until" in metadata else None
+    current = now or datetime.now(timezone.utc)
+    age_seconds = (current - date).total_seconds()
+    age = int(age_seconds)
+    max_age, warn_age = FRESHNESS_POLICY[codename]
+    if age_seconds < -300 or age_seconds > max_age:
+        raise ValueError(f"InRelease Date for {codename} is outside the approved freshness bound")
+    if valid_until is not None and (valid_until <= current or valid_until < date):
+        raise ValueError(f"InRelease Valid-Until for {codename} is expired or precedes Date")
+    return {"date": date.isoformat(), "validUntil": valid_until.isoformat() if valid_until else None,
+            "ageSeconds": age, "maxAgeSeconds": max_age, "warnAgeSeconds": warn_age,
+            "warning": age_seconds >= warn_age}
 
 
 def validate_index_targets(
@@ -638,7 +676,9 @@ def collect_isolated_release_acquisitions(
         digest_record = (directory / "exact-inrelease-digest.tsv").read_text().strip().split("\t")
         if digest_record != [sha256(inrelease_file), str(inrelease_file.stat().st_size)]:
             raise ValueError(f"isolated APT InRelease copy differs from exact-path digest for {codename}")
-        release_codename, release_suite = parse_release_identity(inrelease_file.read_bytes())
+        release_metadata = parse_release_metadata(inrelease_file.read_bytes())
+        release_codename, release_suite = release_metadata["Codename"], release_metadata["Suite"]
+        freshness = release_freshness(release_metadata, datetime.fromisoformat(str(run_manifest["generatedAt"])))
         if (release_codename, release_suite) != (codename, expected_suite):
             raise ValueError(f"isolated APT InRelease identity differs from configured Dist for {codename}")
 
@@ -648,6 +688,10 @@ def collect_isolated_release_acquisitions(
             "suite": expected_suite,
             "signedCodename": release_codename,
             "signedSuite": release_suite,
+            "signedOrigin": release_metadata["Origin"],
+            "releaseDate": release_metadata["Date"],
+            "validUntil": release_metadata.get("Valid-Until"),
+            "freshness": freshness,
             "sourceUri": source_uri,
             "baseUri": base_uri,
             "aptVersion": apt_version,
@@ -953,6 +997,10 @@ def main() -> int:
             "platform": PLATFORM,
             "authenticatedInReleaseFiles": inrelease,
             "isolatedReleaseAcquisitions": isolated_acquisitions,
+            "releaseFreshnessEvidence": [
+                {"codename": item["codename"], "inReleaseFile": item["inReleaseFile"], **item["freshness"]}
+                for item in isolated_acquisitions
+            ],
             "signedReleaseIndexHashes": signed_release_indices,
             "packageIndexTargetBindings": signed_indices,
             "localAptIndexFiles": local_packages,

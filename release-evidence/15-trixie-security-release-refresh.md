@@ -13,7 +13,7 @@
 - Only the signed `trixie-security` Release digest and the candidate lock's matching discovery provenance, captured Release digest, and outer Release-lock SHA-256 are refreshed.
 - The package purge lock remains byte-identical (SHA-256 `358f19903c7e83abb32750ac7e6b882ebafa4b8abfe2b2658754e483f1e320df`); the trust lock remains byte-identical (SHA-256 `b1aea0a58116e60daa4aca97b99d65ffba7f85d77ad6c83596b12cbe5da5c519`). Signed package-index hashes and the removal proposal are unchanged.
 - Local checks on this refresh: `git diff --check` passed; `scripts.ci.test_validate_trixie_gnupg_evidence` passed 46 tests with one skipped because local `gpg/gpgv` is unavailable; `scripts.ci.test_discover_trixie_gnupg_removal` passed 26 tests.
-- Independent source review of this exact lock refresh found no actionable findings. Hosted exact-head CI is pending. Hosted signature verification is based on the recorded run evidence; it was not reproduced locally.
+- Local exact-head refresh remains subject to independent source review and hosted exact-head CI. Hosted signature verification is based on the recorded run evidence; it was not reproduced locally.
 
 ## Security boundary
 

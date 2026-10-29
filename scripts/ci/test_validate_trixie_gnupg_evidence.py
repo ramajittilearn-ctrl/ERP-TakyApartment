@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 from urllib.parse import urlsplit
 
@@ -100,6 +101,7 @@ class EvidenceFixture:
             "platform": self.run["platform"],
             "authenticatedInReleaseFiles": [],
             "isolatedReleaseAcquisitions": [],
+            "releaseFreshnessEvidence": [],
             "signedReleaseIndexHashes": [],
             "packageIndexTargetBindings": [],
             "localAptIndexFiles": [],
@@ -124,16 +126,22 @@ class EvidenceFixture:
             combined_name = f"unrelated-name-{release_index}-InRelease"
             isolated_name = f"isolated-releases/{codename}/InRelease"
             local_name = f"repo_dists_{codename}_main_binary-amd64_Packages.lz4"
+            meta_key = "main/binary-amd64/Packages"
             signed_path = "main/binary-amd64/Packages.xz"
             signed_hash = hashlib.sha256(f"signed index {codename}".encode()).hexdigest()
             signed_size = 123 + len(codename)
-            signed_rows = [(signed_path, signed_hash, signed_size)]
+            canonical_hash = hashlib.sha256(f"canonical index {codename}".encode()).hexdigest()
+            canonical_size = signed_size + 1
+            signed_rows = [(meta_key, canonical_hash, canonical_size), (signed_path, signed_hash, signed_size)]
             if codename == "trixie-pgdg":
                 signed_rows.append(("14/source/Sources", hashlib.sha256(b"").hexdigest(), 0))
             signed_sha256_lines = "".join(f" {row_hash} {row_size} {row_path}\n" for row_path, row_hash, row_size in signed_rows)
             release_bytes = (
                 "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n"
-                f"Codename: {codename}\nSuite: {suite}\nSHA256:\n{signed_sha256_lines}"
+                f"Codename: {codename}\nSuite: {suite}\nOrigin: {MODULE.EXPECTED_SIGNED_ORIGINS[codename]}\n"
+                "Date: Thu, 29 Oct 2026 01:00:00 UTC\n"
+                + ("Valid-Until: Fri, 06 Nov 2026 12:00:00 UTC\n" if codename != "trixie" else "")
+                + f"SHA256:\n{signed_sha256_lines}"
                 "-----BEGIN PGP SIGNATURE-----\nZmFrZS1zaWduYXR1cmU=\n=abcd\n-----END PGP SIGNATURE-----\n"
             ).encode()
             local_bytes = f"synthetic local Packages fixture {codename}\n".encode()
@@ -152,8 +160,7 @@ class EvidenceFixture:
                 source_text = f"Types: deb\nURIs: {source_uri}\nSuites: {codename}\nComponents: main\nSigned-By: {source_key}\n"
             self.files[isolated_source] = source_text.encode()
             base_uri = f"{source_uri}/dists/{codename}/"
-            uri = f"{base_uri}{signed_path}"
-            meta_key = "main/binary-amd64/Packages"
+            uri = f"{base_uri}{meta_key}"
             filename = f"/var/lib/apt/lists/{local_name}"
             target_row = "|".join(("Packages", codename, suite, "amd64", filename, uri, base_uri, meta_key, "main"))
             target_rows.append(target_row)
@@ -182,6 +189,9 @@ class EvidenceFixture:
             self.proposal["isolatedReleaseAcquisitions"].append({
                 "codename": codename, "configuredDist": codename, "suite": suite,
                 "signedCodename": codename, "signedSuite": suite, "sourceUri": source_uri,
+                "signedOrigin": MODULE.EXPECTED_SIGNED_ORIGINS[codename],
+                "releaseDate": "Thu, 29 Oct 2026 01:00:00 UTC",
+                "validUntil": "Fri, 06 Nov 2026 12:00:00 UTC" if codename != "trixie" else None,
                 "baseUri": base_uri, "aptVersion": "apt 3.0.3 (amd64)",
                 "runId": self.run["runId"], "runAttempt": self.run["runAttempt"],
                 "revision": self.run["revision"], "tree": self.run["tree"], "image": self.run["image"],
@@ -195,6 +205,13 @@ class EvidenceFixture:
                 "inReleaseSizeBytes": len(release_bytes), "combinedInReleaseFile": combined_file,
                 "combinedInReleaseSha256": combined_hash, "combinedInReleaseSizeBytes": len(release_bytes),
             })
+            freshness = MODULE.validate_release_freshness(
+                codename, MODULE.parse_release_date("Thu, 29 Oct 2026 01:00:00 UTC", "Date"),
+                MODULE.parse_release_date("Fri, 06 Nov 2026 12:00:00 UTC", "Valid-Until") if codename != "trixie" else None,
+                datetime.fromisoformat(self.run["generatedAt"]),
+            )
+            self.proposal["isolatedReleaseAcquisitions"][-1]["freshness"] = freshness
+            self.proposal["releaseFreshnessEvidence"].append({"codename": codename, "inReleaseFile": isolated_name, **freshness})
             for row_path, row_hash, row_size in signed_rows:
                 self.proposal["signedReleaseIndexHashes"].append({
                     "releaseFile": isolated_name, "releaseSha256": isolated_file_hash, "codename": codename,
@@ -208,7 +225,10 @@ class EvidenceFixture:
                 "architecture": "amd64", "filename": filename, "uri": uri, "baseUri": base_uri,
                 "metaKey": meta_key, "releaseFile": isolated_name, "releaseSha256": isolated_file_hash,
                 "canonicalPackagesPath": "main/binary-amd64/Packages",
-                "signedVariants": [{"path": signed_path, "sha256": signed_hash, "size": signed_size}],
+                "signedVariants": [
+                    {"path": meta_key, "sha256": canonical_hash, "size": canonical_size},
+                    {"path": signed_path, "sha256": signed_hash, "size": signed_size},
+                ],
                 "localAptFile": local_name, "localAptSha256": local_hash, "localAptSize": len(local_bytes),
             })
         self.files["apt-index-targets.tsv"] = ("\n".join(target_rows) + "\n").encode()
@@ -265,9 +285,23 @@ class EvidenceFixture:
                 "sha256": acquisition["inReleaseSha256"],
             }
             releases.append(release)
+        for release in releases:
+            release["signedOrigin"] = MODULE.EXPECTED_SIGNED_ORIGINS[release["codename"]]
+            release["maxAgeSeconds"], release["warnAgeSeconds"] = MODULE.FRESHNESS_POLICY[release["codename"]]
+            release.pop("inReleaseFile")
+            release.pop("sha256")
+        releases.sort(key=lambda item: item["codename"])
         release_path.write_text("".join(
-            f"{item['codename']}\t{item['suite']}\t{item['sha256']}\n" for item in releases
+            "\t".join(str(item[field]) for field in ("codename", "suite", "signedOrigin", "baseUri", "maxAgeSeconds", "warnAgeSeconds")) + "\n"
+            for item in releases
         ))
+        package_index_path = release_dir / "trixie-gnupg-package-index-lock.tsv"
+        index_rows = []
+        for binding in self.proposal["packageIndexTargetBindings"]:
+            for variant in binding["signedVariants"]:
+                index_rows.append([binding["codename"], binding["suite"], MODULE.EXPECTED_SIGNED_ORIGINS[binding["codename"]], binding["baseUri"], binding["component"], binding["architecture"], binding["canonicalPackagesPath"], variant["path"], variant["sha256"], str(variant["size"])])
+        index_rows.sort()
+        package_index_path.write_text("".join("\t".join(row) + "\n" for row in index_rows))
         source_configs = {}
         for acquisition in self.proposal["isolatedReleaseAcquisitions"]:
             source_configs[acquisition["sourceConfigFile"]] = acquisition["sourceConfigSha256"]
@@ -316,12 +350,14 @@ class EvidenceFixture:
                 "keyrings": list(keyrings.values()),
             },
             "releases": releases,
+            "releaseFreshnessPolicy": {"maxFutureSkewSeconds": MODULE.MAX_FUTURE_SKEW_SECONDS},
             "packageLockPath": "release-evidence/trixie-gnupg-purge-lock.tsv",
             "releaseLockPath": "release-evidence/trixie-gnupg-release-lock.tsv",
             "trustLockPath": "release-evidence/trixie-gnupg-trust-lock.tsv",
+            "packageIndexLockPath": "release-evidence/trixie-gnupg-package-index-lock.tsv",
             "lockFileSha256": {
                 "package": digest(package_path.read_bytes()), "release": digest(release_path.read_bytes()),
-                "trust": digest(trust_path.read_bytes()),
+                "trust": digest(trust_path.read_bytes()), "packageIndex": digest(package_index_path.read_bytes()),
             },
         }
         lock_path = release_dir / "trixie-gnupg-candidate-lock.json"
@@ -404,6 +440,7 @@ class EvidenceValidationTests(unittest.TestCase):
             self.assertEqual(result["status"], "VALIDATED_REVIEWED_CANDIDATE_LOCK")
             self.assertEqual(result["packageCount"], 1)
             self.assertEqual(result["releaseCount"], 4)
+            self.assertEqual(len(result["releaseFreshness"]), 4)
             self.assertTrue(result["candidateOnly"])
             self.assertEqual(result["runtimeClearance"], "NOT_EVALUATED")
             self.assertEqual(result["cveClearance"], "NOT_EVALUATED")
@@ -486,6 +523,55 @@ class EvidenceValidationTests(unittest.TestCase):
             lock_path.symlink_to(copy)
             with self.assertRaisesRegex(ValueError, "symlink"):
                 MODULE.validate_candidate_lock(fixture.root, lock_path)
+
+    def test_reviewed_candidate_lock_rejects_package_index_map_drift(self):
+        for mutation in ("hash", "size", "variant", "canonical", "component", "architecture", "missing", "extra", "order"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temp:
+                fixture = self.fixture(temp)
+                lock_path = fixture.candidate_lock(Path(temp) / "repo")
+                lock = json.loads(lock_path.read_text())
+                package_index_path = lock_path.parent / "trixie-gnupg-package-index-lock.tsv"
+                rows = [line.split("\t") for line in package_index_path.read_text().splitlines()]
+                if mutation == "hash": rows[0][8] = "0" * 64
+                elif mutation == "size": rows[0][9] = str(int(rows[0][9]) + 1)
+                elif mutation == "variant": rows[0][7] = "main/binary-amd64/Packages.gz"
+                elif mutation == "canonical": rows[0][6] = "other/binary-amd64/Packages"
+                elif mutation == "component": rows[0][4] = "other"
+                elif mutation == "architecture": rows[0][5] = "arm64"
+                elif mutation == "missing": rows.pop()
+                elif mutation == "extra": rows.append(rows[0].copy())
+                elif mutation == "order": rows.reverse()
+                package_index_path.write_text("".join("\t".join(row) + "\n" for row in rows))
+                lock["lockFileSha256"]["packageIndex"] = digest(package_index_path.read_bytes())
+                lock_path.write_bytes(json_bytes(lock))
+                with self.assertRaises(ValueError):
+                    MODULE.validate_candidate_lock(fixture.root, lock_path)
+
+    def test_release_freshness_policy_enforces_age_future_and_valid_until(self):
+        now = datetime(2026, 10, 29, 12, 0, tzinfo=timezone.utc)
+        tests = (
+            ("trixie", now - timedelta(seconds=MODULE.FRESHNESS_POLICY["trixie"][0]), now + timedelta(days=1), True),
+            ("trixie", now - timedelta(seconds=MODULE.FRESHNESS_POLICY["trixie"][0] + 1), now + timedelta(days=1), False),
+            ("trixie-updates", now + timedelta(seconds=300), now + timedelta(days=1), True),
+            ("trixie-updates", now + timedelta(seconds=301), now + timedelta(days=1), False),
+            ("trixie-security", now, now - timedelta(seconds=1), False),
+            ("trixie-pgdg", now, now - timedelta(days=1), False),
+            ("trixie", now, None, True),
+        )
+        for code, date, valid_until, accepted in tests:
+            with self.subTest(code=code, date=date, valid_until=valid_until):
+                if accepted:
+                    row = MODULE.validate_release_freshness(code, date, valid_until, now)
+                    self.assertEqual(row["warning"], (now - date).total_seconds() >= MODULE.FRESHNESS_POLICY[code][1])
+                else:
+                    with self.assertRaises(ValueError):
+                        MODULE.validate_release_freshness(code, date, valid_until, now)
+
+    def test_release_date_parser_requires_explicit_utc_and_valid_rfc822(self):
+        self.assertEqual(MODULE.parse_release_date("Thu, 29 Oct 2026 12:00:00 UTC", "Date").utcoffset(), timedelta(0))
+        for bad in ("29 Oct 2026 12:00:00", "Thu, 29 Oct 2026 12:00:00 +0100", "not-a-date"):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                MODULE.parse_release_date(bad, "Date")
 
     def test_candidate_lock_does_not_pin_dynamic_run_or_proposal_identity(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -1103,7 +1189,9 @@ class EvidenceValidationTests(unittest.TestCase):
                 f"{digest(changed)}\t{len(changed)}\n"
             )
             fixture.proposal["packageIndexTargetBindings"][0]["releaseSha256"] = digest(changed)
-            fixture.proposal["signedReleaseIndexHashes"][0]["releaseSha256"] = digest(changed)
+            for signed_row in fixture.proposal["signedReleaseIndexHashes"]:
+                if signed_row["releaseFile"] == release_record["file"]:
+                    signed_row["releaseSha256"] = digest(changed)
             fixture.write()
             with self.assertRaisesRegex(ValueError, "signed index rows differ from isolated InRelease SHA256 section"):
                 MODULE.validate_proposal(fixture.root)
@@ -1155,6 +1243,63 @@ class EvidenceValidationTests(unittest.TestCase):
             fixture.write()
             with self.assertRaisesRegex(ValueError, "signed Release metadata"):
                 MODULE.validate_proposal(fixture.root)
+
+    def test_signed_variant_path_must_be_canonical_or_supported_compression(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            binding = fixture.proposal["packageIndexTargetBindings"][0]
+            variant = binding["signedVariants"][0]
+            original = variant["path"]
+            variant["path"] = binding["canonicalPackagesPath"] + ".gzip"
+            fixture.proposal["signedReleaseIndexHashes"][0]["path"] = variant["path"]
+            fixture.write()
+            with self.assertRaises(ValueError):
+                MODULE.validate_proposal(fixture.root)
+
+    def test_package_binding_requires_locked_canonical_variant_row(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            binding = fixture.proposal["packageIndexTargetBindings"][0]
+            binding["signedVariants"] = [item for item in binding["signedVariants"] if item["path"] != binding["canonicalPackagesPath"]]
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "lacks the canonical Packages variant"):
+                MODULE.validate_proposal(fixture.root)
+
+    def test_package_target_uri_must_select_exact_authenticated_variant_and_cover_exact_target_set(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            fixture.proposal["packageIndexTargetBindings"][0]["uri"] += ".gz"
+            fixture.write()
+            with self.assertRaises(ValueError):
+                MODULE.validate_proposal(fixture.root)
+
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            acquisition = fixture.proposal["isolatedReleaseAcquisitions"][0]
+            relative = acquisition["aptTargetEvidenceFile"]
+            original = (fixture.root / relative).read_text().strip()
+            target = "|".join(("Packages", "trixie", "stable", "arm64", "/var/lib/apt/lists/extra_Packages.lz4",
+                               "https://deb.debian.org/debian/dists/trixie/main/binary-arm64/Packages",
+                               acquisition["baseUri"], "main/binary-arm64/Packages", "main"))
+            (fixture.root / relative).write_text(original + "\n" + target + "\n")
+            acquisition["aptTargetEvidenceSha256"] = digest((fixture.root / relative).read_bytes())
+            acquisition["aptTargetEvidenceFile"] = relative
+            fixture.proposal["isolatedReleaseAcquisitions"][0] = acquisition
+            (fixture.root / "apt-index-targets.tsv").write_text((fixture.root / "apt-index-targets.tsv").read_text() + target + "\n")
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "exact active APT target set"):
+                MODULE.validate_proposal(fixture.root)
+
+    def test_package_binding_rejects_uri_authority_base_and_relative_path_drift(self):
+        for field, replacement in (("uri", "https://mirror.example/debian/dists/trixie/main/binary-amd64/Packages.xz"),
+                                    ("baseUri", "https://deb.debian.org/debian-security/dists/trixie/"),
+                                    ("uri", "https://deb.debian.org/debian/dists/trixie/main/binary-arm64/Packages.xz")):
+            with self.subTest(field=field, replacement=replacement), tempfile.TemporaryDirectory() as temp:
+                fixture = self.fixture(temp)
+                fixture.proposal["packageIndexTargetBindings"][0][field] = replacement
+                fixture.write()
+                with self.assertRaises(ValueError):
+                    MODULE.validate_proposal(fixture.root)
 
     def test_proposal_cannot_claim_clearance_or_change_schema(self):
         for key, value in (("runtimeClearance", "PASSED"), ("schemaVersion", 2)):
