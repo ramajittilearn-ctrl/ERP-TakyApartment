@@ -84,7 +84,7 @@ RUN set -eux; \
     case "$(cat "$evidence/postgres-before.txt")" in 'postgres (PostgreSQL) 17.11'*) ;; *) echo 'Unexpected PostgreSQL version in candidate parent' >&2; exit 1 ;; esac; \
     case "$(cat "$evidence/pg-config-before.txt")" in 'PostgreSQL 17.11'*) ;; *) echo 'Unexpected pg_config version in candidate parent' >&2; exit 1 ;; esac; \
     gosu --version > "$evidence/gosu-before.txt"; \
-    grep -Eq '^gosu version: 1\.19([[:space:]]|$)' "$evidence/gosu-before.txt"; \
+    grep -Eq '^1\.19([[:space:]]|$)' "$evidence/gosu-before.txt"; \
     test -x /usr/bin/sqv; \
     sqv --version > "$evidence/sqv-before.txt" 2>&1; \
     grep -F 'sqv 1.3.0' "$evidence/sqv-before.txt" >/dev/null; \
