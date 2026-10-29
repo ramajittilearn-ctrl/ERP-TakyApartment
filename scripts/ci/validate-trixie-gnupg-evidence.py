@@ -10,11 +10,13 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import resource
 import shutil
+import stat
 import sys
 import tempfile
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import unquote, urlsplit
 
 
@@ -32,6 +34,61 @@ EXPECTED_ORIGINS = {
     "trixie-security": ("stable-security", "deb.debian.org", "/debian-security"),
     "trixie-pgdg": ("trixie-pgdg", "apt.postgresql.org", "/pub/repos/apt"),
 }
+GPGV_OUTPUT_LIMIT = 65536
+
+
+def run_bounded(command: list[str], *, env: dict[str, str], timeout: int) -> tuple[int, bytes, bytes, bool]:
+    def limit_output_files() -> None:
+        resource.setrlimit(resource.RLIMIT_FSIZE, (GPGV_OUTPUT_LIMIT, GPGV_OUTPUT_LIMIT))
+
+    with tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
+        try:
+            result = subprocess.run(
+                command, stdout=stdout_file, stderr=stderr_file, stdin=subprocess.DEVNULL,
+                env=env, timeout=timeout, check=False, preexec_fn=limit_output_files,
+            )
+            returncode = result.returncode
+        except subprocess.TimeoutExpired:
+            returncode = -1
+        stdout_file.seek(0)
+        stderr_file.seek(0)
+        stdout = stdout_file.read(GPGV_OUTPUT_LIMIT + 1)
+        stderr = stderr_file.read(GPGV_OUTPUT_LIMIT + 1)
+        overflow = (os.fstat(stdout_file.fileno()).st_size >= GPGV_OUTPUT_LIMIT
+                    or os.fstat(stderr_file.fileno()).st_size >= GPGV_OUTPUT_LIMIT)
+    return returncode, stdout, stderr, overflow
+
+
+def structured_gpg_statuses(stdout: bytes) -> tuple[list[dict[str, object]], list[str]]:
+    statuses: list[dict[str, object]] = []
+    tokens: list[str] = []
+    for line in stdout.splitlines():
+        if not line.startswith(b"[GNUPG:] "):
+            continue
+        fields = line[len(b"[GNUPG:] "):].decode("ascii", errors="replace").split()
+        if not fields:
+            continue
+        token, args = fields[0], fields[1:]
+        tokens.append(token)
+        safe_fields: list[str] = []
+        if token in {"GOODSIG", "BADSIG", "EXPSIG", "EXPKEYSIG", "REVKEYSIG"} and args:
+            safe_fields = [args[0], "[REDACTED-UID]"]
+        elif token in {"VALIDSIG", "ERRSIG", "NO_PUBKEY", "NODATA", "NEWSIG", "SIG_ID"}:
+            safe_fields = [field for field in args if re.fullmatch(r"[A-Fa-f0-9]+|[0-9]+|[0-9A-Fa-f]+", field)]
+        statuses.append({"token": token, "fields": safe_fields})
+    return statuses, tokens
+
+
+def redact_diagnostic_text(stderr: str, evidence_dir: Path, temp_root: Path) -> str:
+    redacted = stderr.replace(str(evidence_dir), "$EVIDENCE").replace(str(temp_root), "$VERIFICATION_TMP")
+    redacted = re.sub(r"(?i)(https?://)[^/\s@]+@", r"\1[REDACTED]@", redacted)
+    redacted = re.sub(r"/[\w./-]+/InRelease", "$PRIVATE_INRELEASE", redacted)
+    redacted = re.sub(r"(?<![:/])/(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+", "$PATH", redacted)
+    redacted = re.sub(r"<[^>\r\n]{0,500}>", "[REDACTED-UID]", redacted)
+    redacted = "".join(ch if ch in "\n\t" or 32 <= ord(ch) < 127 else "�" for ch in redacted)[:16000]
+    if len(stderr) > 16000:
+        redacted += "\n[TRUNCATED]"
+    return redacted
 
 
 @dataclass(frozen=True)
@@ -40,6 +97,110 @@ class ValidatedProposal:
     run: dict[str, object]
     proposal: dict[str, object]
     proposal_sha256: str
+
+
+@dataclass(frozen=True)
+class SignatureRequest:
+    suite: str
+    source_file: str
+    source_stanza_sha256: str
+    inrelease_file: str
+    inrelease_sha256: str
+    inrelease_size_bytes: int
+    keyrings: tuple[dict[str, object], ...]
+
+
+class ValidationDiagnostics:
+    def __init__(self, root: Path, evidence_dir: Path):
+        if root.is_symlink():
+            fail("diagnostics directory must not be a symlink")
+        if not root.is_absolute():
+            fail("diagnostics directory must be absolute")
+        evidence_dir = evidence_dir.resolve(strict=True)
+        parent = root.parent.resolve(strict=True)
+        normalized_root = parent / root.name
+        try:
+            normalized_root.relative_to(evidence_dir)
+        except ValueError:
+            pass
+        else:
+            fail("diagnostics directory must be outside the immutable evidence directory")
+        try:
+            evidence_dir.relative_to(normalized_root)
+        except ValueError:
+            pass
+        else:
+            fail("diagnostics directory must not contain the immutable evidence directory")
+        if root.exists():
+            fail("diagnostics directory must be fresh and must not already exist")
+        root.mkdir()
+        self.root = root
+        self.evidence_dir = evidence_dir
+        self.records: list[str] = []
+        self._manifest: dict[str, object] = {
+            "schemaVersion": 1,
+            "state": "RUNNING",
+            "runId": os.environ.get("GITHUB_RUN_ID"),
+            "runAttempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+            "revision": os.environ.get("GITHUB_SHA"),
+            "evidenceRunSha256": self._optional_hash(evidence_dir / "run.json"),
+            "proposalSha256": self._optional_hash(evidence_dir / "gnupg-removal-lock-proposal.json"),
+            "attempts": [],
+        }
+        self._write_manifest()
+
+    @staticmethod
+    def _optional_hash(path: Path) -> str | None:
+        if path.is_symlink() or not path.is_file():
+            return None
+        return sha256_file(path)
+
+    def record(self, suite: str, result: dict[str, object], stderr: str) -> Path:
+        if not re.fullmatch(r"[a-z0-9-]+", suite):
+            fail("diagnostic suite name is unsafe")
+        record_name = f"{suite}.json"
+        stderr_name = f"{suite}.stderr.txt"
+        stderr_path = self.root / stderr_name
+        record_path = self.root / record_name
+        self._write_text_exclusive(stderr_path, stderr)
+        result["redactedStderrFile"] = stderr_name
+        result["redactedStderrSha256"] = sha256_file(stderr_path)
+        self._write_json_atomic(record_path, result)
+        self.records.append(record_name)
+        self._manifest["attempts"] = list(self.records)
+        self._write_manifest()
+        return record_path
+
+    def finish(self, state: str, error: str | None) -> None:
+        if state not in {"REJECTED", "VALIDATED"}:
+            fail("diagnostics terminal state is unsupported")
+        self._manifest["state"] = state
+        self._manifest["error"] = error
+        inventory: dict[str, str] = {}
+        for path in sorted(self.root.iterdir()):
+            if path.name == "validation.json":
+                continue
+            if path.is_symlink() or not path.is_file():
+                fail("diagnostics directory contains an unsafe output")
+            inventory[path.name] = sha256_file(path)
+        self._manifest["diagnosticSha256"] = inventory
+        self._write_manifest()
+
+    @staticmethod
+    def _write_text_exclusive(path: Path, text: str) -> None:
+        with path.open("x", encoding="utf-8", newline="\n") as stream:
+            stream.write(text)
+
+    @staticmethod
+    def _write_json_atomic(path: Path, value: dict[str, object]) -> None:
+        temporary = path.with_name(f".{path.name}.tmp")
+        with temporary.open("x", encoding="utf-8", newline="\n") as stream:
+            json.dump(value, stream, ensure_ascii=True, sort_keys=True, indent=2)
+            stream.write("\n")
+        os.replace(temporary, path)
+
+    def _write_manifest(self) -> None:
+        self._write_json_atomic(self.root / "validation.json", self._manifest)
 
 
 def fail(message: str) -> None:
@@ -382,6 +543,7 @@ def parse_source_stanzas(text: str, suffix: str) -> list[dict[str, list[str]]]:
 
 def validate_isolated_release_acquisitions(
     evidence_dir: Path,
+    diagnostics: ValidationDiagnostics | None,
     records: object,
     release_by_file: dict[str, dict[str, object]],
     release_contents: dict[str, tuple[str, str, dict[str, tuple[str, int]]]],
@@ -547,7 +709,22 @@ def validate_isolated_release_acquisitions(
         digest_record = evidence_dir / f"isolated-releases/{codename}/exact-inrelease-digest.tsv"
         if digest_record.read_text().strip().split("\t") != [record["inReleaseSha256"], str(record["inReleaseSizeBytes"])]:
             fail("isolated InRelease copy differs from the digest captured at its exact APT path")
-        verify_inrelease_signature(copied_evidence, selected_keyrings)
+        signature_request = SignatureRequest(
+            suite=str(codename),
+            source_file=str(source_config_file),
+            source_stanza_sha256=str(record["sourceConfigSha256"]),
+            inrelease_file=inrelease_file,
+            inrelease_sha256=str(record["inReleaseSha256"]),
+            inrelease_size_bytes=int(record["inReleaseSizeBytes"]),
+            keyrings=tuple(key_records),
+        )
+        verify_inrelease_signature(
+            copied_evidence,
+            selected_keyrings,
+            request=signature_request,
+            evidence_dir=evidence_dir,
+            diagnostics=diagnostics,
+        )
 
         combined_file = safe_relative_path(record["combinedInReleaseFile"], "combined InRelease file")
         if not combined_file.startswith("apt-lists/") or combined_file not in release_by_file:
@@ -601,24 +778,102 @@ def expected_suite_base_path(codename: str) -> str:
     return f"{EXPECTED_ORIGINS[codename][2]}/dists/{codename}"
 
 
-def verify_inrelease_signature(path: Path, keyrings: list[Path]) -> None:
+def verify_inrelease_signature(
+    path: Path,
+    keyrings: list[Path],
+    *,
+    request: SignatureRequest | None = None,
+    evidence_dir: Path | None = None,
+    diagnostics: ValidationDiagnostics | None = None,
+) -> None:
     verifier = shutil.which("gpgv")
     if not verifier:
         fail("trusted gpgv verifier is unavailable; cannot verify captured InRelease signature")
     if not keyrings:
         fail("no source-bound keyrings supplied for InRelease verification")
-    with tempfile.TemporaryDirectory(prefix="trixie-inrelease-gpgv-") as homedir:
-        command = [verifier, "--homedir", homedir, "--status-fd", "1", "--output", os.devnull]
-        for keyring in keyrings:
-            command.extend(("--keyring", str(keyring)))
-        command.append(str(path))
-        result = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
-    statuses = [line for line in result.stdout.splitlines() if line.startswith("[GNUPG:]")]
-    if result.returncode != 0 or not any(line.startswith("[GNUPG:] VALIDSIG ") for line in statuses):
-        fail(f"gpgv rejected captured InRelease signature: {path.name}")
-    forbidden = ("BADSIG", "ERRSIG", "NO_PUBKEY", "EXPKEYSIG", "REVKEYSIG", "NODATA")
-    if any(any(line.startswith(f"[GNUPG:] {status} ") or line == f"[GNUPG:] {status}" for status in forbidden) for line in statuses):
-        fail(f"gpgv reported a failed or ambiguous signature status: {path.name}")
+    if request is None or evidence_dir is None or diagnostics is None:
+        fail("signature diagnostics context is required")
+    evidence_dir = evidence_dir.resolve(strict=True)
+    attempt: dict[str, object] = {
+        "suite": request.suite,
+        "source": {"file": request.source_file, "stanzaSha256": request.source_stanza_sha256},
+        "release": {"file": request.inrelease_file, "sha256": request.inrelease_sha256, "sizeBytes": request.inrelease_size_bytes},
+        "keyrings": [{"path": item["path"], "sha256": item["sha256"], "capturedFile": item["capturedFile"]} for item in request.keyrings],
+        "verifier": {"path": str(Path(verifier).resolve()), "sha256": sha256_file(Path(verifier)), "version": "unavailable"},
+        "argv": [], "returncode": None, "termination": None, "statuses": [],
+        "stdoutSha256": None, "stderrSha256": None, "accepted": False, "failureReason": None,
+    }
+    env = {**os.environ, "LC_ALL": "C", "LANG": "C"}
+    try:
+        version_rc, version_out, version_err, version_overflow = run_bounded([verifier, "--version"], env=env, timeout=5)
+        version_text = (version_out or version_err).decode("utf-8", errors="replace")
+        attempt["verifier"]["version"] = version_text.splitlines()[0][:300] if version_text and not version_overflow else "unavailable"
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    temp_root = Path(tempfile.mkdtemp(prefix="trixie-inrelease-gpgv-"))
+    os.chmod(temp_root, 0o700)
+    try:
+        private_release = temp_root / "InRelease"
+        private_keys: list[Path] = []
+        bound_inputs = [(path, request.inrelease_sha256, request.inrelease_size_bytes)]
+        if len(keyrings) != len(request.keyrings):
+            fail("signature keyring paths differ from bound keyring records")
+        for keyring, key_record in zip(keyrings, request.keyrings):
+            bound_inputs.append((keyring, str(key_record["sha256"]), None))
+        for index, (source_path, expected_hash, expected_size) in enumerate(bound_inputs):
+            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+            descriptor = os.open(source_path, flags)
+            with os.fdopen(descriptor, "rb") as source:
+                metadata = os.fstat(source.fileno())
+                if not stat.S_ISREG(metadata.st_mode):
+                    fail("signature input is not a regular file")
+                raw = source.read()
+            if sha256_bytes(raw) != expected_hash or (expected_size is not None and len(raw) != expected_size):
+                fail("signature input changed from its bound evidence hash")
+            snapshot = private_release if index == 0 else temp_root / f"keyring-{index}.gpg"
+            with snapshot.open("xb") as target:
+                target.write(raw)
+            os.chmod(snapshot, 0o600)
+            if index:
+                private_keys.append(snapshot)
+        with tempfile.TemporaryDirectory(prefix="gpgv-home-", dir=temp_root) as homedir:
+            command = [verifier, "--homedir", homedir, "--status-fd", "1", "--output", os.devnull]
+            for keyring in private_keys:
+                command.extend(("--keyring", str(keyring)))
+            command.append(str(private_release))
+            attempt["argv"] = [str(Path(verifier).resolve()), "--homedir", "$PRIVATE_HOMEDIR", *command[2:-1], "$PRIVATE_INRELEASE"]
+            stdout_bytes, stderr_bytes, overflow = b"", b"", False
+            try:
+                returncode, stdout_bytes, stderr_bytes, overflow = run_bounded(command, env=env, timeout=30)
+                attempt["returncode"] = returncode
+                attempt["termination"] = "OUTPUT_LIMIT" if overflow else ("TIMEOUT" if returncode == -1 else "EXITED")
+            except (OSError, ValueError) as error:
+                stdout_bytes, stderr_bytes = b"", str(error).encode()
+                overflow = False
+                attempt["termination"] = "LAUNCH_ERROR"
+            if overflow:
+                attempt["failureReason"] = "gpgv output exceeded the diagnostic byte limit"
+            stdout = stdout_bytes.decode("utf-8", errors="replace")
+            stderr = stderr_bytes.decode("utf-8", errors="replace")
+            expected_snapshot_hashes = [request.inrelease_sha256, *(str(item["sha256"]) for item in request.keyrings)]
+            snapshot_paths = [private_release, *private_keys]
+            if any(sha256_file(snapshot) != expected for snapshot, expected in zip(snapshot_paths, expected_snapshot_hashes)):
+                fail("private signature snapshot changed during gpgv verification")
+            attempt["stdoutSha256"] = sha256_bytes(stdout_bytes)
+            attempt["stderrSha256"] = sha256_bytes(stderr_bytes)
+            statuses, tokens = structured_gpg_statuses(stdout_bytes)
+            attempt["statuses"] = statuses
+            forbidden = {"BADSIG", "ERRSIG", "NO_PUBKEY", "EXPKEYSIG", "REVKEYSIG", "NODATA"}
+            accepted = (not overflow and attempt["returncode"] == 0 and "VALIDSIG" in tokens and not forbidden.intersection(tokens))
+            attempt["accepted"] = accepted
+            if not accepted:
+                attempt["failureReason"] = "gpgv exit/status policy rejected the signature"
+            redacted = redact_diagnostic_text(stderr, evidence_dir, temp_root)
+            diagnostics.record(request.suite, attempt, redacted)
+            if not accepted:
+                fail(f"gpgv rejected captured InRelease signature: {request.suite}; diagnostics={request.suite}.json")
+    finally:
+        shutil.rmtree(temp_root)
 
 
 def validate_apt_verifiers(evidence_dir: Path) -> None:
@@ -733,7 +988,7 @@ def validate_tuple_list(value: object, label: str) -> list[dict[str, str]]:
     return tuples
 
 
-def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
+def _validate_proposal(evidence_dir: Path, diagnostics: ValidationDiagnostics) -> ValidatedProposal:
     if evidence_dir.is_symlink():
         fail("evidence directory must not be a symlink")
     evidence_dir = evidence_dir.resolve(strict=True)
@@ -868,7 +1123,7 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
             fail(f"isolated authenticated InRelease has an unapproved identity: {inrelease_file}")
         release_contents[inrelease_file] = (codename, suite, index_rows)
     isolated_acquisitions = validate_isolated_release_acquisitions(
-        evidence_dir, proposal["isolatedReleaseAcquisitions"], release_by_file, release_contents, source_keys, hashes, run
+        evidence_dir, diagnostics, proposal["isolatedReleaseAcquisitions"], release_by_file, release_contents, source_keys, hashes, run
     )
 
     local_by_name: dict[str, dict[str, object]] = {}
@@ -1060,6 +1315,28 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
     return ValidatedProposal(evidence_dir, run, proposal, sha256_bytes(proposal_raw))
 
 
+def validate_proposal(evidence_dir: Path, diagnostics_dir: Path | None = None) -> ValidatedProposal:
+    if evidence_dir.is_symlink():
+        fail("evidence directory must not be a symlink")
+    evidence = evidence_dir.resolve(strict=True)
+    owned_temp = None
+    if diagnostics_dir is None:
+        owned_temp = tempfile.TemporaryDirectory(prefix="trixie-validation-diagnostics-")
+        diagnostics_dir = Path(owned_temp.name) / "report"
+    diagnostics = ValidationDiagnostics(diagnostics_dir, evidence)
+    try:
+        validated = _validate_proposal(evidence, diagnostics)
+    except Exception as error:
+        diagnostics.finish("REJECTED", str(error)[:1000])
+        if owned_temp is not None:
+            owned_temp.cleanup()
+        raise
+    diagnostics.finish("VALIDATED", None)
+    if owned_temp is not None:
+        owned_temp.cleanup()
+    return validated
+
+
 def prepare_candidate(evidence_dir: Path, lock_path: Path, output_path: Path) -> list[dict[str, str]]:
     del evidence_dir, lock_path, output_path
     fail("prepare-candidate is disabled until authenticated GitHub review and exact artifact provenance are verified")
@@ -1070,13 +1347,14 @@ def main(argv: list[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
     validate_parser = subparsers.add_parser("validate-proposal", help="validate discovery evidence without emitting removal tuples")
     validate_parser.add_argument("--evidence-dir", required=True, type=Path)
+    validate_parser.add_argument("--diagnostics-dir", required=True, type=Path)
     prepare_parser = subparsers.add_parser("prepare-candidate", help="disabled pending authenticated review and artifact provenance")
     prepare_parser.add_argument("--evidence-dir", required=True, type=Path)
     prepare_parser.add_argument("--frozen-lock", required=True, type=Path)
     prepare_parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
     if args.command == "validate-proposal":
-        validated = validate_proposal(args.evidence_dir)
+        validated = validate_proposal(args.evidence_dir, args.diagnostics_dir)
         print(json.dumps({
             "status": "VALIDATED_DISCOVERY_EVIDENCE",
             "proposalSha256": validated.proposal_sha256,

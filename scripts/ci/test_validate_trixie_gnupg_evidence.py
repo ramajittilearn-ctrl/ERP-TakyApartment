@@ -263,6 +263,27 @@ class EvidenceValidationTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "GITHUB_RUN_ID"):
                     DISCOVERY.required_github_run_identity()
 
+    def test_diagnostics_directory_rejects_symlink_overlap_and_stale_output(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            evidence = root / "evidence"
+            evidence.mkdir()
+            stale = root / "stale"
+            stale.mkdir()
+            with self.assertRaisesRegex(ValueError, "fresh"):
+                MODULE.ValidationDiagnostics(stale, evidence)
+            with self.assertRaisesRegex(ValueError, "outside"):
+                MODULE.ValidationDiagnostics(evidence / "diagnostics", evidence)
+            link = root / "link"
+            link.symlink_to(root / "missing", target_is_directory=True)
+            with self.assertRaisesRegex(ValueError, "symlink"):
+                MODULE.ValidationDiagnostics(link, evidence)
+
+    def test_workflow_uploads_signature_diagnostics_separately(self):
+        workflow = (SCRIPT.parents[2] / ".github/workflows/phase4-ci.yml").read_text()
+        self.assertIn("--diagnostics-dir \"$RUNNER_TEMP/trixie-gnupg-signature-diagnostics\"", workflow)
+        self.assertIn("${{ runner.temp }}/trixie-gnupg-signature-diagnostics/", workflow)
+
     def test_valid_proposal_is_read_only_and_cli_emits_no_package_tuples(self):
         with tempfile.TemporaryDirectory() as temp:
             fixture = self.fixture(temp)
@@ -273,15 +294,19 @@ class EvidenceValidationTests(unittest.TestCase):
             fake_bin = Path(temp) / "fake-bin"
             fake_bin.mkdir()
             fake_gpgv = fake_bin / "gpgv"
-            fake_gpgv.write_text("#!/bin/sh\nprintf '[GNUPG:] VALIDSIG test-fixture\n'\n")
+            fake_gpgv.write_text("#!/bin/sh\nif [ \"$1\" = --version ]; then echo 'gpgv (GnuPG) fixture'; exit 0; fi\nprintf '[GNUPG:] VALIDSIG test-fixture\\n'\n")
             fake_gpgv.chmod(0o755)
             result = subprocess.run(
-                [sys.executable, str(SCRIPT), "validate-proposal", "--evidence-dir", str(fixture.root)],
+                [sys.executable, str(SCRIPT), "validate-proposal", "--evidence-dir", str(fixture.root),
+                 "--diagnostics-dir", str(Path(temp) / "diagnostics")],
                 text=True, capture_output=True,
                 env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PATH": f"{fake_bin}:{os.environ.get('PATH', '')}"},
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertNotIn("gnupg", result.stdout)
+            report = json.loads((Path(temp) / "diagnostics" / "validation.json").read_text())
+            self.assertEqual(report["state"], "VALIDATED")
+            self.assertEqual(len(report["attempts"]), 4)
             after = sorted(path.relative_to(fixture.root).as_posix() for path in fixture.root.rglob("*") if path.is_file())
             self.assertEqual(before, after)
 
@@ -376,24 +401,80 @@ class EvidenceValidationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "do not match this hosted GitHub run"):
                     MODULE.validate_proposal(fixture.root)
 
-    def test_fake_signature_is_rejected_by_trusted_verifier(self):
-        original = REAL_VERIFY_SIGNATURE
-        release = Path("/tmp/fake-InRelease")
-        keyring = Path("/tmp/source-bound-keyring")
-        with patch.object(MODULE.shutil, "which", return_value="/usr/bin/gpgv"), patch.object(
-            MODULE.subprocess, "run",
-            return_value=subprocess.CompletedProcess([], 1, "[GNUPG:] BADSIG 1234 user\n", "bad signature"),
-        ):
-            with self.assertRaisesRegex(ValueError, "gpgv rejected captured InRelease signature"):
-                original(release, [keyring])
+    def test_gpgv_status_policy_and_diagnostic_redaction(self):
+        cases = (
+            ("[GNUPG:] VALIDSIG fingerprint\n", 1, False),
+            ("[GNUPG:] VALIDSIG fingerprint\n[GNUPG:] BADSIG 1234 Alice Example\n", 0, False),
+            ("[GNUPG:] FUTURE_STATUS detail\n[GNUPG:] VALIDSIG fingerprint\n", 0, True),
+        )
+        for stdout, returncode, expected_accept in cases:
+            with self.subTest(stdout=stdout), tempfile.TemporaryDirectory() as temp:
+                base = Path(temp)
+                release, keyring = base / "InRelease", base / "keyring.gpg"
+                release.write_bytes(b"signed metadata")
+                keyring.write_bytes(b"source key")
+                evidence = base / "evidence"
+                evidence.mkdir()
+                diagnostics = MODULE.ValidationDiagnostics(base / "diagnostics", evidence)
+                fake_gpgv = base / "gpgv"
+                fake_gpgv.write_text("fixture verifier\n")
+                request = MODULE.SignatureRequest(
+                    "trixie", "sources.list", "a" * 64, "isolated-releases/trixie/InRelease",
+                    digest(b"signed metadata"), len(b"signed metadata"),
+                    ({"path": "/keyring.gpg", "sha256": digest(b"source key"), "capturedFile": "apt-keyrings/key"},),
+                )
+                raw_stdout = stdout.encode() + (b"\xff" if expected_accept else b"")
+                raw_stderr = b"<Alice Example> at /private/path\x01 https://user@example.test https://user:secret@example.test\n"
+                outputs = [(0, b"gpgv (GnuPG) fixture\n", b""), (returncode, raw_stdout, raw_stderr)]
+                def fake_run(_command, **kwargs):
+                    code, out, err = outputs.pop(0)
+                    kwargs["stdout"].write(out)
+                    kwargs["stderr"].write(err)
+                    return subprocess.CompletedProcess([], code)
+                with patch.object(MODULE.shutil, "which", return_value=str(fake_gpgv)), patch.object(
+                    MODULE.subprocess, "run", side_effect=fake_run,
+                ):
+                    if expected_accept:
+                        REAL_VERIFY_SIGNATURE(release, [keyring], request=request, evidence_dir=evidence, diagnostics=diagnostics)
+                    else:
+                        with self.assertRaisesRegex(ValueError, "gpgv rejected"):
+                            REAL_VERIFY_SIGNATURE(release, [keyring], request=request, evidence_dir=evidence, diagnostics=diagnostics)
+                record = json.loads((base / "diagnostics" / "trixie.json").read_text())
+                self.assertEqual(record["accepted"], expected_accept)
+                self.assertEqual([status["token"] for status in record["statuses"]], [line.split()[1] for line in stdout.splitlines()])
+                self.assertEqual(record["stdoutSha256"], digest(raw_stdout))
+                self.assertIn("$PRIVATE_HOMEDIR", record["argv"])
+                stderr = (base / "diagnostics" / "trixie.stderr.txt").read_text()
+                self.assertNotIn("Alice Example", stderr)
+                self.assertNotIn("/private/path", stderr)
+                self.assertNotIn("user@", stderr)
+                self.assertNotIn("secret@", stderr)
 
-    def test_unsigned_inrelease_is_rejected(self):
-        with patch.object(MODULE.shutil, "which", return_value="/usr/bin/gpgv"), patch.object(
-            MODULE.subprocess, "run",
-            return_value=subprocess.CompletedProcess([], 2, "[GNUPG:] NODATA 1\n", "no valid OpenPGP data"),
-        ):
-            with self.assertRaisesRegex(ValueError, "gpgv rejected captured InRelease signature"):
-                REAL_VERIFY_SIGNATURE(Path("/tmp/unsigned-InRelease"), [Path("/tmp/source-bound-keyring")])
+    def test_status_arguments_and_uri_userinfo_are_sanitized(self):
+        raw = b"[GNUPG:] NEWSIG owner@example.test\n[GNUPG:] EXPSIG 1234 owner@example.test\n[GNUPG:] FUTURE_SECRET private-user@example.test\n"
+        parsed, tokens = MODULE.structured_gpg_statuses(raw)
+        self.assertEqual(tokens, ["NEWSIG", "EXPSIG", "FUTURE_SECRET"])
+        self.assertEqual(parsed, [
+            {"token": "NEWSIG", "fields": []},
+            {"token": "EXPSIG", "fields": ["1234", "[REDACTED-UID]"]},
+            {"token": "FUTURE_SECRET", "fields": []},
+        ])
+        for uri in ("https://user@example.test/path", "https://user:secret@example.test/path"):
+            sanitized = MODULE.redact_diagnostic_text(uri, Path("/evidence"), Path("/tmp/private"))
+            self.assertEqual(sanitized, "https://[REDACTED]@example.test$PATH")
+
+    def test_bounded_capture_handles_invalid_utf8_and_rejects_output_overflow(self):
+        invalid = subprocess.run(
+            [sys.executable, "-c", "import os; os.write(1, b'\\xff')"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+        )
+        self.assertEqual(invalid.stdout, b"\xff")
+        overflow_code, overflow_out, _overflow_err, overflow = MODULE.run_bounded(
+            [sys.executable, "-c", "import os; os.write(1, b'x' * 1000000)"], env=os.environ.copy(), timeout=5,
+        )
+        self.assertTrue(overflow)
+        self.assertGreaterEqual(len(overflow_out), MODULE.GPGV_OUTPUT_LIMIT)
+        self.assertIsInstance(overflow_code, int)
 
     def test_prepare_candidate_is_disabled_even_for_forged_lock_and_never_writes(self):
         with tempfile.TemporaryDirectory() as temp:
