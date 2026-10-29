@@ -245,8 +245,25 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
           echo "$GOBIN" >> "$GITHUB_PATH"
 
+      - name: Discover authenticated Trixie GnuPG removal plan
+        id: trixie-gnupg-discovery
+        continue-on-error: true
+        run: |
+          python3 -m unittest scripts.ci.test_discover_trixie_gnupg_removal -v
+          python3 scripts/ci/discover-trixie-gnupg-removal.py
+
       - name: Build pinned images and verify isolated runtime
         run: bash scripts/ci/verify-container-images.sh
+
+      - name: Require Trixie GnuPG discovery success
+        if: always()
+        env:
+          DISCOVERY_OUTCOME: ${{ steps.trixie-gnupg-discovery.outcome }}
+        run: |
+          if [[ "$DISCOVERY_OUTCOME" != success ]]; then
+            echo "Authenticated Trixie GnuPG discovery failed; inspect the uploaded evidence." >&2
+            exit 1
+          fi
 
       - name: Upload current-image vulnerability reports
         if: always()

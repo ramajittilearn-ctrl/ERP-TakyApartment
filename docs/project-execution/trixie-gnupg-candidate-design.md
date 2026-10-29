@@ -1,27 +1,30 @@
 # Isolated Trixie PostgreSQL GnuPG-prune candidate
 
-## Decision
+## Purpose and boundary
 
-Prepare a candidate-only derivative of the pinned PostgreSQL 17.11 Trixie image that removes `gnupg` and only the dependency closure the pinned image's APT resolver proves removable. Do not modify the operational Trixie image, shared PostgreSQL Dockerfile, existing UAT, or production resources. A passing candidate is not security clearance.
+This work investigates whether the digest-pinned PostgreSQL 17.11 Trixie image can remove `gnupg` and the exact dependency closure selected by Debian APT. It does not change the operational image, shared PostgreSQL Dockerfile, existing Trixie collation candidate, UAT, or production. The discovery job performs no package installation or removal in a built image; its disposable container runs only authenticated metadata refresh and APT simulation.
 
-## Evidence and limits
+Pinned discovery target: `postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe`, platform `linux/amd64`.
 
-- Current Trixie scan: 1 Critical and 61 High findings. Debian's tracker does not list a Trixie fix for CVE-2026-6653 or several other current findings.
-- The reviewed Bookworm candidate's GnuPG purge removed a 16-package closure, including SQLite and ncurses packages. Do not reuse that allowlist for Trixie; its dependency graph must be measured independently.
-- The PostgreSQL Trixie build uses GnuPG to verify `gosu` and import the PGDG key. The upstream runtime entrypoint does not invoke GnuPG. Application backup encryption uses Node AES-256-GCM in the separate Alpine operations image. These observations justify a candidate experiment, not runtime acceptance.
-- Keep `gpgv`, Debian and PGDG keyrings, APT verification tools, PostgreSQL, `libpq`, and `libxml2` protected.
+## Phase 1: hosted discovery evidence
 
-## Acceptance criteria
+The `container-verification` job pulls and inspects the exact target image, then runs `scripts/ci/discover-trixie-gnupg-removal.py` in a disposable container. The collector preserves sanitized APT source files, Debian/PGDG keyring hashes, installed package inventory, manual/automatic package state, authenticated `apt-get update` output, APT index targets, raw `InRelease` and `Packages` files, and `apt-get --simulate purge --auto-remove gnupg` output. APT update uses error mode `any`, signature validation, and freshness validation with `Acquire::Check-Valid-Until=true`; any repository error, insecure repository, or stale `Valid-Until` metadata fails the discovery. All four targets (`trixie`, `trixie-updates`, `trixie-security`, `trixie-pgdg`) must be present. HTTP transport is permitted because APT verifies repository metadata signatures; scheme and URI are recorded with the authenticated targets. URI credentials are redacted and malformed authorities/non-default ports are rejected.
 
-1. Capture `apt-get --simulate purge --auto-remove gnupg` against `postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe` on the hosted Linux runner. Freeze a sorted exact package-name allowlist from that result. Fail if the actual plan, package versions/architectures, or installed-package delta differs.
-2. Preserve before/after package inventories, APT manual/automatic state, purge simulation, exact removal manifest, protected-package manifest, repository keyring hashes, image ID/platform, source revision/tree, and raw scan output.
-3. Build through a separate candidate Dockerfile and Compose project with unique image/project/volume names and no published host port. Retain signed repository verification; verify `gpgv`, keyrings, PostgreSQL 17.11, `libpq`, `libxml2`, `gosu`, and the entrypoint after the purge.
-4. Start a fresh candidate database and exercise readiness, version, backup, restore, and attachment integrity using synthetic data.
-5. Run all nine source/target backup-restore routes for the Trixie, Bookworm, and candidate images. Preserve all existing four Trixie/Bookworm routes and add five candidate routes.
-6. Scan the candidate with the same recorded Trivy database as the comparison images. Preserve raw Critical/High/Unknown results; do not suppress advisories or claim clearance from scanner absence.
+The generated `gnupg-removal-lock-proposal.json` records a sorted package tuple of name, version, and architecture for every simulated removal, plus SHA-256 hashes of the authenticated Release and package-index metadata, simulation, pinned image identity, platform, revision, and Git tree. Discovery fails closed if `gnupg` is absent, metadata refresh or suite validation fails, metadata is missing, the simulation is empty or omits `gnupg`, inventory versions do not match the plan, or the plan includes a protected package. A failed attempt still leaves diagnostic files for the existing always-upload evidence step.
+
+The proposal is not an approved removal lock. Runtime clearance and CVE clearance are explicitly `NOT_EVALUATED`.
+
+## Required next phase
+
+An independent reviewer must inspect the hosted closure and its authenticated metadata, verify every package and the proposed package delta, resolve any unexpected removals, then freeze the exact name/version/architecture lock with its evidence hashes. Only after that review may a separate candidate Dockerfile and Compose project be built. That later phase must test package delta, protected tooling and keyrings, PostgreSQL startup, backups/restores, attachment integrity, and comparable vulnerability scans. No candidate build or purge is authorized by Phase 1 discovery evidence alone.
+
+## Existing findings and constraints
+
+- Current Trixie scan findings and Debian tracker status are recorded in the Phase 4 vulnerability evidence; this design makes no clearance claim.
+- The reviewed Bookworm GnuPG purge removed a 16-package closure, including SQLite and ncurses packages. That closure is not evidence for Trixie and must not be reused.
+- The PostgreSQL Trixie build uses GnuPG to verify `gosu` and import the PGDG key. The upstream runtime entrypoint does not invoke GnuPG. Application backup encryption uses Node AES-256-GCM in the separate Alpine operations image. These observations justify investigation, not runtime acceptance.
+- `gpgv`, Debian and PGDG keyrings, APT executables and `libapt-pkg`, PostgreSQL, `libpq`, `libxml2`, and `gosu` are protected from the proposed purge.
 
 ## Ownership and sequence
 
-`db_cve_triage` completed the design review. Implementation and independent cross-review are queued after the Forky provenance job is integrated so the owners do not edit `.github/workflows/phase4-ci.yml` and `scripts/ci/verify-container-images.sh` concurrently.
-
-Open findings, target-CVE scanner coverage, production-target validation, and Owner/Go-Live acceptance remain separate gates.
+The discovery helper and this design are isolated from the operational Dockerfile and existing candidate. The hosted evidence is uploaded through the existing `phase4-container-scan` artifact path. Independent review and lock freeze precede any candidate implementation. Open findings, target-CVE scanner coverage, production-target validation, and Owner/Go-Live acceptance remain separate gates.
