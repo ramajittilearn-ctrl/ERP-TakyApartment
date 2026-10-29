@@ -155,6 +155,7 @@ select_suite_source() {
 
 for codename in trixie trixie-updates trixie-security trixie-pgdg; do
   suite_dir="$evidence/isolated-releases/$codename"
+  mkdir "$suite_dir"
   lists="/var/lib/apt/phase4-isolated/$codename/lists"
   if [[ -e "$lists" ]]; then
     echo "isolated APT lists path is not fresh for $codename" >&2

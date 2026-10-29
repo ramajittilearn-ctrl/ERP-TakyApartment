@@ -1,5 +1,6 @@
 import importlib.util
 import hashlib
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -105,6 +106,42 @@ class DiscoveryParsingTests(unittest.TestCase):
         self.assertNotIn('lists="$suite_dir/lists"', MODULE.CONTAINER_SCRIPT)
         self.assertIn('if [[ -e "$lists" ]]', MODULE.CONTAINER_SCRIPT)
         self.assertIn('exact-inrelease-digest.tsv', MODULE.CONTAINER_SCRIPT)
+
+    def test_suite_evidence_directory_is_fresh_and_created_before_source_selection(self):
+        loop_start = MODULE.CONTAINER_SCRIPT.index("for codename in trixie")
+        create_line = '  mkdir "$suite_dir"'
+        select_line = '  select_suite_source "$codename" "$selected_source"'
+        loop_end = MODULE.CONTAINER_SCRIPT.index(select_line, loop_start) + len(select_line)
+        suite_setup = MODULE.CONTAINER_SCRIPT[loop_start:loop_end]
+        self.assertIn(create_line, suite_setup)
+        self.assertLess(suite_setup.index(create_line), suite_setup.index(select_line))
+
+        with tempfile.TemporaryDirectory() as temp:
+            evidence = Path(temp) / "evidence"
+            suite_dir = evidence / "isolated-releases" / "trixie"
+            evidence.mkdir()
+            (evidence / "isolated-releases").mkdir()
+            mkdir_command = suite_setup[suite_setup.index(create_line) :].splitlines()[0].strip()
+
+            missing = subprocess.run(
+                ["bash", "-c", mkdir_command],
+                env={**os.environ, "suite_dir": str(suite_dir)},
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(missing.returncode, 0, missing.stderr)
+            self.assertTrue(suite_dir.is_dir())
+
+            marker = suite_dir / "existing-evidence.txt"
+            marker.write_text("preserve me\n")
+            existing = subprocess.run(
+                ["bash", "-c", mkdir_command],
+                env={**os.environ, "suite_dir": str(suite_dir)},
+                text=True,
+                capture_output=True,
+            )
+            self.assertNotEqual(existing.returncode, 0)
+            self.assertEqual(marker.read_text(), "preserve me\n")
 
     def test_workflow_validates_and_uploads_discovery_evidence_separately(self):
         workflow = SCRIPT.parents[2] / ".github/workflows/phase4-ci.yml"
