@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 
 IMAGE = "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
 PLATFORM = "linux/amd64"
-EVIDENCE_BASE = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "phase4-container-scan" / "trixie-gnupg-discovery"
+EVIDENCE_BASE = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "trixie-gnupg-discovery"
 PROTECTED_PREFIXES = (
     "apt", "gpgv", "sqv", "debian-archive-keyring", "debian-keyring", "postgresql",
     "libpq", "libxml2", "libapt-pkg", "gosu", "ca-certificates",
@@ -347,8 +347,9 @@ def validate_index_targets(path: Path, metadata_directory: Path) -> list[dict[st
 def validate_expected_origin(codename: str, base_uri: str) -> None:
     expected = EXPECTED_ORIGINS.get(codename)
     parsed = urlsplit(base_uri)
-    if expected is None or parsed.scheme not in {"http", "https"} or parsed.hostname != expected[0] or parsed.path.rstrip("/") != expected[1]:
-        raise ValueError(f"APT base URI is not the approved origin for {codename}: {base_uri!r}")
+    expected_path = f"{expected[1]}/dists/{codename}" if expected else None
+    if expected is None or parsed.scheme not in {"http", "https"} or parsed.hostname != expected[0] or parsed.path.rstrip("/") != expected_path:
+        raise ValueError(f"APT base URI is not the approved suite-scoped origin for {codename}: {base_uri!r}")
 
 
 def normalize_apt_trusted_paths(shell_path: Path, paths_path: Path) -> None:
@@ -404,8 +405,7 @@ def signed_package_index_evidence(targets: list[dict[str, str]], metadata_direct
         base = urlsplit(target["baseUri"])
         index_uri = urlsplit(target["uri"])
         validate_expected_origin(target["codename"], target["baseUri"])
-        base_path = base.path.rstrip("/")
-        prefix = f"{base_path}/dists/{target['codename']}/"
+        prefix = base.path.rstrip("/") + "/"
         if not index_uri.path.startswith(prefix):
             raise ValueError(f"APT package URI is outside its codename Release path: {target['uri']}")
         upstream_path = index_uri.path[len(prefix) :]
@@ -512,12 +512,17 @@ def required_github_run_identity() -> tuple[int, int]:
     return int(values[0]), int(values[1])
 
 
+def initialize_evidence_directory(base: Path) -> Path:
+    base.parent.mkdir(parents=True, exist_ok=True)
+    if base.exists():
+        raise RuntimeError(f"refusing to overwrite existing discovery evidence: {base}")
+    base.mkdir()
+    return base
+
+
 def main() -> int:
     run_id, run_attempt = required_github_run_identity()
-    EVIDENCE_BASE.parent.mkdir(parents=True, exist_ok=True)
-    if EVIDENCE_BASE.exists():
-        raise RuntimeError(f"refusing to overwrite existing discovery evidence: {EVIDENCE_BASE}")
-    EVIDENCE_BASE.mkdir()
+    initialize_evidence_directory(EVIDENCE_BASE)
     revision = run(["git", "rev-parse", "HEAD"]).stdout.strip()
     tree = run(["git", "rev-parse", "HEAD^{tree}"]).stdout.strip()
     manifest: dict[str, object] = {

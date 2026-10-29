@@ -406,6 +406,12 @@ def source_uri_matches(parsed: object, host: str, repo_path: str) -> bool:
     )
 
 
+def expected_suite_base_path(codename: str) -> str:
+    if codename not in EXPECTED_ORIGINS:
+        fail(f"unknown Trixie release codename: {codename}")
+    return f"{EXPECTED_ORIGINS[codename][2]}/dists/{codename}"
+
+
 def verify_inrelease_signature(path: Path, keyrings: list[Path]) -> None:
     verifier = shutil.which("gpgv")
     if not verifier:
@@ -721,15 +727,15 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
         parsed_base = urlsplit(base_uri)
         if parsed_uri.scheme not in {"http", "https"} or parsed_uri.scheme != parsed_base.scheme:
             fail("captured APT target has an invalid or mismatched transport scheme")
-        if parsed_base.hostname != target_origin[1] or parsed_base.path.rstrip("/") != target_origin[2]:
-            fail("captured APT target has an unapproved repository origin")
+        if parsed_base.hostname != target_origin[1] or parsed_base.path.rstrip("/") != expected_suite_base_path(codename):
+            fail("captured APT target has an unapproved suite-scoped base URI")
         if parsed_uri.hostname != target_origin[1] or parsed_uri.username or parsed_uri.password or parsed_uri.query or parsed_uri.fragment:
             fail("captured APT target URI has an unsafe authority")
         if parsed_base.username or parsed_base.password or parsed_base.query or parsed_base.fragment:
             fail("captured APT target base URI has an unsafe authority")
         if parsed_uri.port not in ({None, 80} if parsed_uri.scheme == "http" else {None, 443}) or parsed_base.port not in ({None, 80} if parsed_base.scheme == "http" else {None, 443}):
             fail("captured APT target uses a non-default port")
-        if not parsed_uri.path.startswith(f"{target_origin[2]}/dists/{codename}/"):
+        if not parsed_uri.path.startswith(expected_suite_base_path(codename) + "/"):
             fail("captured APT target URI is outside its Release path")
         release_identities.add((PurePosixPath(fields[8]).name, fields[1], fields[2]))
         observed_release_identities.add((fields[1], fields[2]))
@@ -776,8 +782,8 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
             fail("package target binding baseUri is malformed")
         parsed_origin = urlsplit(base_uri)
         parsed_uri = urlsplit(uri)
-        if parsed_origin.scheme not in {"http", "https"} or parsed_origin.hostname != origin[1] or parsed_origin.path.rstrip("/") != origin[2]:
-            fail("package target binding uses an unapproved origin")
+        if parsed_origin.scheme not in {"http", "https"} or parsed_origin.hostname != origin[1] or parsed_origin.path.rstrip("/") != expected_suite_base_path(codename):
+            fail("package target binding uses an unapproved suite-scoped base URI")
         if parsed_uri.scheme != parsed_origin.scheme or parsed_uri.hostname != parsed_origin.hostname:
             fail("package target URI authority differs from its base URI")
         if parsed_origin.username or parsed_origin.password or parsed_origin.query or parsed_origin.fragment or parsed_origin.port not in ({None, 80} if parsed_origin.scheme == "http" else {None, 443}):
@@ -790,7 +796,7 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
         expected_path = f"{component}/binary-{architecture}/Packages"
         if record["identifier"] != "Packages" or not isinstance(canonical, str) or canonical != expected_path or record["metaKey"] != canonical:
             fail("package target binding canonical path does not match component and architecture")
-        uri_prefix = f"{origin[2]}/dists/{codename}/"
+        uri_prefix = expected_suite_base_path(codename) + "/"
         uri_path = parsed_uri.path
         if not uri_path.startswith(uri_prefix):
             fail("package target URI is outside its approved Release path")

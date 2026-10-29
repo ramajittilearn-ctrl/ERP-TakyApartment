@@ -129,8 +129,8 @@ class EvidenceFixture:
             local_hash = digest(local_bytes)
             filename = f"/var/lib/apt/lists/{local_name}"
             release_path = f"/var/lib/apt/lists/{release_name}"
-            uri = f"{origin}/dists/{codename}/{signed_path}"
-            base_uri = origin + "/"
+            base_uri = f"{origin}/dists/{codename}/"
+            uri = f"{base_uri}{signed_path}"
             meta_key = "main/binary-amd64/Packages"
             target_rows.append("|".join(("Packages", codename, suite, "amd64", filename, uri, base_uri, meta_key, release_path, "main")))
             self.proposal["authenticatedInReleaseFiles"].append({
@@ -195,7 +195,7 @@ class EvidenceValidationTests(unittest.TestCase):
         self.run_identity.start()
         self.addCleanup(self.run_identity.stop)
         self.signature_verifier = patch.object(MODULE, "verify_inrelease_signature")
-        self.signature_verifier.start()
+        self.verify_signature_mock = self.signature_verifier.start()
         self.addCleanup(self.signature_verifier.stop)
 
     def fixture(self, temp: str) -> EvidenceFixture:
@@ -215,6 +215,8 @@ class EvidenceValidationTests(unittest.TestCase):
             before = sorted(path.relative_to(fixture.root).as_posix() for path in fixture.root.rglob("*") if path.is_file())
             validated = MODULE.validate_proposal(fixture.root)
             self.assertEqual(validated.proposal_sha256, digest((fixture.root / "gnupg-removal-lock-proposal.json").read_bytes()))
+            checked_release_names = {Path(call.args[0]).name for call in self.verify_signature_mock.call_args_list}
+            self.assertEqual(checked_release_names, {f"repo_dists_{name}_InRelease" for name in MODULE.EXPECTED_ORIGINS})
             fake_bin = Path(temp) / "fake-bin"
             fake_bin.mkdir()
             fake_gpgv = fake_bin / "gpgv"
@@ -229,6 +231,24 @@ class EvidenceValidationTests(unittest.TestCase):
             self.assertNotIn("gnupg", result.stdout)
             after = sorted(path.relative_to(fixture.root).as_posix() for path in fixture.root.rglob("*") if path.is_file())
             self.assertEqual(before, after)
+
+    def test_wrong_suite_scoped_base_origin_or_suite_is_rejected_before_signature_check(self):
+        replacements = (
+            ("base", "https://mirror.example/debian/dists/trixie/", "suite-scoped base URI"),
+            ("base", "https://deb.debian.org/debian-security/dists/trixie/", "suite-scoped base URI"),
+            ("suite", "stable-updates", "unapproved Release identity"),
+        )
+        for kind, new_value, message in replacements:
+            with self.subTest(replacement=new_value), tempfile.TemporaryDirectory() as temp:
+                fixture = self.fixture(temp)
+                target_file = fixture.root / "apt-index-targets.tsv"
+                self.verify_signature_mock.reset_mock()
+                fields = target_file.read_text().splitlines()[0].split("|")
+                fields[6 if kind == "base" else 2] = new_value
+                target_file.write_text("|".join(fields) + "\n" + "\n".join(target_file.read_text().splitlines()[1:]) + "\n")
+                fixture.write()
+                with self.assertRaisesRegex(ValueError, message):
+                    MODULE.validate_proposal(fixture.root)
 
     def test_run_identity_must_match_hosted_environment(self):
         with tempfile.TemporaryDirectory() as temp:

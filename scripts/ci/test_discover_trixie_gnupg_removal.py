@@ -14,6 +14,23 @@ SPEC.loader.exec_module(MODULE)
 
 
 class DiscoveryParsingTests(unittest.TestCase):
+    def test_discovery_evidence_setup_does_not_create_scanner_output_root(self):
+        with tempfile.TemporaryDirectory() as temp:
+            runner_temp = Path(temp)
+            scanner_output = runner_temp / "phase4-container-scan"
+            evidence = runner_temp / "trixie-gnupg-discovery"
+            self.assertFalse(scanner_output.exists())
+            MODULE.initialize_evidence_directory(evidence)
+            self.assertTrue(evidence.is_dir())
+            self.assertFalse(scanner_output.exists())
+
+    def test_workflow_validates_and_uploads_discovery_evidence_separately(self):
+        workflow = SCRIPT.parents[2] / ".github/workflows/phase4-ci.yml"
+        text = workflow.read_text()
+        self.assertIn('--evidence-dir "$RUNNER_TEMP/trixie-gnupg-discovery"', text)
+        self.assertIn("${{ runner.temp }}/trixie-gnupg-discovery/", text)
+        self.assertIn("${{ runner.temp }}/phase4-container-scan/", text)
+
     def test_plan_is_sorted_and_bound_to_installed_version_and_architecture(self):
         inventory = {
             ("zlib1g", "amd64"): "1:1.3.dfsg-3",
@@ -77,12 +94,12 @@ class DiscoveryParsingTests(unittest.TestCase):
                 (metadata / Path(filename).name).write_text("authenticated by the test fixture\n")
                 (metadata / Path(release_file).name).write_text("release fixture\n")
                 host, origin_path = MODULE.EXPECTED_ORIGINS[codename]
-                origin = f"https://{host}{origin_path}"
-                index_uri = f"{origin}/dists/{codename}/main/binary-amd64/Packages.xz"
+                origin = f"https://{host}{origin_path}/dists/{codename}"
+                index_uri = f"{origin}/main/binary-amd64/Packages.xz"
                 rows.append(f"Packages|{codename}|{suite}|amd64|{filename}|{index_uri}|{origin}/|main/binary-amd64/Packages|{release_file}|main")
             targets.write_text("\n".join(rows) + "\n")
             MODULE.validate_index_targets(targets, metadata)
-            targets.write_text("Packages|trixie|stable-updates|amd64|/var/lib/apt/lists/trixie_Packages|https://deb.debian.org/debian/dists/trixie/main/binary-amd64/Packages.xz|https://deb.debian.org/debian/|main/binary-amd64/Packages|/var/lib/apt/lists/trixie_InRelease|main\n")
+            targets.write_text("Packages|trixie|stable-updates|amd64|/var/lib/apt/lists/trixie_Packages|https://deb.debian.org/debian/dists/trixie/main/binary-amd64/Packages.xz|https://deb.debian.org/debian/dists/trixie/|main/binary-amd64/Packages|/var/lib/apt/lists/trixie_InRelease|main\n")
             with self.assertRaisesRegex(ValueError, "outside"):
                 MODULE.validate_index_targets(targets, metadata)
 
@@ -100,7 +117,7 @@ class DiscoveryParsingTests(unittest.TestCase):
                 "https://mirror.example/pub/repos/apt/|main/binary-amd64/Packages|"
                 "/var/lib/apt/lists/pgdg_InRelease|main\n"
             )
-            with self.assertRaisesRegex(ValueError, "approved origin"):
+            with self.assertRaisesRegex(ValueError, "suite-scoped origin"):
                 MODULE.validate_index_targets(targets, metadata)
 
     def test_effective_apt_trusted_paths_record_unset_and_normalize_parts(self):
@@ -136,11 +153,30 @@ class DiscoveryParsingTests(unittest.TestCase):
 
     def test_approved_http_pgdg_origin_is_accepted(self):
         MODULE.validate_expected_origin(
-            "trixie-pgdg", "http://apt.postgresql.org/pub/repos/apt/"
+            "trixie-pgdg", "http://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/"
         )
-        with self.assertRaisesRegex(ValueError, "approved origin"):
+        with self.assertRaisesRegex(ValueError, "approved suite-scoped origin"):
             MODULE.validate_expected_origin(
-                "trixie-pgdg", "http://mirror.example/pub/repos/apt/"
+                "trixie-pgdg", "http://mirror.example/pub/repos/apt/dists/trixie-pgdg/"
+            )
+        with self.assertRaisesRegex(ValueError, "suite-scoped origin"):
+            MODULE.validate_expected_origin(
+                "trixie-pgdg", "http://apt.postgresql.org/pub/repos/apt/"
+            )
+
+    def test_suite_scoped_base_uri_must_match_origin_and_codename(self):
+        for codename, (host, repo_path) in MODULE.EXPECTED_ORIGINS.items():
+            with self.subTest(codename=codename):
+                MODULE.validate_expected_origin(
+                    codename, f"https://{host}{repo_path}/dists/{codename}/"
+                )
+        # Regression for the exact BASE_URI emitted by APT in hosted CI.
+        MODULE.validate_expected_origin(
+            "trixie", "http://deb.debian.org/debian/dists/trixie/"
+        )
+        with self.assertRaisesRegex(ValueError, "suite-scoped origin"):
+            MODULE.validate_expected_origin(
+                "trixie", "https://deb.debian.org/debian-security/dists/trixie/"
             )
 
     def test_missing_expected_trixie_suite_is_rejected(self):
@@ -157,8 +193,8 @@ class DiscoveryParsingTests(unittest.TestCase):
                 (metadata / Path(filename).name).write_text("authenticated by the test fixture\n")
                 (metadata / Path(release_file).name).write_text("release fixture\n")
                 host, origin_path = MODULE.EXPECTED_ORIGINS[codename]
-                origin = f"https://{host}{origin_path}"
-                index_uri = f"{origin}/dists/{codename}/main/binary-amd64/Packages.xz"
+                origin = f"https://{host}{origin_path}/dists/{codename}"
+                index_uri = f"{origin}/main/binary-amd64/Packages.xz"
                 rows.append(f"Packages|{codename}|{suite}|amd64|{filename}|{index_uri}|{origin}/|main/binary-amd64/Packages|{release_file}|main")
             targets.write_text("\n".join(rows) + "\n")
             with self.assertRaisesRegex(ValueError, "did not provide all required"):
@@ -208,7 +244,7 @@ class DiscoveryParsingTests(unittest.TestCase):
                 "identifier": "Packages", "codename": "trixie", "suite": "stable",
                 "component": "main", "architecture": "amd64",
                 "releaseFile": "/var/lib/apt/lists/trixie_InRelease",
-                "baseUri": "https://deb.debian.org/debian/",
+                "baseUri": "https://deb.debian.org/debian/dists/trixie/",
                 "uri": f"https://deb.debian.org/debian/dists/trixie/{path}",
                 "metaKey": "main/binary-amd64/Packages",
                 "filename": "/var/lib/apt/lists/local_Packages.lz4",
@@ -264,7 +300,7 @@ class DiscoveryParsingTests(unittest.TestCase):
                     "identifier": "Packages", "codename": "trixie", "suite": "stable",
                     "component": "main", "architecture": "amd64",
                     "releaseFile": "/var/lib/apt/lists/trixie_InRelease",
-                    "baseUri": "https://deb.debian.org/debian/",
+                    "baseUri": "https://deb.debian.org/debian/dists/trixie/",
                     "uri": f"https://deb.debian.org/debian/dists/trixie/{path}{suffix}",
                     "metaKey": path,
                     "filename": "/var/lib/apt/lists/Packages.lz4",
@@ -380,7 +416,7 @@ class DiscoveryParsingTests(unittest.TestCase):
                 "identifier": "Packages", "codename": "trixie", "suite": "stable",
                 "component": "contrib", "architecture": "amd64",
                 "releaseFile": "/var/lib/apt/lists/trixie_InRelease",
-                "baseUri": "https://deb.debian.org/debian/",
+                "baseUri": "https://deb.debian.org/debian/dists/trixie/",
                 "uri": "https://deb.debian.org/debian/dists/trixie/contrib/binary-amd64/Packages.gz",
                 "metaKey": "contrib/binary-amd64/Packages",
                 "filename": "/var/lib/apt/lists/local_Packages.lz4",
@@ -405,7 +441,7 @@ class DiscoveryParsingTests(unittest.TestCase):
                 "identifier": "Packages", "codename": "trixie", "suite": "stable-updates",
                 "component": "main", "architecture": "amd64",
                 "releaseFile": "/var/lib/apt/lists/trixie_InRelease",
-                "baseUri": "https://deb.debian.org/debian/",
+                "baseUri": "https://deb.debian.org/debian/dists/trixie/",
                 "uri": "https://deb.debian.org/debian/dists/trixie/main/binary-amd64/Packages.xz",
                 "metaKey": "main/binary-amd64/Packages",
                 "filename": "/var/lib/apt/lists/local_Packages.lz4",
