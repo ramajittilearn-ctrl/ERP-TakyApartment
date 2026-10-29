@@ -447,7 +447,7 @@ def release_freshness(metadata: dict[str, str], now: datetime | None = None) -> 
         raise ValueError(f"InRelease Date for {codename} is outside the approved freshness bound")
     if valid_until is not None and (valid_until <= current or valid_until < date):
         raise ValueError(f"InRelease Valid-Until for {codename} is expired or precedes Date")
-    return {"date": date.isoformat(), "validUntil": valid_until.isoformat() if valid_until else None,
+    return {"codename": codename, "date": date.isoformat(), "validUntil": valid_until.isoformat() if valid_until else None,
             "ageSeconds": age, "maxAgeSeconds": max_age, "warnAgeSeconds": warn_age,
             "warning": age_seconds >= warn_age}
 

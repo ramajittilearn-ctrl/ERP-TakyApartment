@@ -205,11 +205,13 @@ class EvidenceFixture:
                 "inReleaseSizeBytes": len(release_bytes), "combinedInReleaseFile": combined_file,
                 "combinedInReleaseSha256": combined_hash, "combinedInReleaseSizeBytes": len(release_bytes),
             })
-            freshness = MODULE.validate_release_freshness(
-                codename, MODULE.parse_release_date("Thu, 29 Oct 2026 01:00:00 UTC", "Date"),
-                MODULE.parse_release_date("Fri, 06 Nov 2026 12:00:00 UTC", "Valid-Until") if codename != "trixie" else None,
-                datetime.fromisoformat(self.run["generatedAt"]),
-            )
+            freshness = DISCOVERY.release_freshness({
+                "Codename": codename,
+                "Suite": suite,
+                "Origin": MODULE.EXPECTED_SIGNED_ORIGINS[codename],
+                "Date": "Thu, 29 Oct 2026 01:00:00 UTC",
+                **({"Valid-Until": "Fri, 06 Nov 2026 12:00:00 UTC"} if codename != "trixie" else {}),
+            }, datetime.fromisoformat(self.run["generatedAt"]))
             self.proposal["isolatedReleaseAcquisitions"][-1]["freshness"] = freshness
             self.proposal["releaseFreshnessEvidence"].append({"codename": codename, "inReleaseFile": isolated_name, **freshness})
             for row_path, row_hash, row_size in signed_rows:
@@ -566,6 +568,15 @@ class EvidenceValidationTests(unittest.TestCase):
                 else:
                     with self.assertRaises(ValueError):
                         MODULE.validate_release_freshness(code, date, valid_until, now)
+
+    def test_discovery_freshness_record_matches_validator_acquisition_record_shape(self):
+        now = datetime(2026, 10, 29, 2, 0, tzinfo=timezone.utc)
+        metadata = {"Codename": "trixie", "Suite": "stable", "Origin": "Debian", "Date": "Thu, 29 Oct 2026 01:00:00 UTC"}
+        discovered = DISCOVERY.release_freshness(metadata, now)
+        validated = MODULE.validate_release_freshness(
+            "trixie", MODULE.parse_release_date(metadata["Date"], "Date"), None, now,
+        )
+        self.assertEqual(discovered, {"codename": "trixie", **validated})
 
     def test_release_date_parser_requires_explicit_utc_and_valid_rfc822(self):
         self.assertEqual(MODULE.parse_release_date("Thu, 29 Oct 2026 12:00:00 UTC", "Date").utcoffset(), timedelta(0))

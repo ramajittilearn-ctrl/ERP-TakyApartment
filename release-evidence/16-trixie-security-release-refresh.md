@@ -21,3 +21,10 @@ Local focused verification passes: 80 tests across the discovery and evidence-va
 The current hosted artifact predates the new discovery schema, so it cannot validate the changed proposal format. A fresh hosted discovery and exact-head candidate build are required after these reviewed changes are committed to the existing PR branch. No local Docker daemon is available. In run 40909208002, required quality, Stage 5 runtime, Agent UAT (90 passed, 0 failed/skipped/flaky), libxml2 source provenance/candidate, and Forky/PGDG provenance succeeded; only container verification failed on the prior exact InRelease digest check.
 
 This change does not clear the raw Critical/High findings, authorize image publication, or authorize production use. PR #2 remains unmerged with GitHub approval required. Production remains **NO-GO**.
+
+
+## Exact-head follow-up — run 40914309070
+
+Commit `1bc90795f8390620c8a90df73791e60032ec0836` reached hosted CI. Six of seven jobs passed: required quality, Stage 5, Agent UAT (90 passed, 0 failed/skipped/flaky), libxml2 source provenance/candidate, and Forky/PGDG provenance. Container verification failed during proposal validation because isolated discovery freshness records omitted `codename`, while the validator compares the exact seven-field record derived from authenticated InRelease metadata. All observed dates and age values matched; this was a schema-shape mismatch, not a signature or index mismatch. Container artifact [12915217372](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40914309070/artifacts/12915217372), ZIP SHA-256 `386a402e4e234d378b6aae92dba7f981cd83e7382d26d4d2da51b62f376095e6`.
+
+The local fix adds `codename` to discovery freshness records and a regression comparing discovery and validator record shapes. The implementer reports 81 focused tests pass with one expected skip; I independently reran both suites and observed 81 passed, 1 skipped. Independent reviewers `/root/apt_purge_lock_review` and `/root/trixie_candidate_review` confirmed no finding. A fresh exact-head run is required to validate the corrected schema and candidate build. Production remains **NO-GO**.
