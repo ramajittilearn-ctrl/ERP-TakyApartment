@@ -86,13 +86,6 @@ if [[ ! -s "$evidence/apt-verifiers.tsv" ]]; then
 fi
 apt-config dump | grep -Ei '^(APT::Key::|Dir[[:space:]]|Dir::Etc([[:space:]]|::Trusted))' > "$evidence/apt-signature-config.txt" || true
 apt-config shell TRUSTED Dir::Etc::Trusted/f TRUSTED_PARTS Dir::Etc::TrustedParts/d > "$evidence/apt-trusted-paths.shell"
-source "$evidence/apt-trusted-paths.shell"
-while [[ "${TRUSTED_PARTS:-}" != / && "${TRUSTED_PARTS:-}" == */ ]]; do TRUSTED_PARTS=${TRUSTED_PARTS%/}; done
-[[ "${TRUSTED:-}" == /etc/apt/trusted.gpg && "${TRUSTED_PARTS:-}" == /etc/apt/trusted.gpg.d ]] || {
-  echo "APT effective global trusted-keyring paths are not the captured standard defaults" >&2
-  exit 26
-}
-printf 'trusted\t%s\ntrustedParts\t%s\n' "$TRUSTED" "$TRUSTED_PARTS" > "$evidence/apt-trusted-paths.tsv"
 apt-get --version | head -n 1 > "$evidence/apt-version.txt"
 apt-get indextargets --format '$(IDENTIFIER)|$(CODENAME)|$(SUITE)|$(ARCHITECTURE)|$(FILENAME)|$(URI)|$(BASE_URI)|$(METAKEY)|$(RELEASEFILE)|$(COMPONENT)' > "$evidence/apt-index-targets.raw"
 if [[ ! -s "$evidence/apt-index-targets.raw" ]]; then
@@ -348,6 +341,28 @@ def validate_expected_origin(codename: str, base_uri: str) -> None:
         raise ValueError(f"APT base URI is not the approved origin for {codename}: {base_uri!r}")
 
 
+def normalize_apt_trusted_paths(shell_path: Path, paths_path: Path) -> None:
+    values: dict[str, str] = {}
+    for line in shell_path.read_text().splitlines():
+        match = re.fullmatch(r"([A-Z_]+)='([^']*)';?", line)
+        if not match:
+            raise ValueError("apt-config shell trusted-path evidence has unexpected framing")
+        name, value = match.groups()
+        if name in values:
+            raise ValueError("apt-config shell trusted-path evidence contains duplicate variables")
+        values[name] = value
+    if "TRUSTED" in values:
+        raise ValueError("APT 3 must leave Dir::Etc::Trusted unset; explicit values are not accepted")
+    # APT 3 deliberately leaves Dir::Etc::Trusted unset; do not restore the
+    # legacy /etc/apt/trusted.gpg fallback as a trusted keyring.
+    trusted = "<unset>"
+    trusted_parts = values.get("TRUSTED_PARTS")
+    if trusted_parts is None:
+        raise ValueError("apt-config did not resolve Dir::Etc::TrustedParts")
+    trusted_parts = str(Path(trusted_parts))
+    paths_path.write_text(f"trusted\t{trusted}\ntrustedParts\t{trusted_parts}\n")
+
+
 def validate_apt_trusted_paths(paths_path: Path) -> None:
     values: dict[str, str] = {}
     for line in paths_path.read_text().splitlines():
@@ -358,7 +373,7 @@ def validate_apt_trusted_paths(paths_path: Path) -> None:
         if fields[0].lower() == "trustedparts":
             value = str(Path(value))
         values[fields[0].lower()] = value
-    if values != {"trusted": "/etc/apt/trusted.gpg", "trustedparts": "/etc/apt/trusted.gpg.d"}:
+    if values != {"trusted": "<unset>", "trustedparts": "/etc/apt/trusted.gpg.d"}:
         raise ValueError("APT effective global trusted-keyring paths differ from the captured standard defaults")
 
 
@@ -519,6 +534,10 @@ def main() -> int:
         (EVIDENCE_BASE / "container.log").write_text(result.stdout)
         if result.returncode:
             raise RuntimeError(f"disposable image discovery failed with exit {result.returncode}")
+        normalize_apt_trusted_paths(
+            EVIDENCE_BASE / "apt-trusted-paths.shell",
+            EVIDENCE_BASE / "apt-trusted-paths.tsv",
+        )
         index_targets = validate_index_targets(EVIDENCE_BASE / "apt-index-targets.tsv", EVIDENCE_BASE / "apt-lists")
         validate_apt_trusted_paths(EVIDENCE_BASE / "apt-trusted-paths.tsv")
         signed_indices = signed_package_index_evidence(index_targets, EVIDENCE_BASE / "apt-lists")

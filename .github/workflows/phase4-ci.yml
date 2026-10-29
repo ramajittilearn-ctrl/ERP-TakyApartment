@@ -248,6 +248,8 @@ jobs:
       - name: Discover authenticated Trixie GnuPG removal plan
         id: trixie-gnupg-discovery
         continue-on-error: true
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
         run: |
           python3 -m unittest scripts.ci.test_discover_trixie_gnupg_removal -v
           python3 scripts/ci/discover-trixie-gnupg-removal.py

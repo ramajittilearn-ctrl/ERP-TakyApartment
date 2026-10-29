@@ -103,16 +103,29 @@ class DiscoveryParsingTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "approved origin"):
                 MODULE.validate_index_targets(targets, metadata)
 
-    def test_effective_apt_trusted_paths_normalize_lowercase_and_fallback(self):
+    def test_effective_apt_trusted_paths_record_unset_and_normalize_parts(self):
         with tempfile.TemporaryDirectory() as temp:
+            shell = Path(temp) / "apt-trusted-paths.shell"
             paths = Path(temp) / "apt-trusted-paths.tsv"
-            # apt-config shell's /f and /d modifiers resolve defaults even when
-            # apt-config dump omits Trusted and spells TrustedParts lowercase.
-            paths.write_text("trusted\t/etc/apt/trusted.gpg\ntrustedparts\t/etc/apt/trusted.gpg.d/\n")
+            # Debian APT 3 deliberately leaves Trusted unset; don't restore the
+            # legacy trusted.gpg trust path. TrustedParts may have a trailing slash.
+            shell.write_text("TRUSTED_PARTS='/etc/apt/trusted.gpg.d/';\n")
+            MODULE.normalize_apt_trusted_paths(shell, paths)
+            self.assertEqual(
+                paths.read_text(),
+                "trusted\t<unset>\ntrustedParts\t/etc/apt/trusted.gpg.d\n",
+            )
             MODULE.validate_apt_trusted_paths(paths)
-            paths.write_text("TRUSTED\t/tmp/attacker.gpg\nTRUSTEDPARTS\t/etc/apt/trusted.gpg.d\n")
-            with self.assertRaisesRegex(ValueError, "trusted-keyring paths"):
-                MODULE.validate_apt_trusted_paths(paths)
+            for trusted_assignment in (
+                "TRUSTED='/tmp/attacker.gpg';\n",
+                "TRUSTED='<unset>';\n",
+                "TRUSTED='';\n",
+            ):
+                shell.write_text(
+                    trusted_assignment + "TRUSTED_PARTS='/etc/apt/trusted.gpg.d/';\n"
+                )
+                with self.assertRaisesRegex(ValueError, "must leave Dir::Etc::Trusted unset"):
+                    MODULE.normalize_apt_trusted_paths(shell, paths)
 
     def test_effective_apt_trusted_paths_require_both_resolved_values(self):
         with tempfile.TemporaryDirectory() as temp:
