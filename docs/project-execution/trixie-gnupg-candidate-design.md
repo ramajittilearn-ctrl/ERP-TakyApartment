@@ -14,9 +14,19 @@ The generated `gnupg-removal-lock-proposal.json` records a sorted package tuple 
 
 The proposal is not an approved removal lock. Runtime clearance and CVE clearance are explicitly `NOT_EVALUATED`.
 
-## Required next phase
+## Phase 1 review and candidate-only approval
 
-An independent reviewer must inspect the hosted closure and its authenticated metadata, verify every package and the proposed package delta, resolve any unexpected removals, then freeze the exact name/version/architecture lock with its evidence hashes. Only after that review may a separate candidate Dockerfile and Compose project be built. That later phase must preserve and verify the actual APT signature verifier found in discovery (the base image may use `sqv`; do not assume or install `gpgv`), Debian and PGDG keyrings, and then prove `apt-get --error-on=any update` still succeeds after the purge. It must also test package delta, PostgreSQL startup/runtime checks, backups/restores, attachment integrity, and comparable vulnerability scans. No candidate build or purge is authorized by Phase 1 discovery evidence alone.
+`apt_purge_lock_review` independently checked all 84 evidence-file hashes, the signed Release and source-trust bindings, the pinned base image/platform, installed inventory, exact APT simulation, and protected package families. It approved freezing the exact 14 name/version/architecture tuples for an isolated candidate build only. The reviewed proposal SHA-256 is `32c8407024c411cd9e72f011faa101b139af921994b7628620783c50db260bac`, from workflow run `40869397144`, attempt 1. The original run and artifact identifiers, proposal digest, verifier identity, source hashes, keyring hashes, and the four exact signed Release identities are recorded in `release-evidence/trixie-gnupg-candidate-lock.json`; package, release, and trust inputs are separately frozen in TSV files.
+
+Approval does not establish runtime clearance, CVE clearance, or production authorization. If a later discovery changes the package tuples, base identity, platform, verifier, source trust, keyring, or signed Release hashes, validation must fail closed and require renewed independent review. The lock is not updated automatically.
+
+## Candidate architecture and required verification
+
+The architect compared a rebuild from the pinned upstream PostgreSQL image with a separate layer on top of the operational image built in the same CI run. The separate layer is the selected shape: it minimizes drift from the operational build while keeping the shared Dockerfile, existing candidates, UAT, and production untouched. The build must validate the parent image ID, revision/tree labels, `linux/amd64` platform, and gosu identity against the same-run operational image. It has a distinct image tag, Compose project, network, and volume, with no published database port.
+
+The image must first prove authenticated APT updates and the exact 14-tuple simulated removal; after purge, its actual dpkg delta must equal the frozen tuples. It preserves `sqv 1.3.0`, APT and versioned `libapt-pkg`, both Signed-By keyrings, PostgreSQL 17.11, libpq, libxml2, and gosu. A fresh `apt-get --error-on=any update` must succeed against all four reviewed sources after purge, and the resulting InRelease files must match the frozen hashes. Runtime, database startup, shared-library, backup/restore, attachment integrity, and raw vulnerability scans are candidate-only evidence.
+
+The supported restore matrix is six routes: legacy Trixie and Bookworm sources to the existing Trixie-collation, new Trixie-prune, and Bookworm targets. Alpine is excluded because earlier Trixie/Bookworm collation probes failed. The existing hosted run currently proves only the four routes to the two existing Debian targets; it does not prove the new prune target.
 
 ## Existing findings and constraints
 

@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 revision="$(git rev-parse HEAD)"
 tree="$(git rev-parse 'HEAD^{tree}')"
+trixie_candidate_lock_sha256="$(shasum -a 256 release-evidence/trixie-gnupg-candidate-lock.json | awk '{print $1}')"
 project="taky-ci-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-${RANDOM}"
 ownership_label="com.taky.ci.run"
 network="${project}-private"
@@ -19,6 +20,7 @@ gosu_operational_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-operational-
 gosu_alpine_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-alpine-gosu"
 gosu_debian_trixie_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-debian-trixie-gosu"
 gosu_debian_bookworm_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-debian-bookworm-gosu"
+gosu_trixie_gnupg_candidate_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-trixie-gnupg-candidate-gosu"
 rclone_operations_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-operations-rclone"
 gosu_builder_image="golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4"
 gosu_commit="6456aaa0f3c854d199d0f037f068eb97515b7513"
@@ -29,6 +31,8 @@ database_password="ci_synthetic_password_only"
 bookworm_compatibility_report="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-bookworm-candidate-compatibility.txt"
 bookworm_metadata_container="${project}-bookworm-candidate-metadata"
 bookworm_refresh_evidence_dir="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-container-scan/bookworm-candidate-refresh"
+trixie_gnupg_metadata_container="${project}-trixie-gnupg-candidate-metadata"
+trixie_gnupg_evidence_dir="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-container-scan/trixie-gnupg-candidate"
 if [[ -e "$bookworm_compatibility_report" || -e "$bookworm_refresh_evidence_dir" ]]; then
   echo "Refusing to overwrite pre-existing Bookworm candidate evidence" >&2
   exit 1
@@ -38,11 +42,23 @@ if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
   echo "Container verification requires a clean source checkout" >&2
   exit 1
 fi
+python3 scripts/ci/validate-trixie-gnupg-evidence.py validate-candidate-lock \
+  --evidence-dir "${RUNNER_TEMP:?RUNNER_TEMP is required}/trixie-gnupg-discovery" \
+  --lock-file release-evidence/trixie-gnupg-candidate-lock.json
 
 main_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic SESSION_SECRET=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa DATABASE_URL=postgresql://ci:synthetic@db:5432/ci APP_ORIGIN=http://127.0.0.1:3000 docker compose -f docker-compose.yml config --format json)"
 candidate_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic docker compose -f docker-compose.alpine-candidate.yml config --format json)"
 debian_trixie_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic docker compose -f docker-compose.debian-trixie-candidate.yml config --format json)"
 debian_bookworm_compose_config="$(POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic docker compose -f docker-compose.debian-bookworm-candidate.yml config --format json)"
+trixie_gnupg_compose_config="$( \
+  TRIXIE_OPERATIONAL_IMAGE=taky-ci-operational:placeholder \
+  TRIXIE_OPERATIONAL_IMAGE_ID="sha256:$(printf '0%.0s' {1..64})" \
+  TRIXIE_SOURCE_REVISION="$revision" TRIXIE_SOURCE_TREE="$tree" \
+  TRIXIE_GOSU_COMMIT="$gosu_commit" TRIXIE_GOSU_USER_MODULE_VERSION="$gosu_user_module_version" \
+  TRIXIE_GOSU_X_SYS_MODULE_VERSION="$gosu_x_sys_module_version" \
+  TRIXIE_CANDIDATE_LOCK_SHA256="$trixie_candidate_lock_sha256" \
+  POSTGRES_DB=ci POSTGRES_USER=ci POSTGRES_PASSWORD=synthetic \
+  docker compose -f docker-compose.trixie-gnupg-prune-candidate.yml config --format json)"
 db_image="$(MAIN_COMPOSE_CONFIG="$main_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.MAIN_COMPOSE_CONFIG).services.db.image)')"
 alpine_db_image="$(CANDIDATE_COMPOSE_CONFIG="$candidate_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.image)')"
 db_base_image="$(MAIN_COMPOSE_CONFIG="$main_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.MAIN_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
@@ -51,6 +67,8 @@ debian_trixie_db_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_trixie_compose_confi
 debian_trixie_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_trixie_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
 debian_bookworm_db_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.image)')"
 debian_bookworm_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
+trixie_gnupg_db_image="$(CANDIDATE_COMPOSE_CONFIG="$trixie_gnupg_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.image)')"
+trixie_gnupg_dockerfile="$(CANDIDATE_COMPOSE_CONFIG="$trixie_gnupg_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.dockerfile)')"
 debian_bookworm_dockerfile="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.dockerfile)')"
 debian_bookworm_main_snapshot="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.DEBIAN_MAIN_SNAPSHOT)')"
 debian_bookworm_security_snapshot="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.DEBIAN_SECURITY_SNAPSHOT)')"
@@ -83,10 +101,15 @@ if [[ "$db_base_image" != postgres:17.11-trixie@sha256:b8faeff7712663c2773a19018
 fi
 MAIN_COMPOSE_CONFIG="$main_compose_config" ALPINE_COMPOSE_CONFIG="$candidate_compose_config" \
   DEBIAN_TRIXIE_COMPOSE_CONFIG="$debian_trixie_compose_config" DEBIAN_BOOKWORM_COMPOSE_CONFIG="$debian_bookworm_compose_config" \
+  TRIXIE_GNUPG_COMPOSE_CONFIG="$trixie_gnupg_compose_config" TRIXIE_GNUPG_DB_IMAGE="$trixie_gnupg_db_image" \
+  TRIXIE_SOURCE_REVISION="$revision" TRIXIE_SOURCE_TREE="$tree" TRIXIE_LOCK_SHA256="$trixie_candidate_lock_sha256" \
+  TRIXIE_GOSU_COMMIT="$gosu_commit" TRIXIE_GOSU_USER_MODULE_VERSION="$gosu_user_module_version" \
+  TRIXIE_GOSU_X_SYS_MODULE_VERSION="$gosu_x_sys_module_version" \
   MAIN_DB_IMAGE="$db_image" ALPINE_DB_IMAGE="$alpine_db_image" \
   DEBIAN_TRIXIE_DB_IMAGE="$debian_trixie_db_image" DEBIAN_BOOKWORM_DB_IMAGE="$debian_bookworm_db_image" \
   MAIN_DB_BASE_IMAGE="$db_base_image" ALPINE_DB_BASE_IMAGE="$alpine_db_base_image" \
   DEBIAN_TRIXIE_DB_BASE_IMAGE="$debian_trixie_db_base_image" DEBIAN_BOOKWORM_DB_BASE_IMAGE="$debian_bookworm_db_base_image" \
+  TRIXIE_GNUPG_DOCKERFILE="$trixie_gnupg_dockerfile" \
   DEBIAN_BOOKWORM_DOCKERFILE="$debian_bookworm_dockerfile" \
   DEBIAN_BOOKWORM_MAIN_SNAPSHOT="$debian_bookworm_main_snapshot" \
   DEBIAN_BOOKWORM_SECURITY_SNAPSHOT="$debian_bookworm_security_snapshot" \
@@ -139,7 +162,28 @@ MAIN_COMPOSE_CONFIG="$main_compose_config" ALPINE_COMPOSE_CONFIG="$candidate_com
       volumes.add(config.volumes.database.name);
       images.add(config.services.db.image);
     }
-    console.log("Operational, Alpine and Debian candidate Compose projects and database volumes are isolated.");
+    const prune = JSON.parse(process.env.TRIXIE_GNUPG_COMPOSE_CONFIG);
+    if (prune.name !== "taky-erp-trixie-gnupg-prune-candidate" ||
+      prune.services.db.image !== process.env.TRIXIE_GNUPG_DB_IMAGE ||
+      !prune.services.db.image.includes("trixie-gnupg-prune") ||
+      prune.services.db.platform !== "linux/amd64" ||
+      prune.services.db.build.dockerfile !== process.env.TRIXIE_GNUPG_DOCKERFILE ||
+      prune.services.db.build.args.TRIXIE_OPERATIONAL_IMAGE !== "taky-ci-operational:placeholder" ||
+      prune.services.db.build.args.TRIXIE_OPERATIONAL_IMAGE_ID !== `sha256:${"0".repeat(64)}` ||
+      prune.services.db.build.args.TRIXIE_SOURCE_REVISION !== process.env.TRIXIE_SOURCE_REVISION ||
+      prune.services.db.build.args.TRIXIE_SOURCE_TREE !== process.env.TRIXIE_SOURCE_TREE ||
+      prune.services.db.build.args.TRIXIE_CANDIDATE_LOCK_SHA256 !== process.env.TRIXIE_LOCK_SHA256 ||
+      prune.services.db.build.args.TRIXIE_GOSU_COMMIT !== process.env.TRIXIE_GOSU_COMMIT ||
+      prune.services.db.build.args.TRIXIE_GOSU_USER_MODULE_VERSION !== process.env.TRIXIE_GOSU_USER_MODULE_VERSION ||
+      prune.services.db.build.args.TRIXIE_GOSU_X_SYS_MODULE_VERSION !== process.env.TRIXIE_GOSU_X_SYS_MODULE_VERSION ||
+      prune.volumes.database.name !== "taky-erp-trixie-gnupg-prune-candidate-database" ||
+      (prune.services.db.ports ?? []).length !== 0 || projects.has(prune.name) || volumes.has(prune.volumes.database.name) || images.has(prune.services.db.image)) {
+      throw new Error(`Trixie GnuPG prune candidate Compose identity changed: ${JSON.stringify({name: prune.name, image: prune.services.db.image, dockerfile: prune.services.db.build.dockerfile, volume: prune.volumes.database.name})}`);
+    }
+    projects.add(prune.name);
+    volumes.add(prune.volumes.database.name);
+    images.add(prune.services.db.image);
+    console.log("Operational, Alpine, Debian, and Trixie GnuPG-prune Compose projects and database volumes are isolated.");
   '
 
 resource_label() {
@@ -178,8 +222,8 @@ cleanup() {
   local exit_status=$? cleanup_failed=0 name
   trap - EXIT
   set +e
-  rm -f -- "$gosu_operational_binary" "$gosu_alpine_binary" "$gosu_debian_trixie_binary" "$gosu_debian_bookworm_binary" "$rclone_operations_binary"
-  for name in "$app" "$validator" "$database" "$probe" "$bookworm_metadata_container"; do
+  rm -f -- "$gosu_operational_binary" "$gosu_alpine_binary" "$gosu_debian_trixie_binary" "$gosu_debian_bookworm_binary" "$gosu_trixie_gnupg_candidate_binary" "$rclone_operations_binary"
+  for name in "$app" "$validator" "$database" "$probe" "$bookworm_metadata_container" "$trixie_gnupg_metadata_container"; do
     remove_owned_resource container "$name" || cleanup_failed=1
   done
   for name in "$db_volume" "$attachments_volume"; do
@@ -285,6 +329,42 @@ build_bookworm_security_candidate_image() {
     && "$actual_libssl3" == "$debian_bookworm_libssl3_version" \
     && "$actual_tzdata" == "$debian_bookworm_tzdata_version" ]]
 }
+build_trixie_gnupg_candidate_image() {
+  local image="$1" operational_image="$2" operational_image_id="$3" lock_sha256="$4"
+  local actual_revision actual_tree actual_parent_id actual_lock_sha256 actual_kind actual_platform actual_image_id
+  local actual_gosu_commit actual_user_module actual_x_sys_module
+  docker build --platform linux/amd64 \
+    --build-arg "TRIXIE_OPERATIONAL_IMAGE=$operational_image" \
+    --build-arg "TRIXIE_OPERATIONAL_IMAGE_ID=$operational_image_id" \
+    --build-arg "TRIXIE_SOURCE_REVISION=$revision" \
+    --build-arg "TRIXIE_SOURCE_TREE=$tree" \
+    --build-arg "TRIXIE_GOSU_COMMIT=$gosu_commit" \
+    --build-arg "TRIXIE_GOSU_USER_MODULE_VERSION=$gosu_user_module_version" \
+    --build-arg "TRIXIE_GOSU_X_SYS_MODULE_VERSION=$gosu_x_sys_module_version" \
+    --build-arg "TRIXIE_CANDIDATE_LOCK_SHA256=$lock_sha256" \
+    --label "org.opencontainers.image.revision=$revision" \
+    --label "org.opencontainers.image.tree=$tree" \
+    --tag "$image" --file "$trixie_gnupg_dockerfile" .
+  actual_revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")"
+  actual_tree="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.tree"}}' "$image")"
+  actual_parent_id="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.trixie-gnupg-candidate.parent-image-id"}}' "$image")"
+  actual_lock_sha256="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.trixie-gnupg-candidate.lock-sha256"}}' "$image")"
+  actual_kind="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.trixie-gnupg-candidate.kind"}}' "$image")"
+  actual_platform="$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$image")"
+  actual_image_id="$(docker image inspect --format '{{.Id}}' "$image")"
+  actual_gosu_commit="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.gosu.commit"}}' "$image")"
+  actual_user_module="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.gosu.user-module"}}' "$image")"
+  actual_x_sys_module="$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.gosu.x-sys-module"}}' "$image")"
+  [[ "$actual_revision" == "$revision" && "$actual_tree" == "$tree" \
+    && "$actual_parent_id" == "$operational_image_id" \
+    && "$actual_lock_sha256" == "$lock_sha256" \
+    && "$actual_kind" == trixie-gnupg-prune-candidate \
+    && "$actual_platform" == linux/amd64 \
+    && "$actual_image_id" != "$operational_image_id" \
+    && "$actual_gosu_commit" == "$gosu_commit" \
+    && "$actual_user_module" == "$gosu_user_module_version" \
+    && "$actual_x_sys_module" == "$gosu_x_sys_module_version" ]]
+}
 echo "Building pinned operational PostgreSQL derivative"
 build_postgres_image "$db_image" "$db_base_image"
 echo "Building isolated Alpine PostgreSQL candidate derivative"
@@ -293,6 +373,13 @@ echo "Building isolated Debian Trixie PostgreSQL candidate derivative"
 build_postgres_image "$debian_trixie_db_image" "$debian_trixie_db_base_image"
 echo "Building isolated Debian Bookworm PostgreSQL candidate derivative"
 build_bookworm_security_candidate_image "$debian_bookworm_db_image" "$debian_bookworm_db_base_image"
+trixie_operational_image_id="$(docker image inspect --format '{{.Id}}' "$db_image")"
+if [[ -e "$trixie_gnupg_evidence_dir" ]]; then
+  echo "Refusing to overwrite pre-existing Trixie GnuPG candidate evidence: $trixie_gnupg_evidence_dir" >&2
+  exit 1
+fi
+echo "Building isolated Trixie GnuPG-prune candidate on operational image $trixie_operational_image_id"
+build_trixie_gnupg_candidate_image "$trixie_gnupg_db_image" "$db_image" "$trixie_operational_image_id" "$trixie_candidate_lock_sha256"
 legacy_trixie_db_image="postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
 legacy_bookworm_db_image="postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27"
 restore_probe_failures=0
@@ -303,8 +390,10 @@ if [[ -e "$restore_matrix_report" ]]; then
 fi
 restore_routes=(
   "trixie|$legacy_trixie_db_image|trixie|$debian_trixie_db_image"
+  "trixie|$legacy_trixie_db_image|trixie-gnupg-prune|$trixie_gnupg_db_image"
   "trixie|$legacy_trixie_db_image|bookworm|$debian_bookworm_db_image"
   "bookworm|$legacy_bookworm_db_image|trixie|$debian_trixie_db_image"
+  "bookworm|$legacy_bookworm_db_image|trixie-gnupg-prune|$trixie_gnupg_db_image"
   "bookworm|$legacy_bookworm_db_image|bookworm|$debian_bookworm_db_image"
 )
 for route in "${restore_routes[@]}"; do
@@ -534,8 +623,64 @@ docker exec "$validator" sh -ec \
 echo "Validator removed temporary inputs after successful parsing."
 
 bash scripts/ci/scan-container-images.sh \
-  "$app_image" "$validator_image" "$operations_image" "$db_image" "$alpine_db_image" "$debian_trixie_db_image" "$debian_bookworm_db_image" \
+  "$app_image" "$validator_image" "$operations_image" "$db_image" "$alpine_db_image" "$debian_trixie_db_image" "$debian_bookworm_db_image" "$trixie_gnupg_db_image" \
   "$revision" "$tree" "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
+
+mkdir -p "$trixie_gnupg_evidence_dir"
+docker create --platform linux/amd64 --label "$ownership_label=$project" \
+  --name "$trixie_gnupg_metadata_container" "$trixie_gnupg_db_image" >/dev/null
+docker cp "$trixie_gnupg_metadata_container:/usr/share/taky-trixie-gnupg-candidate/." "$trixie_gnupg_evidence_dir/"
+docker rm "$trixie_gnupg_metadata_container" >/dev/null
+trixie_candidate_image_id="$(docker image inspect --format '{{.Id}}' "$trixie_gnupg_db_image")"
+trixie_candidate_scan_image_id="$(jq -er '.imageId' "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan/debian-trixie-gnupg-prune-database.metadata.json")"
+if [[ "$trixie_candidate_image_id" != "$trixie_candidate_scan_image_id" ]]; then
+  echo "Trixie GnuPG candidate changed after its raw Trivy scan" >&2
+  exit 1
+fi
+for evidence_file in candidate-build-inputs.txt candidate-lock-provenance.json \
+  dpkg-before.tsv dpkg-after.tsv purge-simulation.txt removed-packages.tsv \
+  apt-update-before-purge.log apt-update-after-purge.log \
+  inrelease-before-purge.tsv inrelease-after-purge.tsv \
+  trust-before-purge.tsv trust-after-purge.tsv \
+  verification-tools-before.sha256 verification-tools-after.sha256 \
+  libapt-pkg-family-before.tsv libapt-pkg-family-after.tsv \
+  postgres-runtime-query.txt postgres-link-check.txt; do
+  if [[ ! -s "$trixie_gnupg_evidence_dir/$evidence_file" ]]; then
+    echo "Trixie GnuPG candidate evidence is missing: $evidence_file" >&2
+    exit 1
+  fi
+done
+if find "$trixie_gnupg_evidence_dir" -type l -print -quit | grep -q .; then
+  echo "Trixie GnuPG candidate evidence contains a symlink" >&2
+  exit 1
+fi
+(
+  cd "$trixie_gnupg_evidence_dir"
+  find . -type f ! -name evidence-files.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > evidence-files.sha256
+)
+trixie_candidate_evidence_sha256="$(shasum -a 256 "$trixie_gnupg_evidence_dir/evidence-files.sha256" | awk '{print $1}')"
+trixie_candidate_trivy_db_sha256="$(jq -er '.vulnerabilityDbSha256' "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan/debian-trixie-gnupg-prune-database.metadata.json")"
+trixie_restore_matrix_sha256="$(shasum -a 256 "$restore_matrix_report" | awk '{print $1}')"
+docker image inspect --format '{{.Os}}/{{.Architecture}}' "$trixie_gnupg_db_image" | grep -Fx linux/amd64 >/dev/null
+[[ "$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.trixie-gnupg-candidate.parent-image-id"}}' "$trixie_gnupg_db_image")" == "$trixie_operational_image_id" ]]
+[[ "$(docker image inspect --format '{{index .Config.Labels "io.taky.postgres.trixie-gnupg-candidate.lock-sha256"}}' "$trixie_gnupg_db_image")" == "$trixie_candidate_lock_sha256" ]]
+jq -n \
+  --arg image "$trixie_gnupg_db_image" \
+  --arg imageId "$trixie_candidate_image_id" \
+  --arg platform linux/amd64 \
+  --arg sourceRevision "$revision" \
+  --arg sourceTree "$tree" \
+  --arg parentOperationalImage "$db_image" \
+  --arg parentOperationalImageId "$trixie_operational_image_id" \
+  --arg pinnedPostgresBase "$db_base_image" \
+  --arg candidateLockSha256 "$trixie_candidate_lock_sha256" \
+  --arg candidateEvidenceFilesSha256 "$trixie_candidate_evidence_sha256" \
+  --arg trivyDatabaseSha256 "$trixie_candidate_trivy_db_sha256" \
+  --arg restoreMatrixSha256 "$trixie_restore_matrix_sha256" \
+  --arg restoreMatrix "restore-matrix.txt" \
+  --arg trivyReport "debian-trixie-gnupg-prune-database.trivy.json" \
+  '{image:$image,imageId:$imageId,platform:$platform,sourceRevision:$sourceRevision,sourceTree:$sourceTree,parentOperationalImage:$parentOperationalImage,parentOperationalImageId:$parentOperationalImageId,pinnedPostgresBase:$pinnedPostgresBase,candidateLockSha256:$candidateLockSha256,candidateEvidenceFilesSha256:$candidateEvidenceFilesSha256,trivyDatabaseSha256:$trivyDatabaseSha256,restoreMatrix:{path:$restoreMatrix,sha256:$restoreMatrixSha256,requiredRoutes:6},rawTrivyReport:$trivyReport,securityDisposition:"UNRESOLVED_REPORT_ONLY",runtimeClearance:"CANDIDATE_CHECKS_PASSED",cveClearance:"NOT_EVALUATED",productionUse:"NOT_AUTHORIZED"}' \
+  > "$trixie_gnupg_evidence_dir/image-scan-binding.json"
 
 if [[ ! -s "$bookworm_compatibility_report" ]]; then
   echo "Bookworm-to-Bookworm extension compatibility evidence was not produced" >&2
@@ -607,10 +752,12 @@ gosu_report_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
 cp "$restore_matrix_report" "$gosu_report_dir/restore-matrix.txt"
 {
   printf '\n## Required Debian restore matrix\n\n'
-  printf 'Synthetic backup/restore routes use fresh run-owned resources; all four are required. Results are in `restore-matrix.txt`.\n\n'
+    printf 'Synthetic backup/restore routes use fresh run-owned resources; all six supported Debian routes are required. Results are in `restore-matrix.txt`.\n\n'
   cat "$restore_matrix_report"
   printf '\n## Isolated Bookworm GnuPG purge candidate\n\n'
-  printf 'The candidate image removes only the exact pinned 16-package GnuPG allowlist after comparing APT simulation to actual `dpkg` removals including package version and architecture. It verifies the retained APT/gpgv/keyring/PostgreSQL/libpq/libxml2 package manifest and performs a fresh signed APT update with all three pinned InRelease hashes checked after removal. The required four-route restore matrix, including both Bookworm-target routes, is reported above; each route must pass for the candidate to qualify. This is candidate-only evidence; it does not authorize production use.\n'
+  printf 'The Bookworm candidate report uses its existing reviewed 16-package allowlist and three pinned InRelease hashes. It remains separate from the new Trixie candidate.\n\n'
+  printf '## Isolated Trixie GnuPG purge candidate\n\n'
+  printf 'The Trixie candidate layers onto the exact same-run operational image, compares the simulated and actual package delta with the independently reviewed 14 name/version/architecture tuples, preserves sqv, APT, keyrings, PostgreSQL/libpq/libxml2 and gosu, and verifies fresh signed APT updates against four pinned InRelease hashes. All six supported Debian restore routes are required. This is candidate-only evidence; it does not clear CVEs or authorize production use.\n'
 } >> "$gosu_report_dir/README.md"
 check_gosu_image() {
   local image="$1" base_image="$2" binary="$3" report_name="$4" image_id
@@ -627,6 +774,7 @@ check_gosu_image "$db_image" "$db_base_image" "$gosu_operational_binary" gosu-op
 check_gosu_image "$alpine_db_image" "$alpine_db_base_image" "$gosu_alpine_binary" gosu-alpine-govulncheck.txt
 check_gosu_image "$debian_trixie_db_image" "$debian_trixie_db_base_image" "$gosu_debian_trixie_binary" gosu-debian-trixie-govulncheck.txt
 check_gosu_image "$debian_bookworm_db_image" "$debian_bookworm_db_base_image" "$gosu_debian_bookworm_binary" gosu-debian-bookworm-govulncheck.txt
+check_gosu_image "$trixie_gnupg_db_image" "$db_base_image" "$gosu_trixie_gnupg_candidate_binary" gosu-trixie-gnupg-candidate-govulncheck.txt
 
 operations_image_id="$(docker image inspect --format '{{.Id}}' "$operations_image")"
 docker run --rm --platform linux/amd64 --entrypoint /bin/cat "$operations_image_id" /usr/local/bin/rclone > "$rclone_operations_binary"
@@ -643,5 +791,10 @@ printf '%s\n' '- Exact operations-image rclone binary is reconstructed from the 
 
 if [[ "$restore_probe_failures" != 0 ]]; then
   echo "At least one required Debian restore route failed; no database candidate is eligible for production migration." >&2
+  exit 1
+fi
+restore_pass_count="$(awk '$1 == "PASS" { count++ } END { print count + 0 }' "$restore_matrix_report")"
+if [[ "$restore_pass_count" != 6 ]]; then
+  echo "The supported Debian restore matrix did not produce six passing routes (actual=$restore_pass_count)" >&2
   exit 1
 fi

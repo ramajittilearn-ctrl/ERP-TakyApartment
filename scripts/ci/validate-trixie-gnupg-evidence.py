@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Trixie GnuPG discovery evidence; candidate preparation remains disabled."""
+"""Validate Trixie GnuPG discovery evidence and a reviewed candidate lock."""
 
 from __future__ import annotations
 
@@ -1526,6 +1526,210 @@ def validate_proposal(evidence_dir: Path, diagnostics_dir: Path | None = None) -
     return validated
 
 
+def _read_locked_tsv(root: Path, relative: str, expected_sha256: str, columns: int, label: str) -> list[list[str]]:
+    if not isinstance(relative, str):
+        fail(f"{label} path is malformed")
+    try:
+        safe = safe_relative_path(relative, f"{label} path")
+    except ValueError as error:
+        raise ValueError(f"{label} path is unsafe") from error
+    path = root / safe
+    if path.is_symlink() or not path.is_file():
+        fail(f"{label} is missing or is a symlink")
+    raw = path.read_bytes()
+    if sha256_bytes(raw) != expected_sha256:
+        fail(f"{label} bytes do not match the frozen lock SHA-256")
+    try:
+        text = raw.decode("ascii")
+    except UnicodeDecodeError as error:
+        raise ValueError(f"{label} is not ASCII") from error
+    if not text.endswith("\n") or "\r" in text or not text:
+        fail(f"{label} has malformed line endings or is empty")
+    rows = [line.split("\t") for line in text[:-1].split("\n")]
+    if any(len(row) != columns or any(not field for field in row) for row in rows):
+        fail(f"{label} has malformed columns")
+    return rows
+
+
+def validate_candidate_lock(evidence_dir: Path, lock_path: Path) -> dict[str, object]:
+    """Validate current hosted discovery against the independently reviewed semantic lock."""
+    validated = validate_proposal(evidence_dir)
+    if lock_path.is_symlink() or not lock_path.is_file():
+        fail("candidate lock is missing or is a symlink")
+    resolved_lock_path = lock_path.resolve(strict=True)
+    lock_root = resolved_lock_path.parent.parent if resolved_lock_path.parent.name == "release-evidence" else resolved_lock_path.parent
+    lock, _lock_raw = read_json(resolved_lock_path, "candidate lock")
+    object_with_keys(lock, {
+        "schemaVersion", "kind", "approval", "discovery", "apt", "releases",
+        "packageLockPath", "releaseLockPath", "trustLockPath", "lockFileSha256",
+    }, "candidate lock")
+    if type(lock["schemaVersion"]) is not int or lock["schemaVersion"] != 1 or lock["kind"] != "reviewed-trixie-gnupg-candidate-lock":
+        fail("candidate lock schema or kind is unsupported")
+
+    approval = object_with_keys(lock["approval"], {
+        "state", "reviewer", "reviewDate", "runtimeClearance", "cveClearance", "productionUse",
+    }, "candidate lock approval")
+    if approval != {
+        "state": "APPROVED_FOR_ISOLATED_CANDIDATE_BUILD_ONLY",
+        "reviewer": "apt_purge_lock_review",
+        "reviewDate": "2026-10-29",
+        "runtimeClearance": "NOT_EVALUATED",
+        "cveClearance": "NOT_EVALUATED",
+        "productionUse": "NOT_AUTHORIZED",
+    }:
+        fail("candidate lock approval scope is invalid")
+
+    discovery = object_with_keys(lock["discovery"], {
+        "runId", "runAttempt", "revision", "tree", "proposalSha256", "evidenceArtifactId", "evidenceArtifactSha256",
+        "proposalPath", "baseImage", "baseImageId", "platform", "reviewedEvidenceFileCount",
+    }, "candidate lock discovery provenance")
+    if (not is_positive_int(discovery["runId"]) or not is_positive_int(discovery["runAttempt"])
+        or not is_positive_int(discovery["evidenceArtifactId"]) or not is_positive_int(discovery["reviewedEvidenceFileCount"])
+        or not isinstance(discovery["revision"], str) or not HEX_GIT.fullmatch(discovery["revision"])
+        or not isinstance(discovery["tree"], str) or not HEX_GIT.fullmatch(discovery["tree"])
+        or not isinstance(discovery["proposalSha256"], str) or not HEX_SHA256.fullmatch(discovery["proposalSha256"])
+        or not isinstance(discovery["evidenceArtifactSha256"], str) or not HEX_SHA256.fullmatch(discovery["evidenceArtifactSha256"])
+        or not isinstance(discovery["baseImageId"], str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", discovery["baseImageId"])
+        or discovery["proposalPath"] != "trixie-gnupg-discovery/gnupg-removal-lock-proposal.json"
+        or discovery["baseImage"] != IMAGE or discovery["platform"] != PLATFORM):
+        fail("candidate lock discovery provenance is malformed or outside the reviewed base")
+    if validated.run["image"] != discovery["baseImage"] or validated.run["imageId"] != discovery["baseImageId"] or validated.run["platform"] != discovery["platform"]:
+        fail("current discovery base image ID, digest, or platform differs from reviewed lock")
+
+    file_hashes = object_with_keys(lock["lockFileSha256"], {"package", "release", "trust"}, "candidate lock TSV hashes")
+    expected_lock_paths = {
+        "packageLockPath": "release-evidence/trixie-gnupg-purge-lock.tsv",
+        "releaseLockPath": "release-evidence/trixie-gnupg-release-lock.tsv",
+        "trustLockPath": "release-evidence/trixie-gnupg-trust-lock.tsv",
+    }
+    for key, path_key in (("package", "packageLockPath"), ("release", "releaseLockPath"), ("trust", "trustLockPath")):
+        if not isinstance(file_hashes[key], str) or not HEX_SHA256.fullmatch(file_hashes[key]):
+            fail(f"candidate lock {key} TSV hash is malformed")
+        if lock[path_key] != expected_lock_paths[path_key]:
+            fail(f"candidate lock {key} TSV path is not the reviewed repository path")
+
+    package_rows = _read_locked_tsv(lock_root, lock["packageLockPath"], file_hashes["package"], 3, "package lock")
+    package_tuples = [{"name": row[0], "version": row[1], "architecture": row[2]} for row in package_rows]
+    if package_tuples != validate_tuple_list(validated.proposal["removals"], "current proposal.removals"):
+        fail("current APT-simulated removal tuples differ from the reviewed package lock")
+
+    apt = object_with_keys(lock["apt"], {
+        "verifier", "signatureConfigSha256", "trustedPathsSha256", "sourceTrustEvidenceSha256", "sourceConfigs", "keyrings",
+    }, "candidate lock APT trust")
+    verifier = object_with_keys(apt["verifier"], {"path", "version"}, "candidate lock APT verifier")
+    if not isinstance(verifier["path"], str) or not isinstance(verifier["version"], str):
+        fail("candidate lock APT verifier is malformed")
+    if any(not isinstance(apt[field], str) or not HEX_SHA256.fullmatch(apt[field]) for field in (
+        "signatureConfigSha256", "trustedPathsSha256", "sourceTrustEvidenceSha256",
+    )):
+        fail("candidate lock APT trust hash is malformed")
+    if (apt["signatureConfigSha256"] != validated.proposal["aptSignatureConfigSha256"]
+        or apt["trustedPathsSha256"] != validated.proposal["aptTrustedPathsSha256"]
+        or apt["sourceTrustEvidenceSha256"] != validated.proposal["sourceTrustEvidenceSha256"]):
+        fail("current APT signature, trusted-path, or source-trust evidence differs from reviewed lock")
+
+    verifier_rows = [line.split("\t") for line in (validated.evidence_dir / "apt-verifiers.tsv").read_text().splitlines()]
+    if [row for row in verifier_rows if len(row) == 3 and row[0] == "sqv"] != [["sqv", verifier["path"], verifier["version"]]]:
+        fail("current APT sqv verifier path/version differs from reviewed lock")
+    if verifier["path"] != "/usr/bin/sqv" or "sqv 1.3.0" not in verifier["version"]:
+        fail("reviewed lock does not preserve the discovered sqv verifier")
+
+    source_configs = apt["sourceConfigs"]
+    if not isinstance(source_configs, list) or len(source_configs) != 2:
+        fail("candidate lock must contain exactly two APT source configuration hashes")
+    expected_source_configs: dict[str, str] = {}
+    for index, item in enumerate(source_configs):
+        record = object_with_keys(item, {"path", "sha256"}, f"candidate lock sourceConfigs[{index}]")
+        if not isinstance(record["path"], str) or not isinstance(record["sha256"], str) or not HEX_SHA256.fullmatch(record["sha256"]):
+            fail("candidate lock source configuration row is malformed")
+        if not record["path"].startswith("apt-sources/") or record["path"] in expected_source_configs:
+            fail("candidate lock source configuration path is invalid or duplicated")
+        expected_source_configs[record["path"]] = record["sha256"]
+    observed_source_configs: dict[str, str] = {}
+    for acquisition in validated.proposal["isolatedReleaseAcquisitions"]:
+        source_path = acquisition["sourceConfigFile"]
+        observed_source_configs[source_path] = acquisition["sourceConfigSha256"]
+    if expected_source_configs != observed_source_configs:
+        fail("current APT source configuration path/hash pairs differ from reviewed lock")
+
+    keyrings = apt["keyrings"]
+    if not isinstance(keyrings, list) or len(keyrings) != 2:
+        fail("candidate lock must contain the Debian and PGDG keyring hashes")
+    expected_keyrings: dict[str, tuple[str, int]] = {}
+    for index, item in enumerate(keyrings):
+        record = object_with_keys(item, {"path", "sha256", "sizeBytes"}, f"candidate lock keyrings[{index}]")
+        if (not isinstance(record["path"], str) or not record["path"].startswith("/")
+            or not isinstance(record["sha256"], str) or not HEX_SHA256.fullmatch(record["sha256"])
+            or not is_positive_int(record["sizeBytes"]) or record["path"] in expected_keyrings):
+            fail("candidate lock keyring row is malformed or duplicated")
+        expected_keyrings[record["path"]] = (record["sha256"], record["sizeBytes"])
+    observed_keyrings: dict[str, tuple[str, int]] = {}
+    for line in (validated.evidence_dir / "source-trust.tsv").read_text().splitlines():
+        if line == "APT source trust policy: PASS":
+            continue
+        fields = line.split("\t")
+        if len(fields) != 5:
+            fail("current source-trust.tsv has malformed keyring rows")
+        path, digest, size_text, _source, _captured = fields
+        observed_keyrings[path] = (digest, int(size_text))
+    if expected_keyrings != observed_keyrings:
+        fail("current Debian/PGDG Signed-By keyring path/hash pairs differ from reviewed lock")
+
+    releases = lock["releases"]
+    release_rows = _read_locked_tsv(lock_root, lock["releaseLockPath"], file_hashes["release"], 3, "release lock")
+    if not isinstance(releases, list) or len(releases) != 4 or len(release_rows) != 4:
+        fail("candidate lock must contain exactly four signed Release identities")
+    expected_releases: dict[str, dict[str, str]] = {}
+    for index, item in enumerate(releases):
+        record = object_with_keys(item, {"codename", "suite", "baseUri", "inReleaseFile", "sha256"}, f"candidate lock releases[{index}]")
+        for field in ("codename", "suite", "baseUri", "inReleaseFile", "sha256"):
+            if not isinstance(record[field], str) or not record[field]:
+                fail("candidate lock Release identity is malformed")
+        if not HEX_SHA256.fullmatch(record["sha256"]) or record["codename"] in expected_releases:
+            fail("candidate lock Release identity has an invalid hash or duplicate codename")
+        expected_releases[record["codename"]] = record
+    tsv_releases = {row[0]: (row[1], row[2]) for row in release_rows}
+    if len(tsv_releases) != 4 or any(
+        code not in expected_releases or tsv_releases[code] != (expected_releases[code]["suite"], expected_releases[code]["sha256"])
+        for code in tsv_releases
+    ):
+        fail("release TSV rows differ from the candidate lock JSON")
+    observed_releases: dict[str, dict[str, str]] = {}
+    authenticated_files = {item["file"]: item["sha256"] for item in validated.proposal["authenticatedInReleaseFiles"]}
+    for acquisition in validated.proposal["isolatedReleaseAcquisitions"]:
+        code = acquisition["codename"]
+        observed_releases[code] = {
+            "codename": acquisition["signedCodename"],
+            "suite": acquisition["signedSuite"],
+            "baseUri": acquisition["baseUri"],
+            "inReleaseFile": acquisition["inReleaseFile"],
+            "sha256": acquisition["inReleaseSha256"],
+        }
+    if observed_releases != expected_releases or any(authenticated_files.get(item["inReleaseFile"]) != item["sha256"] for item in releases):
+        fail("current signed Release identities or hashes differ from reviewed lock")
+
+    trust_rows = _read_locked_tsv(lock_root, lock["trustLockPath"], file_hashes["trust"], 3, "trust lock")
+    expected_trust_rows = [
+        ["source", item["path"].removeprefix("apt-sources/"), item["sha256"]] for item in source_configs
+    ] + [["keyring", item["path"], item["sha256"]] for item in keyrings] + [
+        ["apt-signature-config", "apt-signature-config.txt", apt["signatureConfigSha256"]],
+        ["apt-trusted-paths", "apt-trusted-paths.tsv", apt["trustedPathsSha256"]],
+    ]
+    if trust_rows != expected_trust_rows:
+        fail("trust TSV rows differ from source, keyring, and APT configuration hashes in the candidate lock JSON")
+
+    return {
+        "status": "VALIDATED_REVIEWED_CANDIDATE_LOCK",
+        "currentRunId": validated.run["runId"],
+        "currentProposalSha256": validated.proposal_sha256,
+        "packageCount": len(package_tuples),
+        "releaseCount": len(expected_releases),
+        "candidateOnly": True,
+        "runtimeClearance": "NOT_EVALUATED",
+        "cveClearance": "NOT_EVALUATED",
+    }
+
+
 def prepare_candidate(evidence_dir: Path, lock_path: Path, output_path: Path) -> list[dict[str, str]]:
     del evidence_dir, lock_path, output_path
     fail("prepare-candidate is disabled until authenticated GitHub review and exact artifact provenance are verified")
@@ -1537,6 +1741,9 @@ def main(argv: list[str] | None = None) -> int:
     validate_parser = subparsers.add_parser("validate-proposal", help="validate discovery evidence without emitting removal tuples")
     validate_parser.add_argument("--evidence-dir", required=True, type=Path)
     validate_parser.add_argument("--diagnostics-dir", required=True, type=Path)
+    candidate_parser = subparsers.add_parser("validate-candidate-lock", help="validate current signed discovery against the reviewed candidate-only lock")
+    candidate_parser.add_argument("--evidence-dir", required=True, type=Path)
+    candidate_parser.add_argument("--lock-file", required=True, type=Path)
     prepare_parser = subparsers.add_parser("prepare-candidate", help="disabled pending authenticated review and artifact provenance")
     prepare_parser.add_argument("--evidence-dir", required=True, type=Path)
     prepare_parser.add_argument("--frozen-lock", required=True, type=Path)
@@ -1554,6 +1761,9 @@ def main(argv: list[str] | None = None) -> int:
             "image": validated.run["image"],
             "platform": validated.run["platform"],
         }, sort_keys=True))
+        return 0
+    if args.command == "validate-candidate-lock":
+        print(json.dumps(validate_candidate_lock(args.evidence_dir, args.lock_file), sort_keys=True))
         return 0
     prepare_candidate(args.evidence_dir, args.frozen_lock, args.output)
     return 1

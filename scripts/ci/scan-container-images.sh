@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-if [[ "$#" -ne 10 ]]; then
-  echo "Usage: scan-container-images.sh APP_IMAGE VALIDATOR_IMAGE OPERATIONS_IMAGE OPERATIONAL_DATABASE_IMAGE ALPINE_DATABASE_IMAGE DEBIAN_TRIXIE_DATABASE_IMAGE DEBIAN_BOOKWORM_DATABASE_IMAGE REVISION TREE OUTPUT_DIR" >&2
+if [[ "$#" -ne 11 ]]; then
+  echo "Usage: scan-container-images.sh APP_IMAGE VALIDATOR_IMAGE OPERATIONS_IMAGE OPERATIONAL_DATABASE_IMAGE ALPINE_DATABASE_IMAGE DEBIAN_TRIXIE_DATABASE_IMAGE DEBIAN_BOOKWORM_DATABASE_IMAGE TRIXIE_GNUPG_PRUNE_DATABASE_IMAGE REVISION TREE OUTPUT_DIR" >&2
   exit 2
 fi
 
@@ -13,9 +13,10 @@ operational_database_image="$4"
 alpine_database_image="$5"
 debian_trixie_database_image="$6"
 debian_bookworm_database_image="$7"
-revision="$8"
-tree="$9"
-output_dir="${10}"
+trixie_gnupg_prune_database_image="$8"
+revision="$9"
+tree="${10}"
+output_dir="${11}"
 trivy_version="0.76.1"
 trivy_sha256="c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0"
 platform="linux/amd64"
@@ -27,7 +28,7 @@ if [[ ! "$revision" =~ ^[a-f0-9]{40}$ || ! "$tree" =~ ^[a-f0-9]{40}$ ]]; then
   echo "Image scan requires full source revision and tree hashes" >&2
   exit 1
 fi
-for image in "$app_image" "$validator_image" "$operations_image" "$operational_database_image" "$alpine_database_image" "$debian_trixie_database_image" "$debian_bookworm_database_image"; do
+for image in "$app_image" "$validator_image" "$operations_image" "$operational_database_image" "$alpine_database_image" "$debian_trixie_database_image" "$debian_bookworm_database_image" "$trixie_gnupg_prune_database_image"; do
   if [[ -z "$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null)" ]]; then
     echo "Required local image is missing: $image" >&2
     exit 1
@@ -120,7 +121,8 @@ scan_image operational-database "$operational_database_image"
 scan_image alpine-database "$alpine_database_image"
 scan_image debian-trixie-database "$debian_trixie_database_image"
 scan_image debian-bookworm-database "$debian_bookworm_database_image"
-for image_name in operations operational-database alpine-database debian-trixie-database debian-bookworm-database; do
+scan_image debian-trixie-gnupg-prune-database "$trixie_gnupg_prune_database_image"
+for image_name in operations operational-database alpine-database debian-trixie-database debian-bookworm-database debian-trixie-gnupg-prune-database; do
   report="${output_dir}/${image_name}.trivy.json"
   case "$image_name" in
     operations) image="$operations_image" ;;
@@ -128,6 +130,7 @@ for image_name in operations operational-database alpine-database debian-trixie-
     alpine-database) image="$alpine_database_image" ;;
     debian-trixie-database) image="$debian_trixie_database_image" ;;
     debian-bookworm-database) image="$debian_bookworm_database_image" ;;
+    debian-trixie-gnupg-prune-database) image="$trixie_gnupg_prune_database_image" ;;
   esac
   image_id="$(jq -r '.imageId' "${output_dir}/${image_name}.metadata.json")"
   current_image_id="$(docker image inspect --format '{{.Id}}' "$image")"
@@ -157,7 +160,7 @@ for image_name in operations operational-database alpine-database debian-trixie-
       echo "CVE-2026-6653 remains in the Alpine $image_name image" >&2
       exit 1
     fi
-  elif [[ "$image_name" == operational-database || "$image_name" == debian-trixie-database || "$image_name" == debian-bookworm-database ]]; then
+  elif [[ "$image_name" == operational-database || "$image_name" == debian-trixie-database || "$image_name" == debian-bookworm-database || "$image_name" == debian-trixie-gnupg-prune-database ]]; then
     if ! jq -e --arg image_id "$image_id" '.Metadata.ImageID == $image_id and .Metadata.OS.Family == "debian"' "$report" >/dev/null; then
       echo "The Trivy $image_name report does not identify the exact Debian image" >&2
       exit 1

@@ -257,6 +257,9 @@ jobs:
           python3 scripts/ci/validate-trixie-gnupg-evidence.py validate-proposal \
             --evidence-dir "$RUNNER_TEMP/trixie-gnupg-discovery" \
             --diagnostics-dir "$RUNNER_TEMP/trixie-gnupg-signature-diagnostics"
+          python3 scripts/ci/validate-trixie-gnupg-evidence.py validate-candidate-lock \
+            --evidence-dir "$RUNNER_TEMP/trixie-gnupg-discovery" \
+            --lock-file release-evidence/trixie-gnupg-candidate-lock.json
 
       - name: Build pinned images and verify isolated runtime
         run: bash scripts/ci/verify-container-images.sh

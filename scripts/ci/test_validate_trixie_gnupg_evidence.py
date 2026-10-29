@@ -248,6 +248,86 @@ class EvidenceFixture:
             "reviewEvidenceSha256": "f" * 64,
         }
 
+    def candidate_lock(self, lock_root: Path) -> Path:
+        release_dir = lock_root / "release-evidence"
+        release_dir.mkdir(parents=True, exist_ok=True)
+        package_path = release_dir / "trixie-gnupg-purge-lock.tsv"
+        package_path.write_text("".join(
+            f"{item['name']}\t{item['version']}\t{item['architecture']}\n"
+            for item in self.proposal["removals"]
+        ))
+        release_path = release_dir / "trixie-gnupg-release-lock.tsv"
+        releases = []
+        for acquisition in self.proposal["isolatedReleaseAcquisitions"]:
+            release = {
+                "codename": acquisition["codename"], "suite": acquisition["signedSuite"],
+                "baseUri": acquisition["baseUri"], "inReleaseFile": acquisition["inReleaseFile"],
+                "sha256": acquisition["inReleaseSha256"],
+            }
+            releases.append(release)
+        release_path.write_text("".join(
+            f"{item['codename']}\t{item['suite']}\t{item['sha256']}\n" for item in releases
+        ))
+        source_configs = {}
+        for acquisition in self.proposal["isolatedReleaseAcquisitions"]:
+            source_configs[acquisition["sourceConfigFile"]] = acquisition["sourceConfigSha256"]
+        keyrings = {}
+        for line in (self.root / "source-trust.tsv").read_text().splitlines():
+            if line == "APT source trust policy: PASS":
+                continue
+            path, sha256, size, _source, _captured = line.split("\t")
+            keyrings[path] = {"path": path, "sha256": sha256, "sizeBytes": int(size)}
+        trust_path = release_dir / "trixie-gnupg-trust-lock.tsv"
+        trust_rows = [
+            ["source", path.removeprefix("apt-sources/"), sha256]
+            for path, sha256 in source_configs.items()
+        ] + [["keyring", item["path"], item["sha256"]] for item in keyrings.values()] + [
+            ["apt-signature-config", "apt-signature-config.txt", self.proposal["aptSignatureConfigSha256"]],
+            ["apt-trusted-paths", "apt-trusted-paths.tsv", self.proposal["aptTrustedPathsSha256"]],
+        ]
+        trust_path.write_text("".join("\t".join(row) + "\n" for row in trust_rows))
+        verifier_row = (self.root / "apt-verifiers.tsv").read_text().strip().split("\t")
+        lock = {
+            "schemaVersion": 1,
+            "kind": "reviewed-trixie-gnupg-candidate-lock",
+            "approval": {
+                "state": "APPROVED_FOR_ISOLATED_CANDIDATE_BUILD_ONLY",
+                "reviewer": "apt_purge_lock_review", "reviewDate": "2026-10-29",
+                "runtimeClearance": "NOT_EVALUATED", "cveClearance": "NOT_EVALUATED",
+                "productionUse": "NOT_AUTHORIZED",
+            },
+            "discovery": {
+                "runId": self.run["runId"], "runAttempt": self.run["runAttempt"],
+                "revision": self.run["revision"], "tree": self.run["tree"],
+                "proposalSha256": digest((self.root / "gnupg-removal-lock-proposal.json").read_bytes()),
+                "evidenceArtifactId": 123, "evidenceArtifactSha256": "a" * 64,
+                "proposalPath": "trixie-gnupg-discovery/gnupg-removal-lock-proposal.json",
+                "baseImage": self.run["image"], "baseImageId": self.run["imageId"],
+                "platform": self.run["platform"], "reviewedEvidenceFileCount": 84,
+            },
+            "apt": {
+                "verifier": {"path": verifier_row[1], "version": verifier_row[2]},
+                "signatureConfigSha256": self.proposal["aptSignatureConfigSha256"],
+                "trustedPathsSha256": self.proposal["aptTrustedPathsSha256"],
+                "sourceTrustEvidenceSha256": self.proposal["sourceTrustEvidenceSha256"],
+                "sourceConfigs": [
+                    {"path": path, "sha256": sha256} for path, sha256 in source_configs.items()
+                ],
+                "keyrings": list(keyrings.values()),
+            },
+            "releases": releases,
+            "packageLockPath": "release-evidence/trixie-gnupg-purge-lock.tsv",
+            "releaseLockPath": "release-evidence/trixie-gnupg-release-lock.tsv",
+            "trustLockPath": "release-evidence/trixie-gnupg-trust-lock.tsv",
+            "lockFileSha256": {
+                "package": digest(package_path.read_bytes()), "release": digest(release_path.read_bytes()),
+                "trust": digest(trust_path.read_bytes()),
+            },
+        }
+        lock_path = release_dir / "trixie-gnupg-candidate-lock.json"
+        lock_path.write_bytes(json_bytes(lock))
+        return lock_path
+
 
 class EvidenceValidationTests(unittest.TestCase):
     def setUp(self):
@@ -315,6 +395,122 @@ class EvidenceValidationTests(unittest.TestCase):
             self.assertEqual(len(report["attempts"]), 4)
             after = sorted(path.relative_to(fixture.root).as_posix() for path in fixture.root.rglob("*") if path.is_file())
             self.assertEqual(before, after)
+
+    def test_reviewed_candidate_lock_accepts_matching_semantic_discovery(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            lock_path = fixture.candidate_lock(Path(temp) / "repo")
+            result = MODULE.validate_candidate_lock(fixture.root, lock_path)
+            self.assertEqual(result["status"], "VALIDATED_REVIEWED_CANDIDATE_LOCK")
+            self.assertEqual(result["packageCount"], 1)
+            self.assertEqual(result["releaseCount"], 4)
+            self.assertTrue(result["candidateOnly"])
+            self.assertEqual(result["runtimeClearance"], "NOT_EVALUATED")
+            self.assertEqual(result["cveClearance"], "NOT_EVALUATED")
+
+    def test_reviewed_candidate_lock_rejects_tuple_release_source_keyring_sqv_and_tsv_drift(self):
+        mutations = (
+            "package", "release", "source", "keyring", "sqv", "tsv-hash", "tsv-symlink",
+            "signature-config-row", "missing-trusted-paths-row", "artifact-hash",
+        )
+        for mutation in mutations:
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temp:
+                fixture = self.fixture(temp)
+                lock_path = fixture.candidate_lock(Path(temp) / "repo")
+                lock = json.loads(lock_path.read_text())
+                package_path = lock_path.parent / "trixie-gnupg-purge-lock.tsv"
+                release_path = lock_path.parent / "trixie-gnupg-release-lock.tsv"
+                trust_path = lock_path.parent / "trixie-gnupg-trust-lock.tsv"
+                if mutation == "package":
+                    package_path.write_text("gnupg\t2.4.7-22\tamd64\n")
+                    lock["lockFileSha256"]["package"] = digest(package_path.read_bytes())
+                elif mutation == "release":
+                    lock["releases"][0]["sha256"] = "0" * 64
+                    rows = release_path.read_text().splitlines()
+                    fields = rows[0].split("\t")
+                    fields[2] = "0" * 64
+                    rows[0] = "\t".join(fields)
+                    release_path.write_text("\n".join(rows) + "\n")
+                    lock["lockFileSha256"]["release"] = digest(release_path.read_bytes())
+                elif mutation == "source":
+                    lock["apt"]["sourceConfigs"][0]["sha256"] = "0" * 64
+                    rows = trust_path.read_text().splitlines()
+                    fields = rows[0].split("\t")
+                    fields[2] = "0" * 64
+                    rows[0] = "\t".join(fields)
+                    trust_path.write_text("\n".join(rows) + "\n")
+                    lock["lockFileSha256"]["trust"] = digest(trust_path.read_bytes())
+                elif mutation == "keyring":
+                    lock["apt"]["keyrings"][0]["sha256"] = "0" * 64
+                    rows = trust_path.read_text().splitlines()
+                    fields = rows[-2].split("\t")
+                    fields[2] = "0" * 64
+                    rows[-2] = "\t".join(fields)
+                    trust_path.write_text("\n".join(rows) + "\n")
+                    lock["lockFileSha256"]["trust"] = digest(trust_path.read_bytes())
+                elif mutation == "signature-config-row":
+                    rows = trust_path.read_text().splitlines()
+                    fields = rows[-2].split("\t")
+                    fields[2] = "0" * 64
+                    rows[-2] = "\t".join(fields)
+                    trust_path.write_text("\n".join(rows) + "\n")
+                    lock["lockFileSha256"]["trust"] = digest(trust_path.read_bytes())
+                elif mutation == "missing-trusted-paths-row":
+                    rows = trust_path.read_text().splitlines()
+                    trust_path.write_text("\n".join(rows[:-1]) + "\n")
+                    lock["lockFileSha256"]["trust"] = digest(trust_path.read_bytes())
+                elif mutation == "sqv":
+                    (fixture.root / "apt-verifiers.tsv").write_text("sqv\t/usr/sbin/sqv\tsqv 1.3.0\n")
+                    fixture.write()
+                elif mutation == "artifact-hash":
+                    lock["discovery"]["evidenceArtifactSha256"] = "bad-hash"
+                elif mutation == "tsv-hash":
+                    package_path.write_text(package_path.read_text() + "\n")
+                elif mutation == "tsv-symlink":
+                    original = package_path.read_bytes()
+                    outside = Path(temp) / "outside.tsv"
+                    outside.write_bytes(original)
+                    package_path.unlink()
+                    package_path.symlink_to(outside)
+                lock_path.write_bytes(json_bytes(lock))
+                with self.assertRaises(ValueError):
+                    MODULE.validate_candidate_lock(fixture.root, lock_path)
+
+    def test_reviewed_candidate_lock_rejects_symlinked_lock_file(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            lock_path = fixture.candidate_lock(Path(temp) / "repo")
+            copy = Path(temp) / "candidate-lock.json"
+            copy.write_bytes(lock_path.read_bytes())
+            lock_path.unlink()
+            lock_path.symlink_to(copy)
+            with self.assertRaisesRegex(ValueError, "symlink"):
+                MODULE.validate_candidate_lock(fixture.root, lock_path)
+
+    def test_candidate_lock_does_not_pin_dynamic_run_or_proposal_identity(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            lock_path = fixture.candidate_lock(Path(temp) / "repo")
+            fixture.run["runId"] += 1
+            fixture.run["runAttempt"] += 1
+            fixture.run["revision"] = "d" * 40
+            fixture.run["tree"] = "e" * 40
+            for acquisition in fixture.proposal["isolatedReleaseAcquisitions"]:
+                acquisition["runId"] = fixture.run["runId"]
+                acquisition["runAttempt"] = fixture.run["runAttempt"]
+                acquisition["revision"] = fixture.run["revision"]
+                acquisition["tree"] = fixture.run["tree"]
+            fixture.proposal.update({
+                "runId": fixture.run["runId"], "runAttempt": fixture.run["runAttempt"],
+                "revision": fixture.run["revision"], "tree": fixture.run["tree"],
+            })
+            fixture.write()
+            with patch.dict(os.environ, {
+                "GITHUB_RUN_ID": str(fixture.run["runId"]),
+                "GITHUB_RUN_ATTEMPT": str(fixture.run["runAttempt"]),
+            }):
+                result = MODULE.validate_candidate_lock(fixture.root, lock_path)
+            self.assertEqual(result["status"], "VALIDATED_REVIEWED_CANDIDATE_LOCK")
 
     def test_empty_signed_release_index_is_accepted_but_negative_size_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
