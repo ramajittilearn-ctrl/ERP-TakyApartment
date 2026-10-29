@@ -27,6 +27,7 @@ CONSUMER_PATH = ROOT / "scripts/ci/consume-libxml2-provenance.mjs"
 CONSUMER_TEST_PATH = ROOT / "scripts/ci/consume-libxml2-provenance.test.mjs"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 FINGERPRINT_RE = re.compile(r"^[0-9A-F]{40}$")
+APT_HELPER_FALLBACKS = (pathlib.Path("/usr/lib/apt/apt-helper"),)
 BAD_GPG_STATUSES = {
     "BADSIG", "ERRSIG", "EXPSIG", "EXPKEYSIG", "REVKEYSIG", "KEYREVOKED",
     "SIGEXPIRED", "KEYEXPIRED", "NO_PUBKEY", "NODATA", "FAILURE",
@@ -397,9 +398,25 @@ def parse_dpkg_fields(text: str) -> dict[str, str]:
     return records[0]
 
 
-def check_command(name: str) -> None:
-    if shutil.which(name) is None:
-        raise ProvenanceError(f"required command is unavailable: {name}")
+def resolve_command(name: str) -> str:
+    candidates = []
+    path_candidate = shutil.which(name)
+    if path_candidate is not None:
+        candidates.append(pathlib.Path(path_candidate))
+    if name == "apt-helper":
+        candidates.extend(APT_HELPER_FALLBACKS)
+    for candidate in candidates:
+        try:
+            resolved = candidate.resolve(strict=True)
+        except OSError:
+            continue
+        if resolved.is_file() and os.access(resolved, os.X_OK):
+            return str(resolved)
+    raise ProvenanceError(f"required command is unavailable: {name}")
+
+
+def check_command(name: str) -> str:
+    return resolve_command(name)
 
 
 def write_apt_sources(path: pathlib.Path, sources: list[tuple[str, str, pathlib.Path]]) -> None:
@@ -440,7 +457,7 @@ def apt_release_from_state(state: pathlib.Path, label: str) -> pathlib.Path:
 
 
 def decompress_apt_index(source: pathlib.Path, destination: pathlib.Path, log_dir: pathlib.Path) -> None:
-    result = subprocess.run(["apt-helper", "cat-file", str(source)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    result = subprocess.run([resolve_command("apt-helper"), "cat-file", str(source)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
     if result.returncode:
         (log_dir / f"{source.name}.decompress-stderr.txt").write_bytes(result.stderr)
         raise ProvenanceError(f"cannot decompress APT index {source.name}")

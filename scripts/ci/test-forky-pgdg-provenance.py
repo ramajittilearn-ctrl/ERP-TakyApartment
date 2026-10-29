@@ -4,7 +4,9 @@ import hashlib
 import os
 import pathlib
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import importlib.util
@@ -147,6 +149,30 @@ class SignatureTests(unittest.TestCase):
 
 
 class PackageClosureTests(unittest.TestCase):
+    def test_resolves_apt_helper_from_path_as_an_absolute_executable(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executable = pathlib.Path(temp_dir) / "apt-helper"
+            executable.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            executable.chmod(0o755)
+            with mock.patch.object(module.shutil, "which", return_value=str(executable)):
+                self.assertEqual(module.resolve_command("apt-helper"), str(executable.resolve()))
+
+    def test_resolves_apt_helper_from_standard_install_location_when_not_on_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executable = pathlib.Path(temp_dir) / "apt-helper"
+            executable.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            executable.chmod(0o755)
+            with mock.patch.object(module.shutil, "which", return_value=None), mock.patch.object(
+                module, "APT_HELPER_FALLBACKS", (executable,)
+            ):
+                self.assertEqual(module.resolve_command("apt-helper"), str(executable.resolve()))
+
+    def test_fails_closed_when_apt_helper_is_missing_from_path_and_standard_location(self):
+        with mock.patch.object(module.shutil, "which", return_value=None), mock.patch.object(
+            module, "APT_HELPER_FALLBACKS", (pathlib.Path("/missing/apt-helper"),)
+        ), self.assertRaisesRegex(module.ProvenanceError, "required command is unavailable: apt-helper"):
+            module.resolve_command("apt-helper")
+
     def test_parses_https_apt_uri_plan(self):
         text = "'https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-17/root.deb' root.deb 123 SHA256:abc\n"
         self.assertEqual(module.parse_apt_print_uris(text)[0]["filename"], "root.deb")
