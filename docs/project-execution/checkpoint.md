@@ -4,20 +4,21 @@
 
 ### Verified code and CI
 
-- PR #2 remains OPEN/Draft at `2a7f6016c7cd9420cf8323e9191d6aa369231509`, base `release/phase4`; it has no approving review.
+- Remote PR #2 remains OPEN/Draft at `da1d622` (docs-only) on validated code head `2a7f6016c7cd9420cf8323e9191d6aa369231509`, base `release/phase4`; it has no approving review. Exact-head docs-only push/PR runs 40794986851/40794992397 both passed all six jobs. Local integration commit `bd8323e` adds the reviewed optional Forky provenance job; it has not yet been pushed and awaits exact-head hosted CI.
 - Exact-head push run [40793174826](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40793174826) and PR run [40793181281](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40793181281) both passed all six jobs: required quality, source provenance, Agent UAT, Stage 5 runtime, container verification, and isolated libxml2 candidate.
 - Commit `2a7f601` moves rclone builder scratch/cache outside uploaded evidence and strengthens cleanup tests. Focused helper test, shell syntax, and diff checks passed locally. Independent cross-review approved the fix.
 - PR container artifact [12862922014](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40793181281/artifacts/12862922014) was independently audited: ZIP digest matched GitHub; source/image/builder bindings matched; rebuilt stripped rclone SHA-256 matched the extracted executable byte-for-byte; before/after manifests matched; no cache/scratch paths were included. Push artifact [12863725508](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40793174826/artifacts/12863725508) digest also matched GitHub and local ZIP inventory contained no cache/scratch files.
 - Raw govulncheck and Trivy findings are preserved. GO-2026-5932 is only scoped as absent legacy OpenPGP paths in the exact reconstructed binary; this is not image or production clearance.
+- Forky provenance implementation commit `778a793` was independently cross-reviewed, cherry-picked to the PR worktree as `bd8323e`, and passed 21 focused tests, Python compilation, workflow YAML parse, policy JSON parse, and `git diff --check`. The workflow job is explicitly non-gating and always uploads PASS/FAIL evidence. Hosted Linux CI must still prove the actual Debian signer fingerprint and complete authenticated APT package closure.
 
 ### Active collaborative work
 
-- `implement_forky_provenance` owns the isolated branch `codex/forky-pgdg-provenance-20261029`, based on `02c3ffa`; checkout was still active at the last observation. Scope is authenticated Debian/PGDG Forky package provenance only, non-gating, no image selection/build or CVE disposition. `forky_provenance_design` supplied the reviewed design; an explicit authenticated keyring rotation chain must be proven in CI.
+- `implement_forky_provenance` committed the bounded implementation on isolated branch `codex/forky-pgdg-provenance-20261029` (`778a793`); root integrated it locally into `codex/phase4-security-builds-20261028` as `bd8323e`. The independent `forky_provenance_design` cross-review passed after fixes for signer pinning, package-stanza/URI/source binding, strict clear-signed parsing, and APT state isolation. Hosted verification remains pending; this is provenance intake only, with no image selection/build or CVE disposition.
 - `rclone_reconstruction_review` independently audited PR artifact `12862922014` and approved the evidence scope. `architecture_inventory` confirmed go-live gates remain open. `db_cve_triage` found no stable Trixie fixes for several scanned findings and prepared a candidate-only Trixie GnuPG-prune design; implementation is queued to avoid editing the shared workflow concurrently.
 
 ### Remaining release gates and next work
 
-1. Finish Forky provenance implementation, tests, independent cross-review, integrate explicitly, and run exact-head CI. Any artifact must state runtime/CVE clearance was not evaluated.
+1. Push `bd8323e` and run exact-head CI; inspect the non-gating artifact and correct any real signer/closure mismatch once from evidence. Any artifact must state runtime/CVE clearance was not evaluated.
 2. Consider the isolated Trixie GnuPG-prune candidate using a runner-captured exact APT purge allowlist, after Forky workflow ownership ends; preserve operational Trixie, keyrings, PostgreSQL/libpq/libxml2, and run full 3×3 restore/runtime/scans.
 3. Resolve or formally accept raw database Critical/High findings; do not interpret missing Trivy coverage as clearance.
 4. Attest the production target, then prove target-matched encrypted backup/restore, no-seed migration and rollback, immutable image publication/pull, deployment, and monitoring.
