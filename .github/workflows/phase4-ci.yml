@@ -198,6 +198,8 @@ jobs:
           node --check scripts/ci/consume-libxml2-provenance.mjs
           node --test scripts/ci/consume-libxml2-provenance.test.mjs
           bash -n scripts/ci/build-libxml2-candidate.sh
+          bash -n scripts/ci/run-libxml2-candidate-self-tests.sh
+          python3 -m unittest scripts.ci.test_libxml2_candidate_self_tests -v
 
       - name: Materialize and verify same-run source artifact
         env:
