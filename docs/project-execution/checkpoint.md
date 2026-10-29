@@ -1,5 +1,30 @@
 # Phase 4 continuation checkpoint — 2026-10-28
 
+## Latest live continuation — 2026-10-29
+
+### Verified code and CI
+
+- PR #2 remains OPEN/Draft at `2a7f6016c7cd9420cf8323e9191d6aa369231509`, base `release/phase4`; it has no approving review.
+- Exact-head push run [40793174826](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40793174826) and PR run [40793181281](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40793181281) both passed all six jobs: required quality, source provenance, Agent UAT, Stage 5 runtime, container verification, and isolated libxml2 candidate.
+- Commit `2a7f601` moves rclone builder scratch/cache outside uploaded evidence and strengthens cleanup tests. Focused helper test, shell syntax, and diff checks passed locally. Independent cross-review approved the fix.
+- PR container artifact [12862922014](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40793181281/artifacts/12862922014) was independently audited: ZIP digest matched GitHub; source/image/builder bindings matched; rebuilt stripped rclone SHA-256 matched the extracted executable byte-for-byte; before/after manifests matched; no cache/scratch paths were included. Push artifact [12863725508](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40793174826/artifacts/12863725508) digest also matched GitHub and local ZIP inventory contained no cache/scratch files.
+- Raw govulncheck and Trivy findings are preserved. GO-2026-5932 is only scoped as absent legacy OpenPGP paths in the exact reconstructed binary; this is not image or production clearance.
+
+### Active collaborative work
+
+- `implement_forky_provenance` owns the isolated branch `codex/forky-pgdg-provenance-20261029`, based on `02c3ffa`; checkout was still active at the last observation. Scope is authenticated Debian/PGDG Forky package provenance only, non-gating, no image selection/build or CVE disposition. `forky_provenance_design` supplied the reviewed design; an explicit authenticated keyring rotation chain must be proven in CI.
+- `rclone_reconstruction_review` independently audited PR artifact `12862922014` and approved the evidence scope. `architecture_inventory` confirmed go-live gates remain open. `db_cve_triage` found no stable Trixie fixes for several scanned findings and prepared a candidate-only Trixie GnuPG-prune design; implementation is queued to avoid editing the shared workflow concurrently.
+
+### Remaining release gates and next work
+
+1. Finish Forky provenance implementation, tests, independent cross-review, integrate explicitly, and run exact-head CI. Any artifact must state runtime/CVE clearance was not evaluated.
+2. Consider the isolated Trixie GnuPG-prune candidate using a runner-captured exact APT purge allowlist, after Forky workflow ownership ends; preserve operational Trixie, keyrings, PostgreSQL/libpq/libxml2, and run full 3×3 restore/runtime/scans.
+3. Resolve or formally accept raw database Critical/High findings; do not interpret missing Trivy coverage as clearance.
+4. Attest the production target, then prove target-matched encrypted backup/restore, no-seed migration and rollback, immutable image publication/pull, deployment, and monitoring.
+5. Obtain required independent GitHub review. Agent UAT is synthetic; Owner acceptance and Go-Live acceptance are unrecorded.
+
+Production remains **NO-GO**. Do not merge, publish images, deploy, or touch existing UAT/production resources until release gates are met.
+
 ## Latest independently verified code snapshot — PR head `3fee87d`
 
 PR #2 was OPEN/Draft at `3fee87ded0f27e95f0f4347fa909cb7219926f6e`, base `release/phase4`, with `REVIEW_REQUIRED`; exact-head PR run [40739126369](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40739126369) passed all six jobs. Independent artifact review found no run/head/source/image binding mismatch. The run verifies the code at this head; documentation status and subsequent PR head must still be reconciled from live GitHub state when resuming.
