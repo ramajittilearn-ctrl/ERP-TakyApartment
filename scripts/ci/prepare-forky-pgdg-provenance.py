@@ -242,6 +242,14 @@ def policy_max_age_seconds(
     return value
 
 
+def debian_forky_policy_context(policy: dict[str, Any]) -> tuple[dict[str, Any], set[str]]:
+    debian_policy = policy["debianForky"]
+    primary_fingerprints = debian_policy["primaryFingerprints"]
+    if not isinstance(primary_fingerprints, list) or not primary_fingerprints:
+        raise ProvenanceError("policy does not define Debian Forky primary fingerprints")
+    return debian_policy, {str(fingerprint).upper() for fingerprint in primary_fingerprints}
+
+
 def verified_signers(
     status_text: str,
     trusted_primary_fingerprints: Iterable[str] | None = None,
@@ -854,6 +862,7 @@ def apt_environment() -> dict[str, str]:
 
 def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
     policy = read_json(POLICY_PATH)
+    debian_policy, current_debian_primaries = debian_forky_policy_context(policy)
     quality_result = os.environ.get("UPSTREAM_QUALITY_RESULT", "")
     source_result = os.environ.get("UPSTREAM_PROVENANCE_RESULT", "")
     if quality_result != "success" or source_result != "success":
@@ -990,7 +999,6 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
         recorded_trixie_signers = set(trixie.get("releaseSignerFingerprints", []))
         if not required_trixie_signers or not required_trixie_signers.issubset(recorded_trixie_signers):
             raise ProvenanceError("source artifact does not bind its required Trixie archive signer set")
-        current_debian_primaries = set(debian_policy["primaryFingerprints"])
         trusted_trixie_primaries = current_debian_primaries | {TRIXIE_STABLE_RELEASE_PRIMARY}
         required_trixie_pairs = {
             TRIXIE_CURRENT_ARCHIVE_SIGNER_PAIR,
@@ -1088,7 +1096,6 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
             raise ProvenanceError("downloaded PGDG key does not have exactly the pinned PostgreSQL primary fingerprint")
         pgdg_primary_fingerprints = [pgdg_primary]
 
-        debian_policy = policy["debianForky"]
         core_sources = work / "forky-pgdg.sources.list"
         write_apt_sources(core_sources, [
             (debian_policy["uri"], debian_policy["suite"], debian_keyring),

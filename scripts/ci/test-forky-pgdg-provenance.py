@@ -52,6 +52,17 @@ class Deb822Tests(unittest.TestCase):
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_debian_policy_context_binds_repository_and_signers_for_transition(self):
+        policy = module.read_json(module.POLICY_PATH)
+        debian_policy, trusted_primaries = module.debian_forky_policy_context(policy)
+        self.assertEqual(debian_policy["uri"], "https://deb.debian.org/debian")
+        self.assertEqual(debian_policy["suite"], "forky")
+        self.assertEqual(trusted_primaries, {"04B54C3CDCA79751B16BC6B5225629DF75B188BD"})
+
+    def test_debian_policy_context_rejects_missing_signer_policy(self):
+        with self.assertRaisesRegex(module.ProvenanceError, "does not define Debian Forky primary fingerprints"):
+            module.debian_forky_policy_context({"debianForky": {"primaryFingerprints": []}})
+
     def test_validates_fresh_debian_forky_release_and_index_hashes(self):
         result = module.validate_release(
             GOOD_RELEASE,
