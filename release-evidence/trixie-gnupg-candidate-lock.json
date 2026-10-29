@@ -10,13 +10,13 @@
     "productionUse": "NOT_AUTHORIZED"
   },
   "discovery": {
-    "runId": 40879919144,
+    "runId": 40882581268,
     "runAttempt": 1,
-    "revision": "4a84f04de8c2943f52b767f3c327ef850ada38b3",
-    "tree": "bb1b32e978f9e60c4f24265842c0fcc953df648c",
-    "proposalSha256": "2c8b969fed7dd8a5b94c9b2833c87ffa15c0106894d623e9c650f4c573e0e912",
-    "evidenceArtifactId": 12898689947,
-    "evidenceArtifactSha256": "8e04fbb2301c9f547bfd751adddef7588703fb3f86c44c36a84c77d4fff14ee1",
+    "revision": "87c546574ddf4b9a32e683a7a20b08159e482f97",
+    "tree": "ec05a671ba62dc873de9ece2e9d6056075581d27",
+    "proposalSha256": "fc203a5067f4108a5804162a6d5361184101c3918e9a8f487b8fdc8d24b37e02",
+    "evidenceArtifactId": 12901500989,
+    "evidenceArtifactSha256": "57efa283cd5aa49c39524b0ac40180d9259d7fa27a62ad79a677abcfef11eafc",
     "proposalPath": "trixie-gnupg-discovery/gnupg-removal-lock-proposal.json",
     "baseImage": "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe",
     "baseImageId": "sha256:82903352d6faf8f8a318bc4353d1cb1db67d4a5ff968d2799b2718e2cb00afa2",
@@ -81,7 +81,7 @@
       "suite": "trixie-pgdg",
       "baseUri": "http://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/",
       "inReleaseFile": "isolated-releases/trixie-pgdg/InRelease",
-      "sha256": "533952775033e0b93fc27721e047c57ebfdaeff01b1a1be8636cd159e9daf68a"
+      "sha256": "4e4d99286dac9cbddc5ff01abb59e217347f5cccebfebeab15734bb36a583e81"
     }
   ],
   "packageLockPath": "release-evidence/trixie-gnupg-purge-lock.tsv",
@@ -89,7 +89,7 @@
   "trustLockPath": "release-evidence/trixie-gnupg-trust-lock.tsv",
   "lockFileSha256": {
     "package": "358f19903c7e83abb32750ac7e6b882ebafa4b8abfe2b2658754e483f1e320df",
-    "release": "fcd2a07120f478f8b66a31df4f1418a5fcba39fecd7eb67c4bad2bf85e1606d8",
+    "release": "aa59da0ee3b2101512845c66fdefa000b91188915a4cda665e474c242dd78d19",
     "trust": "b1aea0a58116e60daa4aca97b99d65ffba7f85d77ad6c83596b12cbe5da5c519"
   }
 }
