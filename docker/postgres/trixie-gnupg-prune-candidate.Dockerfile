@@ -104,7 +104,7 @@ RUN set -eux; \
     LC_ALL=C sort -u "$lock/purge.tsv" > "$evidence/unique-purge-lock.tsv"; \
     cmp "$lock/purge.tsv" "$evidence/unique-purge-lock.tsv"; \
     awk -F '\t' '$1 == "gnupg" && NF == 3 { found=1 } END { exit !found }' "$lock/purge.tsv"; \
-    comm -23 "$lock/purge.tsv" "$evidence/dpkg-before.tsv" > "$evidence/missing-locked-packages-before.tsv"; \
+    LC_ALL=C comm -23 "$lock/purge.tsv" "$evidence/dpkg-before.tsv" > "$evidence/missing-locked-packages-before.tsv"; \
     test ! -s "$evidence/missing-locked-packages-before.tsv"; \
     awk -F '\t' 'NF != 3 || !($1 ~ /^(trixie|trixie-updates|trixie-security|trixie-pgdg)$/) || $2 == "" || length($3) != 64 || $3 ~ /[^a-f0-9]/ { bad=1 } { print $1 "\t" $2 } END { if (NR != 4 || bad) exit 1 }' "$lock/releases.tsv" | LC_ALL=C sort > "$evidence/expected-release-hashes.tsv"; \
     printf '%s\n' 'trixie\tstable' 'trixie-pgdg\ttrixie-pgdg' 'trixie-security\tstable-security' 'trixie-updates\tstable-updates' | LC_ALL=C sort > "$evidence/required-releases.tsv"; \
@@ -123,8 +123,8 @@ RUN set -eux; \
     awk '$1 == "Remv" || $1 == "Purg" { name=$2; sub(/:.*/, "", name); if (name == "apt" || name ~ /^apt-/ || name == "sqv" || name == "gpgv" || name ~ /^debian-archive-keyring/ || name ~ /^debian-keyring/ || name ~ /^libapt-pkg/ || name ~ /^libpq/ || name == "libxml2" || name ~ /^postgresql/ || name == "gosu" || name == "ca-certificates") { print "Protected package in purge plan: " name > "/dev/stderr"; bad=1 } } END { exit bad }' "$evidence/purge-simulation.txt"; \
     apt-get purge --auto-remove --yes gnupg > "$evidence/purge-execution.log" 2>&1; \
     dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\t${db:Status-Status}\n' | awk -F '\t' '$4 == "installed" { print $1 "\t" $2 "\t" $3 }' | LC_ALL=C sort > "$evidence/dpkg-after.tsv"; \
-    comm -23 "$evidence/dpkg-before.tsv" "$evidence/dpkg-after.tsv" > "$evidence/removed-packages.tsv"; \
-    comm -13 "$evidence/dpkg-before.tsv" "$evidence/dpkg-after.tsv" > "$evidence/added-packages.tsv"; \
+    LC_ALL=C comm -23 "$evidence/dpkg-before.tsv" "$evidence/dpkg-after.tsv" > "$evidence/removed-packages.tsv"; \
+    LC_ALL=C comm -13 "$evidence/dpkg-before.tsv" "$evidence/dpkg-after.tsv" > "$evidence/added-packages.tsv"; \
     test ! -s "$evidence/added-packages.tsv"; \
     cmp "$lock/purge.tsv" "$evidence/removed-packages.tsv"; \
     for required_package in apt sqv debian-archive-keyring libpq5 libxml2 postgresql-17; do \
