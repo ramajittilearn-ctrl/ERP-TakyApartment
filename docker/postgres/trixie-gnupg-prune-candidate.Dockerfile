@@ -107,7 +107,7 @@ RUN set -eux; \
     LC_ALL=C comm -23 "$lock/purge.tsv" "$evidence/dpkg-before.tsv" > "$evidence/missing-locked-packages-before.tsv"; \
     test ! -s "$evidence/missing-locked-packages-before.tsv"; \
     awk -F '\t' 'NF != 3 || !($1 ~ /^(trixie|trixie-updates|trixie-security|trixie-pgdg)$/) || $2 == "" || length($3) != 64 || $3 ~ /[^a-f0-9]/ { bad=1 } { print $1 "\t" $2 } END { if (NR != 4 || bad) exit 1 }' "$lock/releases.tsv" | LC_ALL=C sort > "$evidence/expected-release-hashes.tsv"; \
-    printf '%s\n' 'trixie\tstable' 'trixie-pgdg\ttrixie-pgdg' 'trixie-security\tstable-security' 'trixie-updates\tstable-updates' | LC_ALL=C sort > "$evidence/required-releases.tsv"; \
+    printf 'trixie\tstable\ntrixie-pgdg\ttrixie-pgdg\ntrixie-security\tstable-security\ntrixie-updates\tstable-updates\n' | LC_ALL=C sort > "$evidence/required-releases.tsv"; \
     cut -f1,2 "$lock/releases.tsv" | LC_ALL=C sort > "$evidence/observed-locked-releases.tsv"; \
     cmp "$evidence/required-releases.tsv" "$evidence/observed-locked-releases.tsv"; \
     verify_trust_set before-purge; \
