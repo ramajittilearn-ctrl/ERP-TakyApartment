@@ -74,7 +74,7 @@
       "suite": "stable-security",
       "baseUri": "http://deb.debian.org/debian-security/dists/trixie-security/",
       "inReleaseFile": "isolated-releases/trixie-security/InRelease",
-      "sha256": "83418b3b53f7e635f6f7b43f15bb1fc89e3b5fd62df5d8db73c7160923d0ffcd"
+      "sha256": "942258f79bb4c7d35264eba73a5cfecf07451a9eb17e5cfa8be6d5f085ed2ad7"
     },
     {
       "codename": "trixie-pgdg",
