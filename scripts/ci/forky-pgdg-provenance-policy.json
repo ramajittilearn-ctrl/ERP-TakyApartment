@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "evidenceScope": "authenticated Debian Forky and PGDG package provenance intake only",
+  "architecture": "amd64",
+  "rootPackage": {
+    "name": "postgresql-17",
+    "version": "17.11-1.pgdg14+2",
+    "requiredOrigin": "apt.postgresql.org"
+  },
+  "debianKeyringTransition": {
+    "bootstrapSuite": "trixie",
+    "bootstrapCodename": "trixie",
+    "bootstrapOrigin": "Debian",
+    "maxMetadataAgeSeconds": 604800,
+    "maxFutureClockSkewSeconds": 300
+  },
+  "debianForky": {
+    "uri": "https://deb.debian.org/debian",
+    "suite": "forky",
+    "codename": "forky",
+    "origin": "Debian",
+    "primaryFingerprints": [
+      "04B54C3CDCA79751B16BC6B5225629DF75B188BD"
+    ],
+    "fingerprintAuthority": "https://ftp-master.debian.org/keys.html",
+    "component": "main"
+  },
+  "pgdg": {
+    "uri": "https://apt.postgresql.org/pub/repos/apt",
+    "suite": "forky-pgdg",
+    "codename": "forky-pgdg",
+    "origin": "apt.postgresql.org",
+    "label": "PostgreSQL for Debian/Ubuntu repository",
+    "keyUrl": "https://www.postgresql.org/media/keys/ACCC4CF8.asc",
+    "primaryFingerprint": "B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8",
+    "maxMetadataAgeSeconds": 604800,
+    "maxFutureClockSkewSeconds": 300
+  },
+  "clearance": {
+    "runtimeVerification": false,
+    "imageSelection": false,
+    "scannerClearance": false,
+    "cveDisposition": false,
+    "productionClearance": false
+  }
+}

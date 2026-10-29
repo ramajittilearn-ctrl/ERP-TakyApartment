@@ -92,6 +92,83 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  forky-pgdg-provenance:
+    name: forky-pgdg-provenance
+    runs-on: ubuntu-24.04
+    needs: [required-quality, libxml2-source-provenance]
+    if: always() && (github.event_name == 'pull_request' || github.event_name == 'push')
+    continue-on-error: true
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+    env:
+      PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+      QUALITY_RESULT: ${{ needs.required-quality.result }}
+      PROVENANCE_RESULT: ${{ needs.libxml2-source-provenance.result }}
+      SOURCE_ARTIFACT_ID: ${{ needs.libxml2-source-provenance.outputs.artifact_id }}
+      SOURCE_ARTIFACT_DIGEST: ${{ needs.libxml2-source-provenance.outputs.artifact_digest }}
+    steps:
+      - name: Initialize optional provenance evidence
+        if: always()
+        env:
+          OUTPUT_DIR: ${{ runner.temp }}/phase4-forky-pgdg-provenance
+        run: |
+          mkdir -p "$OUTPUT_DIR"
+          python3 - <<'PY'
+          import datetime
+          import json
+          import os
+          from pathlib import Path
+
+          quality = os.environ.get("QUALITY_RESULT", "")
+          provenance = os.environ.get("PROVENANCE_RESULT", "")
+          ready = quality == "success" and provenance == "success"
+          record = {
+              "schemaVersion": 1,
+              "status": "INCONCLUSIVE" if ready else "FAIL",
+              "reason": "provenance collection has not completed" if ready else f"prerequisite jobs did not succeed (quality={quality or 'missing'}, source-provenance={provenance or 'missing'})",
+              "generatedAtUtc": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
+              "prerequisites": {"requiredQuality": quality, "libxml2SourceProvenance": provenance},
+              "runtimeVerification": False,
+              "imageSelection": False,
+              "scannerClearance": False,
+              "cveDisposition": False,
+              "productionClearance": False,
+          }
+          Path(os.environ["OUTPUT_DIR"], "status.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Check out source
+        if: env.QUALITY_RESULT == 'success' && env.PROVENANCE_RESULT == 'success'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        if: env.QUALITY_RESULT == 'success' && env.PROVENANCE_RESULT == 'success'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: Collect authenticated Forky and PGDG package provenance
+        if: env.QUALITY_RESULT == 'success' && env.PROVENANCE_RESULT == 'success'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          UPSTREAM_QUALITY_RESULT: ${{ needs.required-quality.result }}
+          UPSTREAM_PROVENANCE_RESULT: ${{ needs.libxml2-source-provenance.result }}
+          OUTPUT_DIR: ${{ runner.temp }}/phase4-forky-pgdg-provenance
+        run: python3 scripts/ci/prepare-forky-pgdg-provenance.py "$OUTPUT_DIR"
+
+      - name: Upload optional Forky and PGDG provenance evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forky-pgdg-provenance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/phase4-forky-pgdg-provenance/
+          if-no-files-found: warn
+          retention-days: 30
+
   libxml2-candidate:
     name: libxml2-candidate
     runs-on: ubuntu-24.04
