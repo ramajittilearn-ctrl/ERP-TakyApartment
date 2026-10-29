@@ -61,6 +61,8 @@ for keyring_dir in /usr/share/keyrings /etc/apt/trusted.gpg.d; do
     | LC_ALL=C sort -z | xargs -0 -r sha256sum >> "$evidence/keyring-sha256.txt"
 done
 if [[ -f /etc/apt/trusted.gpg ]]; then sha256sum /etc/apt/trusted.gpg >> "$evidence/keyring-sha256.txt"; fi
+awk -F '\t' 'NF == 5 { printf "%s  %s\n", $2, $1 }' "$evidence/source-trust.tsv" >> "$evidence/keyring-sha256.txt"
+LC_ALL=C sort -u -o "$evidence/keyring-sha256.txt" "$evidence/keyring-sha256.txt"
 dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\t${db:Status-Status}\n' | LC_ALL=C sort > "$evidence/dpkg-before.tsv"
 apt-mark showmanual | LC_ALL=C sort > "$evidence/apt-manual-before.txt"
 apt-mark showauto | LC_ALL=C sort > "$evidence/apt-auto-before.txt"
@@ -86,7 +88,7 @@ if [[ ! -s "$evidence/apt-verifiers.tsv" ]]; then
 fi
 apt-config dump | grep -Ei '^(APT::Key::|Dir[[:space:]]|Dir::Etc([[:space:]]|::Trusted))' > "$evidence/apt-signature-config.txt" || true
 apt-config shell TRUSTED Dir::Etc::Trusted/f TRUSTED_PARTS Dir::Etc::TrustedParts/d > "$evidence/apt-trusted-paths.shell"
-apt-get --version | head -n 1 > "$evidence/apt-version.txt"
+apt-get --version > "$evidence/apt-version.txt"
 apt-get indextargets --format '$(IDENTIFIER)|$(CODENAME)|$(SUITE)|$(ARCHITECTURE)|$(FILENAME)|$(URI)|$(BASE_URI)|$(METAKEY)|$(RELEASEFILE)|$(COMPONENT)' > "$evidence/apt-index-targets.raw"
 if [[ ! -s "$evidence/apt-index-targets.raw" ]]; then
   echo 'APT reported no authenticated index targets' >&2
@@ -110,13 +112,21 @@ output=$2
 shopt -s nocasematch
 : > "$output"
 hash_keyring() {
-  local keyring=$1 source_file=$2 size digest
+  local keyring=$1 source_file=$2 size digest captured
   [[ "$keyring" == /* ]] || { echo "APT Signed-By path is not absolute: $keyring" >&2; exit 31; }
   [[ -f "$keyring" ]] || { echo "APT Signed-By keyring is missing: $keyring" >&2; exit 32; }
-  if awk -F '\t' -v key="$keyring" -v source="$source_file" '$1 == key && $4 == source { found=1 } END { exit !found }' "$output"; then return 0; fi
   if command -v sha256sum >/dev/null 2>&1; then digest=$(sha256sum "$keyring" | awk '{print $1}'); else digest=$(shasum -a 256 "$keyring" | awk '{print $1}'); fi
   size=$(wc -c < "$keyring" | tr -d '[:space:]')
-  printf '%s\t%s\t%s\t%s\n' "$keyring" "$digest" "$size" "$source_file" >> "$output"
+  captured="apt-keyrings/$digest"
+  mkdir -p "${output%/*}/apt-keyrings"
+  if [[ -e "${output%/*}/$captured" ]]; then
+    [[ "$(sha256sum "${output%/*}/$captured" | awk '{print $1}')" == "$digest" ]] || { echo "Captured keyring digest collision: $captured" >&2; exit 36; }
+  else
+    cp "$keyring" "${output%/*}/$captured"
+  fi
+  if ! awk -F '\t' -v key="$keyring" -v source="$source_file" '$1 == key && $4 == source { found=1 } END { exit !found }' "$output"; then
+    printf '%s\t%s\t%s\t%s\t%s\n' "$keyring" "$digest" "$size" "$source_file" "$captured" >> "$output"
+  fi
 }
 check_bypass() {
   local source_text=$1 lower
@@ -495,7 +505,15 @@ def parse_removals(simulation: str, inventory: dict[tuple[str, str], str]) -> li
     return sorted(removals, key=lambda item: (item["name"], item["architecture"], item["version"]))
 
 
+def required_github_run_identity() -> tuple[int, int]:
+    values = (os.environ.get("GITHUB_RUN_ID", ""), os.environ.get("GITHUB_RUN_ATTEMPT", ""))
+    if any(not value.isascii() or not value.isdecimal() or int(value) < 1 for value in values):
+        raise RuntimeError("GITHUB_RUN_ID and GITHUB_RUN_ATTEMPT must be positive decimal integers")
+    return int(values[0]), int(values[1])
+
+
 def main() -> int:
+    run_id, run_attempt = required_github_run_identity()
     EVIDENCE_BASE.parent.mkdir(parents=True, exist_ok=True)
     if EVIDENCE_BASE.exists():
         raise RuntimeError(f"refusing to overwrite existing discovery evidence: {EVIDENCE_BASE}")
@@ -507,6 +525,8 @@ def main() -> int:
         "state": "DISCOVERY_RUNNING",
         "revision": revision,
         "tree": tree,
+        "runId": run_id,
+        "runAttempt": run_attempt,
         "image": IMAGE,
         "platform": PLATFORM,
         "runtimeClearance": "NOT_EVALUATED",
@@ -559,6 +579,8 @@ def main() -> int:
             "kind": "discovery-lock-proposal",
             "revision": revision,
             "tree": tree,
+            "runId": run_id,
+            "runAttempt": run_attempt,
             "image": IMAGE,
             "imageId": manifest["imageId"],
             "platform": PLATFORM,

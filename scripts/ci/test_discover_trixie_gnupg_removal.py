@@ -298,6 +298,9 @@ class DiscoveryParsingTests(unittest.TestCase):
             with temporary:
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn(f"{keyring}\t{hashlib.sha256(keyring.read_bytes()).hexdigest()}\t{keyring.stat().st_size}", result_path.read_text())
+                binding = next(line.split("\t") for line in result_path.read_text().splitlines() if line.startswith(str(keyring) + "\t"))
+                captured = result_path.parent / binding[4]
+                self.assertEqual(captured.read_bytes(), keyring.read_bytes())
 
             deb822 = (
                 "Types: deb\nURIs: https://apt.postgresql.org/pub/repos/apt\n"
@@ -364,6 +367,7 @@ class DiscoveryParsingTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             bindings = [line.split("\t") for line in output.read_text().splitlines() if line.startswith(str(keyring) + "\t")]
             self.assertEqual({row[3] for row in bindings}, {"sources.list.d/debian.list", "sources.list.d/pgdg.list"})
+            self.assertEqual({row[4] for row in bindings}, {f"apt-keyrings/{hashlib.sha256(keyring.read_bytes()).hexdigest()}"})
 
     def test_unlisted_upstream_packages_path_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -252,7 +252,10 @@ jobs:
           PYTHONDONTWRITEBYTECODE: "1"
         run: |
           python3 -m unittest scripts.ci.test_discover_trixie_gnupg_removal -v
+          python3 -m unittest scripts.ci.test_validate_trixie_gnupg_evidence -v
           python3 scripts/ci/discover-trixie-gnupg-removal.py
+          python3 scripts/ci/validate-trixie-gnupg-evidence.py validate-proposal \
+            --evidence-dir "$RUNNER_TEMP/phase4-container-scan/trixie-gnupg-discovery"
 
       - name: Build pinned images and verify isolated runtime
         run: bash scripts/ci/verify-container-images.sh
