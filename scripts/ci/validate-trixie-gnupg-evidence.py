@@ -280,6 +280,10 @@ def is_positive_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value > 0
 
 
+def is_nonnegative_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
 def expected_github_run_identity() -> tuple[int, int]:
     run_id = os.environ.get("GITHUB_RUN_ID", "")
     attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "")
@@ -1337,7 +1341,7 @@ def _validate_proposal(evidence_dir: Path, diagnostics: ValidationDiagnostics) -
             fail("signed Release index row has an unapproved suite identity")
         if not isinstance(record["path"], str) or not record["path"] or record["path"].startswith("/") or "\\" in record["path"] or ".." in PurePosixPath(record["path"]).parts:
             fail("signed Release index row has an invalid path")
-        if not isinstance(record["sha256"], str) or not HEX_SHA256.fullmatch(record["sha256"]) or not is_positive_int(record["size"]):
+        if not isinstance(record["sha256"], str) or not HEX_SHA256.fullmatch(record["sha256"]) or not is_nonnegative_int(record["size"]):
             fail("signed Release index row has malformed hash or size")
         key = (release_file, record["path"])
         if key in signed_index_keys:

@@ -127,9 +127,13 @@ class EvidenceFixture:
             signed_path = "main/binary-amd64/Packages.xz"
             signed_hash = hashlib.sha256(f"signed index {codename}".encode()).hexdigest()
             signed_size = 123 + len(codename)
+            signed_rows = [(signed_path, signed_hash, signed_size)]
+            if codename == "trixie-pgdg":
+                signed_rows.append(("14/source/Sources", hashlib.sha256(b"").hexdigest(), 0))
+            signed_sha256_lines = "".join(f" {row_hash} {row_size} {row_path}\n" for row_path, row_hash, row_size in signed_rows)
             release_bytes = (
                 "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n"
-                f"Codename: {codename}\nSuite: {suite}\nSHA256:\n {signed_hash} {signed_size} {signed_path}\n"
+                f"Codename: {codename}\nSuite: {suite}\nSHA256:\n{signed_sha256_lines}"
                 "-----BEGIN PGP SIGNATURE-----\nZmFrZS1zaWduYXR1cmU=\n=abcd\n-----END PGP SIGNATURE-----\n"
             ).encode()
             local_bytes = f"synthetic local Packages fixture {codename}\n".encode()
@@ -191,10 +195,11 @@ class EvidenceFixture:
                 "inReleaseSizeBytes": len(release_bytes), "combinedInReleaseFile": combined_file,
                 "combinedInReleaseSha256": combined_hash, "combinedInReleaseSizeBytes": len(release_bytes),
             })
-            self.proposal["signedReleaseIndexHashes"].append({
-                "releaseFile": isolated_name, "releaseSha256": isolated_file_hash, "codename": codename,
-                "suite": suite, "path": signed_path, "sha256": signed_hash, "size": signed_size,
-            })
+            for row_path, row_hash, row_size in signed_rows:
+                self.proposal["signedReleaseIndexHashes"].append({
+                    "releaseFile": isolated_name, "releaseSha256": isolated_file_hash, "codename": codename,
+                    "suite": suite, "path": row_path, "sha256": row_hash, "size": row_size,
+                })
             self.proposal["localAptIndexFiles"].append({
                 "file": f"apt-lists/{local_name}", "sha256": local_hash, "sizeBytes": len(local_bytes),
             })
@@ -310,6 +315,24 @@ class EvidenceValidationTests(unittest.TestCase):
             self.assertEqual(len(report["attempts"]), 4)
             after = sorted(path.relative_to(fixture.root).as_posix() for path in fixture.root.rglob("*") if path.is_file())
             self.assertEqual(before, after)
+
+    def test_empty_signed_release_index_is_accepted_but_negative_size_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            empty_row = next(row for row in fixture.proposal["signedReleaseIndexHashes"] if row["path"] == "14/source/Sources")
+            self.assertEqual(empty_row["sha256"], hashlib.sha256(b"").hexdigest())
+            self.assertEqual(empty_row["size"], 0)
+            MODULE.validate_proposal(fixture.root)
+
+            empty_row["size"] = True
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "signed Release index row has malformed hash or size"):
+                MODULE.validate_proposal(fixture.root)
+
+            empty_row["size"] = -1
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "signed Release index row has malformed hash or size"):
+                MODULE.validate_proposal(fixture.root)
 
     def test_wrong_suite_scoped_base_origin_or_suite_is_rejected_before_signature_check(self):
         replacements = (
