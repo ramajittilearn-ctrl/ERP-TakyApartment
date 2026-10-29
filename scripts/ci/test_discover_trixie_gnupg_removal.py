@@ -14,6 +14,11 @@ SPEC.loader.exec_module(MODULE)
 
 
 class DiscoveryParsingTests(unittest.TestCase):
+    def test_indextargets_format_uses_only_supported_nine_fields(self):
+        line = next(item for item in MODULE.CONTAINER_SCRIPT.splitlines() if "apt-get indextargets --format" in item)
+        self.assertEqual(line.count("$("), 9)
+        self.assertNotIn("RELEASEFILE", line)
+
     def test_discovery_evidence_setup_does_not_create_scanner_output_root(self):
         with tempfile.TemporaryDirectory() as temp:
             runner_temp = Path(temp)
@@ -88,20 +93,30 @@ class DiscoveryParsingTests(unittest.TestCase):
                 ("trixie-pgdg", "trixie-pgdg"),
             )
             rows = []
-            for codename, suite in releases:
+            acquisitions = []
+            resolved = {}
+            for index, (codename, suite) in enumerate(releases):
                 filename = f"/var/lib/apt/lists/{codename}_{suite}_Packages"
-                release_file = f"/var/lib/apt/lists/{codename}_InRelease"
+                release_name = f"arbitrary-captured-{index}-InRelease"
                 (metadata / Path(filename).name).write_text("authenticated by the test fixture\n")
-                (metadata / Path(release_file).name).write_text("release fixture\n")
+                (metadata / release_name).write_text(
+                    "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n"
+                    f"Codename: {codename}\nSuite: {suite}\n"
+                    "-----BEGIN PGP SIGNATURE-----\nfixture\n=abcd\n-----END PGP SIGNATURE-----\n"
+                )
                 host, origin_path = MODULE.EXPECTED_ORIGINS[codename]
                 origin = f"https://{host}{origin_path}/dists/{codename}"
                 index_uri = f"{origin}/main/binary-amd64/Packages.xz"
-                rows.append(f"Packages|{codename}|{suite}|amd64|{filename}|{index_uri}|{origin}/|main/binary-amd64/Packages|{release_file}|main")
+                rows.append(f"Packages|{codename}|{suite}|amd64|{filename}|{index_uri}|{origin}/|main/binary-amd64/Packages|main")
+                isolated_release = f"isolated-releases/{codename}/InRelease"
+                acquisitions.append({"codename": codename, "suite": suite, "baseUri": origin + "/", "inReleaseFile": isolated_release})
+                resolved[codename] = isolated_release
             targets.write_text("\n".join(rows) + "\n")
-            MODULE.validate_index_targets(targets, metadata)
-            targets.write_text("Packages|trixie|stable-updates|amd64|/var/lib/apt/lists/trixie_Packages|https://deb.debian.org/debian/dists/trixie/main/binary-amd64/Packages.xz|https://deb.debian.org/debian/dists/trixie/|main/binary-amd64/Packages|/var/lib/apt/lists/trixie_InRelease|main\n")
+            parsed = MODULE.validate_index_targets(targets, metadata, acquisitions)
+            self.assertEqual({item["codename"]: item["releaseFile"] for item in parsed}, resolved)
+            targets.write_text("Packages|trixie|stable-updates|amd64|/var/lib/apt/lists/trixie_Packages|https://deb.debian.org/debian/dists/trixie/main/binary-amd64/Packages.xz|https://deb.debian.org/debian/dists/trixie/|main/binary-amd64/Packages|main\n")
             with self.assertRaisesRegex(ValueError, "outside"):
-                MODULE.validate_index_targets(targets, metadata)
+                MODULE.validate_index_targets(targets, metadata, acquisitions)
 
     def test_target_origin_must_match_release_codenames_approved_origin(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -110,15 +125,13 @@ class DiscoveryParsingTests(unittest.TestCase):
             metadata = root / "metadata"
             metadata.mkdir()
             (metadata / "pgdg_Packages").write_text("index fixture\n")
-            (metadata / "pgdg_InRelease").write_text("release fixture\n")
             targets.write_text(
                 "Packages|trixie-pgdg|trixie-pgdg|amd64|/var/lib/apt/lists/pgdg_Packages|"
                 "https://mirror.example/pub/repos/apt/dists/trixie-pgdg/main/binary-amd64/Packages.xz|"
-                "https://mirror.example/pub/repos/apt/|main/binary-amd64/Packages|"
-                "/var/lib/apt/lists/pgdg_InRelease|main\n"
+                "https://mirror.example/pub/repos/apt/dists/trixie-pgdg/|main/binary-amd64/Packages|main\n"
             )
             with self.assertRaisesRegex(ValueError, "suite-scoped origin"):
-                MODULE.validate_index_targets(targets, metadata)
+                MODULE.validate_index_targets(targets, metadata, [])
 
     def test_effective_apt_trusted_paths_record_unset_and_normalize_parts(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -179,6 +192,24 @@ class DiscoveryParsingTests(unittest.TestCase):
                 "trixie", "https://deb.debian.org/debian-security/dists/trixie/"
             )
 
+    def test_target_release_mapping_requires_exact_source_root_acquisition(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            targets = root / "targets.tsv"
+            metadata = root / "metadata"
+            metadata.mkdir()
+            (metadata / "trixie_Packages").write_text("index fixture")
+            targets.write_text(
+                "Packages|trixie|stable|amd64|/var/lib/apt/lists/trixie_Packages|"
+                "https://deb.debian.org/debian/dists/trixie/main/binary-amd64/Packages.xz|"
+                "https://deb.debian.org/debian/dists/trixie/|main/binary-amd64/Packages|main\n"
+            )
+            with self.assertRaisesRegex(ValueError, "exactly one isolated source-root acquisition"):
+                MODULE.validate_index_targets(targets, metadata, [])
+            acquisitions = [{"codename": "trixie", "suite": "stable", "baseUri": "https://mirror.example/debian/dists/trixie/", "inReleaseFile": "isolated-releases/trixie/InRelease"}]
+            with self.assertRaisesRegex(ValueError, "exactly one isolated source-root acquisition"):
+                MODULE.validate_index_targets(targets, metadata, acquisitions)
+
     def test_missing_expected_trixie_suite_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -187,18 +218,26 @@ class DiscoveryParsingTests(unittest.TestCase):
             metadata.mkdir()
             releases = (("trixie", "stable"), ("trixie-updates", "stable-updates"), ("trixie-security", "stable-security"))
             rows = []
-            for codename, suite in releases:
+            for index, (codename, suite) in enumerate(releases):
                 filename = f"/var/lib/apt/lists/{codename}_{suite}_Packages"
-                release_file = f"/var/lib/apt/lists/{codename}_InRelease"
+                release_file = f"missing-pgdg-fixture-{index}-InRelease"
                 (metadata / Path(filename).name).write_text("authenticated by the test fixture\n")
-                (metadata / Path(release_file).name).write_text("release fixture\n")
+                (metadata / release_file).write_text(
+                    "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n"
+                    f"Codename: {codename}\nSuite: {suite}\n"
+                    "-----BEGIN PGP SIGNATURE-----\nfixture\n=abcd\n-----END PGP SIGNATURE-----\n"
+                )
                 host, origin_path = MODULE.EXPECTED_ORIGINS[codename]
                 origin = f"https://{host}{origin_path}/dists/{codename}"
                 index_uri = f"{origin}/main/binary-amd64/Packages.xz"
-                rows.append(f"Packages|{codename}|{suite}|amd64|{filename}|{index_uri}|{origin}/|main/binary-amd64/Packages|{release_file}|main")
+                rows.append(f"Packages|{codename}|{suite}|amd64|{filename}|{index_uri}|{origin}/|main/binary-amd64/Packages|main")
             targets.write_text("\n".join(rows) + "\n")
+            acquisitions = [
+                {"codename": row.split("|")[1], "suite": row.split("|")[2], "baseUri": row.split("|")[6], "inReleaseFile": f"isolated-releases/{row.split('|')[1]}/InRelease"}
+                for row in rows
+            ]
             with self.assertRaisesRegex(ValueError, "did not provide all required"):
-                MODULE.validate_index_targets(targets, metadata)
+                MODULE.validate_index_targets(targets, metadata, acquisitions)
 
     def test_target_uri_credentials_and_non_default_ports_are_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -207,14 +246,13 @@ class DiscoveryParsingTests(unittest.TestCase):
             metadata = root / "metadata"
             metadata.mkdir()
             (metadata / "debian_Packages").write_text("authenticated by the test fixture\n")
-            (metadata / "debian_InRelease").write_text("release fixture\n")
             for uri in (
                 "https://user:secret@deb.debian.org/debian",
                 "https://deb.debian.org:8443/debian",
             ):
-                targets.write_text(f"Packages|trixie|stable|amd64|/var/lib/apt/lists/debian_Packages|{uri}|https://deb.debian.org/debian/|main/binary-amd64/Packages|/var/lib/apt/lists/debian_InRelease|main\n")
+                targets.write_text(f"Packages|trixie|stable|amd64|/var/lib/apt/lists/debian_Packages|{uri}|https://deb.debian.org/debian/dists/trixie/|main/binary-amd64/Packages|main\n")
                 with self.assertRaisesRegex(ValueError, "URI"):
-                    MODULE.validate_index_targets(targets, metadata)
+                    MODULE.validate_index_targets(targets, metadata, [])
 
     def test_signed_packages_hash_is_separate_from_local_transformed_index_hash(self):
         upstream = b"authenticated upstream uncompressed index"

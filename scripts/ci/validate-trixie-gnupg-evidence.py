@@ -15,7 +15,7 @@ import sys
 import tempfile
 import subprocess
 from datetime import datetime
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 
 IMAGE = "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
@@ -334,61 +334,240 @@ def validate_source_trust(evidence_dir: Path) -> dict[str, list[tuple[str, Path]
     return source_keys
 
 
-def source_keyrings_for_release(evidence_dir: Path, source_keys: dict[str, list[tuple[str, Path]]], codename: str) -> list[Path]:
-    _, host, repo_path = EXPECTED_ORIGINS[codename]
-    selected: list[Path] = []
-    source_root = evidence_dir / "apt-sources"
-    for relative, keys in source_keys.items():
-        content = (source_root / relative).read_text(errors="replace")
-        if relative.endswith(".list"):
-            for line in content.splitlines():
-                stripped = line.strip()
-                if not stripped or stripped.startswith("#") or not re.match(r"(?i)^deb(?:-src)?\s", stripped):
+def parse_source_stanzas(text: str, suffix: str) -> list[dict[str, list[str]]]:
+    entries: list[dict[str, list[str]]] = []
+    if suffix == ".sources":
+        for paragraph in re.split(r"\n\s*\n", text):
+            fields: dict[str, list[str]] = {}
+            current = None
+            for line in paragraph.splitlines():
+                if not line or line.lstrip().startswith("#"):
                     continue
-                option = re.search(r"\[([^]]*)\]", stripped)
-                signed = re.search(r"(?i)signed-by\s*=\s*([^]]+)", option.group(1)) if option else None
-                if not signed:
+                if line[0].isspace() and current:
+                    fields[current][-1] += " " + line.strip()
                     continue
-                fields = re.sub(r"\[[^]]*\]", "", stripped, count=1).split()
-                if len(fields) < 3:
-                    continue
-                uri, suite = fields[1], fields[2]
-                parsed = urlsplit(uri)
-                if source_uri_matches(parsed, host, repo_path) and suite == codename:
-                    paths = [token for token in re.split(r"[\s,]+", signed.group(1).strip()) if token]
-                    if not paths or any(not token.startswith("/") for token in paths):
-                        fail(f"APT source Signed-By syntax is unsupported: {relative}")
-                    key_map = dict(keys)
-                    if any(key not in key_map for key in paths):
-                        fail(f"APT source keyring binding is missing for {relative}")
-                    selected.extend(key_map[key] for key in paths)
-                    break
-        elif relative.endswith(".sources"):
-            for paragraph in re.split(r"\n\s*\n", content):
-                if re.search(r"(?im)^Enabled:\s*no\s*$", paragraph):
-                    continue
-                suites = re.search(r"(?im)^Suites:\s*(.*?)\s*$", paragraph)
-                uris = re.search(r"(?im)^URIs:\s*(.*?)\s*$", paragraph)
-                signed = re.search(r"(?ims)^Signed-By:\s*(.*?)(?=^\S|\Z)", paragraph)
-                if not suites or codename not in suites.group(1).split() or not uris:
-                    continue
-                for uri in uris.group(1).split():
-                    parsed = urlsplit(uri)
-                    if source_uri_matches(parsed, host, repo_path):
-                        if not signed:
-                            fail(f"APT source has no explicit Signed-By for {codename}: {relative}")
-                        paths = [token for token in re.split(r"[\s,]+", signed.group(1).strip()) if token]
-                        if not paths or any(not token.startswith("/") for token in paths):
-                            fail(f"APT source Signed-By syntax is unsupported: {relative}")
-                        key_map = dict(keys)
-                        if any(key not in key_map for key in paths):
-                            fail(f"APT source keyring binding is missing for {relative}")
-                        selected.extend(key_map[key] for key in paths)
-                        break
-    unique = list(dict.fromkeys(selected))
-    if not unique:
-        fail(f"no captured Signed-By keyring is bound to the {codename} source")
-    return unique
+                if ":" not in line:
+                    fail("Deb822 source stanza has malformed field framing")
+                key, value = line.split(":", 1)
+                current = key.lower()
+                fields.setdefault(current, []).append(value.strip())
+            if fields.get("enabled", ["yes"])[-1].lower() == "no" or "deb" not in " ".join(fields.get("types", [])).split():
+                continue
+            uris = " ".join(fields.get("uris", [])).split()
+            suites = " ".join(fields.get("suites", [])).split()
+            key_paths = " ".join(fields.get("signed-by", [])).split()
+            if not uris or not suites or not key_paths or any(not item.startswith("/") for item in key_paths):
+                fail("APT Deb822 source stanza has unsupported URI, Suite, or Signed-By configuration")
+            entries.append({"uris": uris, "suites": suites, "keyPaths": key_paths})
+    elif suffix == ".list":
+        for line in text.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            match = re.fullmatch(r"deb\s+(?:\[([^]]+)\]\s+)?(\S+)\s+(\S+)\s+(.+)", stripped)
+            if not match:
+                if re.match(r"(?i)^deb(?:-src)?\s", stripped):
+                    fail("APT one-line source stanza has unsupported syntax")
+                continue
+            options, uri, suite, _components = match.groups()
+            signed = re.search(r"(?i)(?:^|[\s,])signed-by\s*=\s*([^\s,]+)", options or "")
+            key_paths = signed.group(1).split(",") if signed else []
+            if not key_paths or any(not item.startswith("/") for item in key_paths):
+                fail("APT one-line source stanza has unsupported Signed-By configuration")
+            entries.append({"uris": [uri], "suites": [suite], "keyPaths": key_paths})
+    else:
+        fail(f"unsupported APT source format: {suffix}")
+    return entries
+
+
+def validate_isolated_release_acquisitions(
+    evidence_dir: Path,
+    records: object,
+    release_by_file: dict[str, dict[str, object]],
+    release_contents: dict[str, tuple[str, str, dict[str, tuple[str, int]]]],
+    source_keys: dict[str, list[tuple[str, Path]]],
+    evidence_hashes: dict[str, str],
+    run: dict[str, object],
+) -> dict[tuple[str, str, str], dict[str, object]]:
+    if not isinstance(records, list) or len(records) != len(EXPECTED_ORIGINS):
+        fail("proposal must contain exactly one isolated Release acquisition for each approved suite")
+    apt_version = (evidence_dir / "apt-version.txt").read_text().splitlines()[0].strip()
+    by_target: dict[tuple[str, str, str], dict[str, object]] = {}
+    observed_codenames: set[str] = set()
+    required_record_keys = {
+        "codename", "configuredDist", "suite", "signedCodename", "signedSuite", "sourceUri", "baseUri",
+        "aptVersion", "sourceConfigFile", "sourceConfigSha256", "isolatedSourceFile", "isolatedSourceSha256",
+        "aptTargetEvidenceFile", "aptTargetEvidenceSha256", "sourceKeyrings", "exactInReleasePath",
+        "inReleaseFile", "inReleaseSha256", "inReleaseSizeBytes", "combinedInReleaseFile",
+        "combinedInReleaseSha256", "combinedInReleaseSizeBytes",
+        "runId", "runAttempt", "revision", "tree", "image", "imageId", "platform",
+    }
+    for index, value in enumerate(records):
+        record = object_with_keys(value, required_record_keys, f"isolatedReleaseAcquisitions[{index}]")
+        codename = record["codename"]
+        if codename not in EXPECTED_ORIGINS or codename in observed_codenames:
+            fail("isolated Release acquisitions contain an unknown or duplicate codename")
+        observed_codenames.add(str(codename))
+        expected_suite = EXPECTED_ORIGINS[codename][0]
+        if record["configuredDist"] != codename or record["suite"] != expected_suite:
+            fail("isolated acquisition configured Dist/suite differs from policy")
+        if record["aptVersion"] != apt_version:
+            fail("isolated acquisition APT version differs from captured apt-version.txt")
+        for field in ("runId", "runAttempt", "revision", "tree", "image", "imageId", "platform"):
+            if record[field] != run[field]:
+                fail(f"isolated acquisition {field} differs from the verified discovery run")
+
+        source_config_file = safe_relative_path(record["sourceConfigFile"], "isolated source config file")
+        if not source_config_file.startswith("apt-sources/"):
+            fail("isolated source config file is outside captured APT sources")
+        source_config = evidence_dir / source_config_file
+        if not source_config.is_file() or source_config.is_symlink() or sha256_file(source_config) != record["sourceConfigSha256"]:
+            fail("isolated source config hash does not match captured source stanza")
+        source_relative = source_config_file.removeprefix("apt-sources/")
+        configured_entries = parse_source_stanzas(source_config.read_text(errors="replace"), source_config.suffix)
+
+        isolated_source_file = safe_relative_path(record["isolatedSourceFile"], "isolated source file")
+        if not isolated_source_file.startswith(f"isolated-releases/{codename}/source."):
+            fail("isolated source file is outside its codename acquisition directory")
+        isolated_source_path = evidence_dir / isolated_source_file
+        if not isolated_source_path.is_file() or isolated_source_path.is_symlink() or sha256_file(isolated_source_path) != record["isolatedSourceSha256"]:
+            fail("isolated source file hash does not match captured source stanza")
+        isolated_entries = parse_source_stanzas(isolated_source_path.read_text(errors="replace"), isolated_source_path.suffix)
+        if len(isolated_entries) != 1:
+            fail("isolated APT run must use exactly one source stanza")
+        isolated_entry = isolated_entries[0]
+        if isolated_entry["suites"] != [codename]:
+            fail("isolated APT source did not narrow to exactly the configured Dist")
+        matching_sources = [
+            entry for entry in configured_entries
+            if codename in entry["suites"] and entry["uris"] == isolated_entry["uris"]
+            and entry["keyPaths"] == isolated_entry["keyPaths"]
+        ]
+        if len(matching_sources) != 1:
+            fail("isolated source does not match exactly one captured original source stanza")
+        if len(isolated_entry["uris"]) != 1:
+            fail("isolated APT source must have exactly one URI")
+        source_uri = isolated_entry["uris"][0].rstrip("/")
+        if record["sourceUri"] != source_uri:
+            fail("isolated source URI differs from proposal acquisition")
+        target_origin = EXPECTED_ORIGINS[codename]
+        source_parsed = urlsplit(source_uri)
+        if source_parsed.scheme not in {"http", "https"} or source_parsed.hostname != target_origin[1] or source_parsed.path.rstrip("/") != target_origin[2]:
+            fail("isolated source URI is outside the approved repository root")
+
+        base_uri = record["baseUri"]
+        if not isinstance(base_uri, str):
+            fail("isolated acquisition BASE_URI is malformed")
+        parsed_base = urlsplit(base_uri)
+        if parsed_base.scheme != source_parsed.scheme or parsed_base.hostname != source_parsed.hostname or parsed_base.path.rstrip("/") != expected_suite_base_path(str(codename)):
+            fail("isolated APT BASE_URI does not match the source root and configured Dist")
+        expected_base_root = base_uri.split(f"/dists/{codename}/", 1)[0].rstrip("/")
+        if source_uri != expected_base_root:
+            fail("isolated APT source URI does not derive the captured suite-scoped BASE_URI")
+
+        key_records = record["sourceKeyrings"]
+        if not isinstance(key_records, list) or not key_records:
+            fail("isolated acquisition has no bound Signed-By keyring records")
+        if [item.get("path") for item in key_records if isinstance(item, dict)] != isolated_entry["keyPaths"]:
+            fail("isolated acquisition keyrings differ from its source stanza")
+        bound_original = dict(source_keys.get(source_relative, []))
+        selected_keyrings: list[Path] = []
+        for key_index, key_value in enumerate(key_records):
+            key_record = object_with_keys(key_value, {"path", "sha256", "capturedFile"}, f"isolated sourceKeyrings[{key_index}]")
+            key_path = key_record["path"]
+            if key_path not in bound_original:
+                fail("isolated keyring is not bound to the original source stanza")
+            captured_relative = safe_relative_path(key_record["capturedFile"], "isolated captured keyring file")
+            if captured_relative != f"apt-keyrings/{key_record['sha256']}":
+                fail("isolated captured keyring path does not bind its hash")
+            captured = evidence_dir / captured_relative
+            if not captured.is_file() or captured.is_symlink() or sha256_file(captured) != key_record["sha256"]:
+                fail("isolated source keyring hash differs from captured Signed-By bytes")
+            if bound_original[key_path] != captured:
+                fail("isolated source keyring bytes differ from source-trust binding")
+            selected_keyrings.append(captured)
+
+        target_file = safe_relative_path(record["aptTargetEvidenceFile"], "isolated APT target evidence file")
+        if not target_file.startswith(f"isolated-releases/{codename}/") or evidence_hashes.get(target_file) != record["aptTargetEvidenceSha256"]:
+            fail("isolated APT target evidence hash is unbound")
+        target_path = evidence_dir / target_file
+        if sha256_file(target_path) != record["aptTargetEvidenceSha256"]:
+            fail("isolated APT target evidence bytes differ from proposal")
+        target_rows = [line.split("|") for line in target_path.read_text().splitlines() if line]
+        if not target_rows or any(len(row) != 9 for row in target_rows):
+            fail("isolated APT target evidence has malformed framing")
+        package_targets = 0
+        for row in target_rows:
+            if row[1] != codename or row[2] != expected_suite or row[6] != base_uri:
+                fail("isolated APT target suite or BASE_URI differs from acquisition")
+            target_uri = urlsplit(row[5])
+            decoded_target_path = unquote(target_uri.path, errors="strict")
+            if not (
+                target_uri.scheme == source_parsed.scheme
+                and target_uri.netloc == source_parsed.netloc
+                and target_uri.hostname == target_origin[1]
+                and not target_uri.username and not target_uri.password
+                and not target_uri.query and not target_uri.fragment
+                and target_uri.port in ({None, 80} if source_parsed.scheme == "http" else {None, 443})
+                and decoded_target_path.startswith(parsed_base.path.rstrip("/") + "/")
+                and ".." not in PurePosixPath(decoded_target_path).parts
+            ):
+                fail("isolated APT target URI does not match its approved source root")
+            if row[0] == "Packages":
+                package_targets += 1
+        if not package_targets:
+            fail("isolated APT acquisition contains no Packages target")
+
+        inrelease_file = safe_relative_path(record["inReleaseFile"], "isolated InRelease file")
+        inrelease_record = release_by_file.get(inrelease_file)
+        if inrelease_record is None or record["inReleaseSha256"] != inrelease_record["sha256"] or record["inReleaseSizeBytes"] != inrelease_record["sizeBytes"]:
+            fail("isolated InRelease file/hash/size differs from authenticated evidence")
+        if release_contents[inrelease_file][:2] != (record["signedCodename"], record["signedSuite"]):
+            fail("isolated Release signed identity differs from acquisition record")
+        if (record["signedCodename"], record["signedSuite"]) != (codename, expected_suite):
+            fail("isolated Release signed identity differs from configured Dist and source suite")
+
+        exact_path = record["exactInReleasePath"]
+        expected_lists_prefix = f"/evidence/isolated-releases/{codename}/lists/"
+        if not isinstance(exact_path, str) or not exact_path.startswith(expected_lists_prefix) or not exact_path.endswith("InRelease"):
+            fail("isolated exact InRelease path is outside the dedicated APT lists directory")
+        exact_relative = exact_path.removeprefix("/evidence/")
+        exact_relative = safe_relative_path(exact_relative, "isolated exact InRelease path")
+        exact_evidence = evidence_dir / exact_relative
+        copied_evidence = evidence_dir / inrelease_file
+        if not exact_evidence.is_file() or exact_evidence.is_symlink() or exact_evidence.read_bytes() != copied_evidence.read_bytes():
+            fail("isolated InRelease copy differs from the exact APT lists path")
+        verify_inrelease_signature(copied_evidence, selected_keyrings)
+
+        combined_file = safe_relative_path(record["combinedInReleaseFile"], "combined InRelease file")
+        if not combined_file.startswith("apt-lists/") or combined_file not in release_by_file:
+            fail("combined InRelease association does not reference captured combined-update metadata")
+        combined_record = release_by_file[combined_file]
+        if record["combinedInReleaseSha256"] != combined_record["sha256"] or record["combinedInReleaseSizeBytes"] != combined_record["sizeBytes"]:
+            fail("combined InRelease hash/size differs from its captured evidence record")
+        identity_matches = [
+            filename for filename, identity in release_contents.items()
+            if filename.startswith("apt-lists/") and identity[:2] == (codename, expected_suite)
+        ]
+        if len(identity_matches) != 1 or identity_matches[0] != combined_file:
+            fail("combined APT InRelease identity association is missing or ambiguous")
+        if (evidence_dir / combined_file).read_bytes() != copied_evidence.read_bytes():
+            fail("combined and isolated APT InRelease snapshots differ")
+        target_key = (str(codename), str(expected_suite), base_uri)
+        if target_key in by_target:
+            fail("multiple isolated acquisitions bind the same target source root")
+        by_target[target_key] = record
+
+    if observed_codenames != set(EXPECTED_ORIGINS):
+        fail("isolated Release acquisitions do not cover all approved suites")
+    acquisition_release_files = {
+        filename
+        for record in records
+        for filename in (record["inReleaseFile"], record["combinedInReleaseFile"])
+    }
+    if acquisition_release_files != set(release_by_file):
+        fail("isolated acquisitions do not cover exactly the authenticated InRelease evidence")
+    return by_target
 
 
 def source_uri_matches(parsed: object, host: str, repo_path: str) -> bool:
@@ -608,6 +787,7 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
     proposal_keys = {
         "schemaVersion", "kind", "revision", "tree", "runId", "runAttempt", "image", "imageId", "platform",
         "authenticatedInReleaseFiles", "signedReleaseIndexHashes", "packageIndexTargetBindings", "localAptIndexFiles",
+        "isolatedReleaseAcquisitions",
         "aptSignatureConfigSha256", "aptTrustedPathsSha256", "sourceTrustEvidenceSha256", "purgeSimulationSha256",
         "removals", "runtimeClearance", "cveClearance", "approvalState",
     }
@@ -648,27 +828,38 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
         fail("proposal is missing authenticated Release or local Packages evidence")
     if not isinstance(signed_rows, list) or not signed_rows or not isinstance(bindings, list) or not bindings:
         fail("proposal is missing signed index rows or APT target bindings")
-    release_by_name: dict[str, dict[str, object]] = {}
+    release_by_file: dict[str, dict[str, object]] = {}
     for index, item in enumerate(releases):
         record = validate_file_record(item, f"authenticatedInReleaseFiles[{index}]", evidence_dir, hashes)
         filename = record["file"]
-        if not isinstance(filename, str) or not filename.startswith("apt-lists/") or not filename.endswith("InRelease"):
+        if not isinstance(filename, str) or not (
+            re.fullmatch(r"isolated-releases/[a-z0-9-]+/InRelease", filename)
+            or re.fullmatch(r"apt-lists/[^/]+InRelease", filename)
+        ):
             fail("authenticated Release evidence has an unexpected file path")
-        basename = PurePosixPath(filename).name
-        if basename in release_by_name:
+        if filename in release_by_file:
             fail("proposal contains duplicate authenticated InRelease files")
-        release_by_name[basename] = record
+        release_by_file[filename] = record
+    captured_inrelease_files = {
+        path.relative_to(evidence_dir).as_posix()
+        for path in (
+            *(evidence_dir / "isolated-releases").glob("*/InRelease"),
+            *(evidence_dir / "apt-lists").glob("*InRelease"),
+        )
+        if path.is_file()
+    }
+    if {record["file"] for record in release_by_file.values()} != captured_inrelease_files:
+        fail("proposal does not cover every combined and isolated InRelease acquisition")
     release_contents: dict[str, tuple[str, str, dict[str, tuple[str, int]]]] = {}
-    for basename, record in release_by_name.items():
+    for inrelease_file, record in release_by_file.items():
         raw = (evidence_dir / record["file"]).read_bytes()
         codename, suite, index_rows = parse_inrelease(raw)
         if codename not in EXPECTED_ORIGINS or suite != EXPECTED_ORIGINS[codename][0]:
-            fail(f"authenticated InRelease has an unapproved identity: {basename}")
-        verify_inrelease_signature(
-            evidence_dir / record["file"],
-            source_keyrings_for_release(evidence_dir, source_keys, codename),
-        )
-        release_contents[basename] = (codename, suite, index_rows)
+            fail(f"isolated authenticated InRelease has an unapproved identity: {inrelease_file}")
+        release_contents[inrelease_file] = (codename, suite, index_rows)
+    isolated_acquisitions = validate_isolated_release_acquisitions(
+        evidence_dir, proposal["isolatedReleaseAcquisitions"], release_by_file, release_contents, source_keys, hashes, run
+    )
 
     local_by_name: dict[str, dict[str, object]] = {}
     for index, item in enumerate(local_indices):
@@ -686,9 +877,9 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
     for index, item in enumerate(signed_rows):
         record = object_with_keys(item, {"releaseFile", "releaseSha256", "codename", "suite", "path", "sha256", "size"}, f"signedReleaseIndexHashes[{index}]")
         release_file = record["releaseFile"]
-        if not isinstance(release_file, str) or release_file not in release_by_name:
+        if not isinstance(release_file, str) or release_file not in release_by_file:
             fail("signed Release index row references an unknown InRelease")
-        release_record = release_by_name[release_file]
+        release_record = release_by_file[release_file]
         if record["releaseSha256"] != release_record["sha256"]:
             fail("signed Release index row has a mismatched InRelease hash")
         codename = record["codename"]
@@ -708,19 +899,20 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
     parsed_targets: set[tuple[str, ...]] = set()
     release_identities: set[tuple[str, str, str]] = set()
     observed_release_identities: set[tuple[str, str]] = set()
+    target_release_map: dict[tuple[str, str, str], str] = {}
     for raw_target in raw_target_rows:
         fields = tuple(raw_target.split("|"))
-        if len(fields) != 10:
+        if len(fields) != 9:
             fail("captured APT index-target evidence has invalid framing")
         if fields in parsed_targets:
             fail("captured APT index-target evidence contains duplicate rows")
         parsed_targets.add(fields)
         if fields[1] not in EXPECTED_ORIGINS or fields[2] != EXPECTED_ORIGINS[fields[1]][0]:
             fail("captured APT index-target evidence has an unapproved Release identity")
-        _, codename, _, _, filename, uri, base_uri, _, release_path, _ = fields
-        if not filename.startswith("/var/lib/apt/lists/") or not release_path.startswith("/var/lib/apt/lists/"):
+        _, codename, suite, _, filename, uri, base_uri, _, _ = fields
+        if not filename.startswith("/var/lib/apt/lists/"):
             fail("captured APT target contains an unexpected local metadata path")
-        if any(part == ".." for part in PurePosixPath(filename).parts + PurePosixPath(release_path).parts):
+        if any(part == ".." for part in PurePosixPath(filename).parts):
             fail("captured APT target contains a traversal path")
         target_origin = EXPECTED_ORIGINS[codename]
         parsed_uri = urlsplit(uri)
@@ -737,7 +929,15 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
             fail("captured APT target uses a non-default port")
         if not parsed_uri.path.startswith(expected_suite_base_path(codename) + "/"):
             fail("captured APT target URI is outside its Release path")
-        release_identities.add((PurePosixPath(fields[8]).name, fields[1], fields[2]))
+        target_key = (codename, suite, base_uri)
+        acquisition = isolated_acquisitions.get(target_key)
+        if acquisition is None:
+            fail(f"APT target does not map to an isolated source-root acquisition: {codename}/{suite}")
+        candidate_file = str(acquisition["inReleaseFile"])
+        previous = target_release_map.setdefault(target_key, candidate_file)
+        if previous != candidate_file:
+            fail(f"APT targets map one suite-scoped source root to multiple InRelease files: {codename}/{suite}")
+        release_identities.add((candidate_file, codename, suite))
         observed_release_identities.add((fields[1], fields[2]))
     if not parsed_targets:
         fail("captured APT index-target evidence is empty")
@@ -750,16 +950,23 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
     signed_rows_by_release: dict[str, dict[str, tuple[str, int]]] = {}
     for item in signed_rows:
         signed_rows_by_release.setdefault(item["releaseFile"], {})[item["path"]] = (item["sha256"], item["size"])
-    if set(signed_rows_by_release) != set(release_contents):
-        fail("signed Release index rows do not cover every authenticated InRelease")
+    isolated_release_files = {
+        str(record["inReleaseFile"]) for record in proposal["isolatedReleaseAcquisitions"]
+    }
+    if set(signed_rows_by_release) != isolated_release_files:
+        fail("signed Release index rows do not cover exactly the isolated authenticated InRelease files")
     for release_file, (codename, suite, actual_rows) in release_contents.items():
-        if signed_rows_by_release[release_file] != actual_rows:
-            fail(f"proposal signed index rows differ from InRelease SHA256 section: {release_file}")
-        if not any(
-            target[0] == "Packages" and target[1] == codename and target[2] == suite
-            and PurePosixPath(target[8]).name == release_file for target in parsed_targets
-        ):
-            fail(f"authenticated InRelease is not bound to a captured Packages target: {release_file}")
+        if release_file in isolated_release_files:
+            if signed_rows_by_release[release_file] != actual_rows:
+                fail(f"proposal signed index rows differ from isolated InRelease SHA256 section: {release_file}")
+        else:
+            acquisition = next(
+                record for record in proposal["isolatedReleaseAcquisitions"]
+                if record["combinedInReleaseFile"] == release_file
+            )
+            isolated_identity = release_contents[acquisition["inReleaseFile"]]
+            if (codename, suite, actual_rows) != isolated_identity:
+                fail(f"combined InRelease differs from source-isolated signed metadata: {release_file}")
 
     binding_keys = {
         "identifier", "codename", "suite", "component", "architecture", "filename", "uri", "baseUri", "metaKey",
@@ -772,7 +979,7 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
         if codename not in EXPECTED_ORIGINS or record["suite"] != EXPECTED_ORIGINS[codename][0]:
             fail("package target binding has an unapproved suite identity")
         release_file = record["releaseFile"]
-        release_record = release_by_name.get(release_file) if isinstance(release_file, str) else None
+        release_record = release_by_file.get(release_file) if isinstance(release_file, str) else None
         if release_record is None or record["releaseSha256"] != release_record["sha256"]:
             fail("package target binding does not match authenticated InRelease evidence")
         origin = EXPECTED_ORIGINS[codename]
@@ -780,6 +987,9 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
         uri = record["uri"]
         if not isinstance(base_uri, str) or not isinstance(uri, str):
             fail("package target binding baseUri is malformed")
+        derived_release = target_release_map.get((str(codename), str(record["suite"]), base_uri))
+        if derived_release is None or release_file != derived_release:
+            fail("package target binding Release file differs from the independently derived target association")
         parsed_origin = urlsplit(base_uri)
         parsed_uri = urlsplit(uri)
         if parsed_origin.scheme not in {"http", "https"} or parsed_origin.hostname != origin[1] or parsed_origin.path.rstrip("/") != expected_suite_base_path(codename):
@@ -828,8 +1038,7 @@ def validate_proposal(evidence_dir: Path) -> ValidatedProposal:
             fail("package target URI is not one of its authenticated signed variants")
         target_tuple = (
             record["identifier"], record["codename"], record["suite"], record["architecture"],
-            record["filename"], record["uri"], record["baseUri"], record["metaKey"],
-            f"/var/lib/apt/lists/{release_file}", record["component"],
+            record["filename"], record["uri"], record["baseUri"], record["metaKey"], record["component"],
         )
         if target_tuple not in parsed_targets:
             fail("package target binding does not match captured APT index-target fields")

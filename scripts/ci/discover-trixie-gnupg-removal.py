@@ -89,7 +89,106 @@ fi
 apt-config dump | grep -Ei '^(APT::Key::|Dir[[:space:]]|Dir::Etc([[:space:]]|::Trusted))' > "$evidence/apt-signature-config.txt" || true
 apt-config shell TRUSTED Dir::Etc::Trusted/f TRUSTED_PARTS Dir::Etc::TrustedParts/d > "$evidence/apt-trusted-paths.shell"
 apt-get --version > "$evidence/apt-version.txt"
-apt-get indextargets --format '$(IDENTIFIER)|$(CODENAME)|$(SUITE)|$(ARCHITECTURE)|$(FILENAME)|$(URI)|$(BASE_URI)|$(METAKEY)|$(RELEASEFILE)|$(COMPONENT)' > "$evidence/apt-index-targets.raw"
+mkdir -p "$evidence/isolated-releases"
+select_suite_source() {
+  local wanted=$1 destination=$2 source_file relative fragment found=0
+  : > "$destination"
+  for source_file in "$evidence/apt-sources/sources.list" "$evidence"/apt-sources/sources.list.d/*.list "$evidence"/apt-sources/sources.list.d/*.sources; do
+    [[ -f "$source_file" ]] || continue
+    relative=${source_file#"$evidence/apt-sources/"}
+    fragment="$destination.fragment"
+    : > "$fragment"
+    if [[ "$source_file" == *.sources ]]; then
+      awk -v wanted="$wanted" '
+        BEGIN { RS=""; ORS="\n\n" }
+        {
+          n=split($0, lines, "\n"); types=""; suites=""; active=1
+          for (i=1; i<=n; i++) {
+            if (tolower(lines[i]) ~ /^[[:space:]]*enabled:[[:space:]]*no[[:space:]]*$/) active=0
+            if (tolower(lines[i]) ~ /^types:[[:space:]]*/) types=tolower(lines[i])
+            if (tolower(lines[i]) ~ /^suites:[[:space:]]*/) suites=tolower(lines[i])
+          }
+          found=0; m=split(suites, values, /[[:space:]]+/)
+          for (i=1; i<=m; i++) if (values[i] == tolower(wanted)) found=1
+          if (active && types ~ /(^|[[:space:]])deb([[:space:]]|$)/ && found) {
+            hits++
+            if (hits > 1) exit 3
+            for (i=1; i<=n; i++) {
+              if (tolower(lines[i]) ~ /^types:[[:space:]]*/) print "Types: deb"
+              else if (tolower(lines[i]) ~ /^suites:[[:space:]]*/) print "Suites: " wanted
+              else print lines[i]
+            }
+            print ""
+          }
+        }
+        END { if (hits > 1) exit 3 }
+      ' "$source_file" > "$fragment"
+    else
+      awk -v wanted="$wanted" '
+        {
+          raw=$0; line=$0; sub(/^[[:space:]]+/, "", line)
+          if (line == "" || line ~ /^#/ || tolower(line) !~ /^deb[[:space:]]/) next
+          n=split(line, fields, /[[:space:]]+/); suite_index=3
+          if (fields[2] ~ /^\[/) {
+            if (fields[2] !~ /\]$/) exit 4
+            suite_index=4
+          }
+          if (fields[suite_index] == wanted) { hits++; if (hits > 1) exit 3; print raw }
+        }
+        END { if (hits > 1) exit 3 }
+      ' "$source_file" > "$fragment"
+    fi
+    if [[ -s "$fragment" ]]; then
+      found=$((found + 1))
+      if (( found > 1 )); then echo "multiple configured APT source stanzas match $wanted" >&2; exit 41; fi
+      cat "$fragment" > "$destination"
+      printf '%s\n' "$relative" > "$destination.origin"
+    fi
+  done
+  rm -f "$destination.fragment"
+  [[ $found == 1 ]] || { echo "no configured APT source stanza matches $wanted" >&2; exit 42; }
+}
+
+for codename in trixie trixie-updates trixie-security trixie-pgdg; do
+  suite_dir="$evidence/isolated-releases/$codename"
+  lists="$suite_dir/lists"
+  mkdir -p "$lists/partial"
+  selected_source="$suite_dir/source.selected"
+  select_suite_source "$codename" "$selected_source"
+  source_relative=$(cat "$selected_source.origin")
+  if [[ "$source_relative" == *.sources ]]; then source_file="$suite_dir/source.sources"; else source_file="$suite_dir/source.list"; fi
+  mv "$selected_source" "$source_file"
+  printf '%s\n' "$source_relative" > "$suite_dir/original-source-relative.txt"
+  printf '%s\n' "$codename" > "$suite_dir/configured-dist.txt"
+  printf '%s\n' "$source_file" > "$suite_dir/source-path.txt"
+  printf '%s\n' "$lists" > "$suite_dir/lists-path.txt"
+  if ! apt-get -o Dir::Etc::sourcelist="$source_file" -o Dir::Etc::sourceparts=- \
+    -o Dir::State::lists="$lists" -o Dir::Cache::pkgcache="$suite_dir/pkgcache.bin" \
+    -o Dir::Cache::srcpkgcache="$suite_dir/srcpkgcache.bin" \
+    -o Acquire::AllowInsecureRepositories=false -o Acquire::AllowDowngradeToInsecureRepositories=false \
+    -o Acquire::Check-Valid-Until=true -o APT::Get::AllowUnauthenticated=false --error-on=any update \
+    > "$suite_dir/apt-update.raw" 2>&1; then
+    sed -E 's#(https?://)[^/@[:space:]]+@#\1[REDACTED]@#g' "$suite_dir/apt-update.raw" > "$suite_dir/apt-update.log"
+    rm "$suite_dir/apt-update.raw"
+    echo "isolated APT update failed for $codename" >&2
+    exit 44
+  fi
+  sed -E 's#(https?://)[^/@[:space:]]+@#\1[REDACTED]@#g' "$suite_dir/apt-update.raw" > "$suite_dir/apt-update.log"
+  rm "$suite_dir/apt-update.raw"
+  apt-get -o Dir::Etc::sourcelist="$source_file" -o Dir::Etc::sourceparts=- \
+    -o Dir::State::lists="$lists" -o Dir::Cache::pkgcache="$suite_dir/pkgcache.bin" \
+    -o Dir::Cache::srcpkgcache="$suite_dir/srcpkgcache.bin" \
+    indextargets --format '$(IDENTIFIER)|$(CODENAME)|$(SUITE)|$(ARCHITECTURE)|$(FILENAME)|$(URI)|$(BASE_URI)|$(METAKEY)|$(COMPONENT)' \
+    > "$suite_dir/apt-index-targets.tsv"
+  mapfile -t inrelease_candidates < <(find "$lists" -maxdepth 1 -type f -name '*InRelease' -print | LC_ALL=C sort)
+  if [[ ${#inrelease_candidates[@]} -ne 1 ]]; then
+    echo "isolated APT run for $codename produced ${#inrelease_candidates[@]} InRelease candidates" >&2
+    exit 43
+  fi
+  printf '%s\n' "${inrelease_candidates[0]}" > "$suite_dir/exact-inrelease-path.txt"
+  cp "${inrelease_candidates[0]}" "$suite_dir/InRelease"
+done
+apt-get indextargets --format '$(IDENTIFIER)|$(CODENAME)|$(SUITE)|$(ARCHITECTURE)|$(FILENAME)|$(URI)|$(BASE_URI)|$(METAKEY)|$(COMPONENT)' > "$evidence/apt-index-targets.raw"
 if [[ ! -s "$evidence/apt-index-targets.raw" ]]; then
   echo 'APT reported no authenticated index targets' >&2
   exit 22
@@ -100,7 +199,7 @@ find /var/lib/apt/lists -maxdepth 1 -type f \( -name '*InRelease' -o -name '*_Pa
   | LC_ALL=C sort -z | while IFS= read -r -d '' file; do cp "$file" "$evidence/apt-lists/$(basename "$file")"; done
 find "$evidence/apt-lists" -maxdepth 1 -type f -print | LC_ALL=C sort > "$evidence/apt-index-files.txt"
 if ! grep -q 'InRelease$' "$evidence/apt-index-files.txt" || ! grep -q 'Packages' "$evidence/apt-index-files.txt"; then
-  echo 'Authenticated InRelease or Packages metadata was not captured' >&2
+  echo 'Combined update did not capture authenticated InRelease and Packages metadata' >&2
   exit 24
 fi
 apt-get --simulate purge --auto-remove gnupg > "$evidence/gnupg-purge-simulation.txt" 2>&1
@@ -297,16 +396,20 @@ def parse_release_identity(raw: bytes) -> tuple[str, str]:
     return values["Codename"], values["Suite"]
 
 
-def validate_index_targets(path: Path, metadata_directory: Path) -> list[dict[str, str]]:
+def validate_index_targets(
+    path: Path,
+    metadata_directory: Path,
+    acquisitions: list[dict[str, object]],
+) -> list[dict[str, str]]:
     rows = [line.split("|") for line in path.read_text().splitlines() if line]
     if not rows:
         raise ValueError("APT reported no authenticated index targets")
     observed_codenames: set[str] = set()
     targets: list[dict[str, str]] = []
     for row in rows:
-        if len(row) != 10:
+        if len(row) != 9:
             raise ValueError("APT index-target output has unexpected framing")
-        identifier, codename, suite, architecture, filename, uri, base_uri, meta_key, release_file, component = row
+        identifier, codename, suite, architecture, filename, uri, base_uri, meta_key, component = row
         if (codename, suite) not in ALLOWED_RELEASES:
             raise ValueError(f"APT target is outside the approved Trixie suites: {suite!r}/{codename!r}")
         observed_codenames.add(codename)
@@ -325,12 +428,17 @@ def validate_index_targets(path: Path, metadata_directory: Path) -> list[dict[st
             raise ValueError("APT target URI authority differs from its configured base URI")
         if parsed_uri.query or parsed_uri.fragment or parsed_base.query or parsed_base.fragment:
             raise ValueError("APT target URI contains query or fragment data")
-        if not filename.startswith("/var/lib/apt/lists/") or not release_file.startswith("/var/lib/apt/lists/"):
+        if not filename.startswith("/var/lib/apt/lists/"):
             raise ValueError("APT target has an unexpected local path")
         if not (metadata_directory / Path(filename).name).is_file():
             raise ValueError(f"APT target index was not preserved: {filename}")
-        if not (metadata_directory / Path(release_file).name).is_file():
-            raise ValueError(f"APT target Release file was not preserved: {release_file}")
+        acquisition_matches = [
+            item for item in acquisitions
+            if item["codename"] == codename and item["suite"] == suite and item["baseUri"] == base_uri
+        ]
+        if len(acquisition_matches) != 1:
+            raise ValueError(f"APT target does not bind to exactly one isolated source-root acquisition: {codename}/{suite}")
+        release_file = str(acquisition_matches[0]["inReleaseFile"])
         targets.append({
             "identifier": identifier, "codename": codename, "suite": suite,
             "architecture": architecture, "filename": filename, "uri": uri,
@@ -350,6 +458,214 @@ def validate_expected_origin(codename: str, base_uri: str) -> None:
     expected_path = f"{expected[1]}/dists/{codename}" if expected else None
     if expected is None or parsed.scheme not in {"http", "https"} or parsed.hostname != expected[0] or parsed.path.rstrip("/") != expected_path:
         raise ValueError(f"APT base URI is not the approved suite-scoped origin for {codename}: {base_uri!r}")
+
+
+def parse_configured_source_stanzas(text: str, suffix: str) -> list[dict[str, object]]:
+    entries: list[dict[str, object]] = []
+    if suffix == ".sources":
+        for paragraph in re.split(r"\n\s*\n", text):
+            fields: dict[str, list[str]] = {}
+            current = None
+            for line in paragraph.splitlines():
+                if not line or line.lstrip().startswith("#"):
+                    continue
+                if line[0].isspace() and current:
+                    fields[current][-1] += " " + line.strip()
+                    continue
+                if ":" not in line:
+                    raise ValueError("isolated APT Deb822 source has malformed field framing")
+                key, value = line.split(":", 1)
+                current = key.lower()
+                fields.setdefault(current, []).append(value.strip())
+            if fields.get("enabled", ["yes"])[-1].lower() == "no":
+                continue
+            if "deb" not in " ".join(fields.get("types", [])).split():
+                continue
+            if len(fields.get("uris", [])) != 1 or len(fields.get("suites", [])) != 1:
+                raise ValueError("isolated APT Deb822 stanza must have one URIs and Suites field")
+            signed = " ".join(fields.get("signed-by", []))
+            key_paths = signed.split()
+            if not key_paths or any(not key.startswith("/") for key in key_paths):
+                raise ValueError("isolated APT source uses unsupported Signed-By syntax")
+            entries.append({
+                "uri": fields["uris"][0].split(),
+                "suites": fields["suites"][0].split(),
+                "keyPaths": key_paths,
+            })
+    elif suffix == ".list":
+        for line in text.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            match = re.fullmatch(r"deb\s+(?:\[([^]]+)\]\s+)?(\S+)\s+(\S+)\s+(.+)", stripped)
+            if not match:
+                if re.match(r"(?i)^deb(?:-src)?\s", stripped):
+                    raise ValueError("isolated APT one-line source syntax is unsupported")
+                continue
+            options, uri, suite, _components = match.groups()
+            signed = re.search(r"(?i)(?:^|[\s,])signed-by\s*=\s*([^\s,]+)", options or "")
+            key_paths = signed.group(1).split(",") if signed else []
+            if not key_paths or any(not key.startswith("/") for key in key_paths):
+                raise ValueError("isolated APT source uses unsupported Signed-By syntax")
+            entries.append({"uri": [uri], "suites": [suite], "keyPaths": key_paths})
+    else:
+        raise ValueError(f"unsupported isolated APT source suffix: {suffix}")
+    return entries
+
+
+def read_source_trust_bindings(path: Path) -> dict[tuple[str, str], dict[str, str]]:
+    bindings: dict[tuple[str, str], dict[str, str]] = {}
+    for line in path.read_text().splitlines():
+        if line == "APT source trust policy: PASS":
+            continue
+        fields = line.split("\t")
+        if len(fields) != 5:
+            raise ValueError("source-trust.tsv has malformed keyring binding rows")
+        key_path, digest, _size, source_relative, captured = fields
+        bindings[(source_relative, key_path)] = {"sha256": digest, "capturedFile": captured}
+    return bindings
+
+
+def collect_isolated_release_acquisitions(
+    evidence_dir: Path,
+    run_manifest: dict[str, object],
+) -> list[dict[str, object]]:
+    apt_version = (evidence_dir / "apt-version.txt").read_text().splitlines()[0].strip()
+    source_bindings = read_source_trust_bindings(evidence_dir / "source-trust.tsv")
+    acquisitions: list[dict[str, object]] = []
+    expected = {
+        "trixie": "stable",
+        "trixie-updates": "stable-updates",
+        "trixie-security": "stable-security",
+        "trixie-pgdg": "trixie-pgdg",
+    }
+    for codename, expected_suite in expected.items():
+        directory = evidence_dir / "isolated-releases" / codename
+        source_relative = (directory / "original-source-relative.txt").read_text().strip()
+        source_relative = Path(source_relative).as_posix()
+        source_config = evidence_dir / "apt-sources" / source_relative
+        isolated_source = next(path for path in (directory / "source.list", directory / "source.sources") if path.is_file())
+        source_entries = parse_configured_source_stanzas(source_config.read_text(errors="replace"), source_config.suffix)
+        isolated_entries = parse_configured_source_stanzas(isolated_source.read_text(errors="replace"), isolated_source.suffix)
+        matching = [entry for entry in source_entries if codename in entry["suites"]]
+        if len(matching) != 1 or len(isolated_entries) != 1:
+            raise ValueError(f"isolated APT source does not identify exactly one original stanza for {codename}")
+        original = matching[0]
+        isolated = isolated_entries[0]
+        if isolated["suites"] != [codename] or isolated["uri"] != original["uri"] or isolated["keyPaths"] != original["keyPaths"]:
+            raise ValueError(f"isolated APT source changed URI, Dist, or Signed-By for {codename}")
+        if len(isolated["uri"]) != 1:
+            raise ValueError(f"isolated APT source must have one URI for {codename}")
+        keyrings = []
+        for key_path in isolated["keyPaths"]:
+            binding = source_bindings.get((source_relative, key_path))
+            if not binding:
+                raise ValueError(f"isolated APT source keyring is not bound in source-trust evidence: {key_path}")
+            keyrings.append({"path": key_path, **binding})
+
+        target_path = directory / "apt-index-targets.tsv"
+        target_rows = [line.split("|") for line in target_path.read_text().splitlines() if line]
+        if not target_rows or any(len(row) != 9 for row in target_rows):
+            raise ValueError(f"isolated APT target evidence has invalid framing for {codename}")
+        base_uris = set()
+        for row in target_rows:
+            if row[1] != codename or row[2] != expected_suite:
+                raise ValueError(f"isolated APT run returned a mismatched Dist or suite for {codename}")
+            target_uri = urlsplit(row[5])
+            if (
+                target_uri.scheme not in {"http", "https"}
+                or target_uri.hostname != EXPECTED_ORIGINS[codename][0]
+                or target_uri.username or target_uri.password or target_uri.query or target_uri.fragment
+                or target_uri.port not in ({None, 80} if target_uri.scheme == "http" else {None, 443})
+                or not target_uri.path.startswith(EXPECTED_ORIGINS[codename][1] + f"/dists/{codename}/")
+            ):
+                raise ValueError(f"isolated APT target URI differs from its approved source root for {codename}")
+            base_uris.add(row[6])
+        if len(base_uris) != 1:
+            raise ValueError(f"isolated APT run has multiple BASE_URI values for {codename}")
+        base_uri = base_uris.pop()
+        validate_expected_origin(codename, base_uri)
+        source_uri = isolated["uri"][0].rstrip("/")
+        source_parsed = urlsplit(source_uri)
+        if (
+            source_parsed.scheme not in {"http", "https"}
+            or source_parsed.hostname != EXPECTED_ORIGINS[codename][0]
+            or source_parsed.path.rstrip("/") != EXPECTED_ORIGINS[codename][1]
+            or source_parsed.username or source_parsed.password or source_parsed.query or source_parsed.fragment
+            or source_parsed.port not in ({None, 80} if source_parsed.scheme == "http" else {None, 443})
+        ):
+            raise ValueError(f"isolated source URI has an unsafe or unapproved origin for {codename}")
+        base_parsed = urlsplit(base_uri)
+        if (
+            base_parsed.scheme != source_parsed.scheme
+            or base_parsed.hostname != source_parsed.hostname
+            or base_parsed.username or base_parsed.password or base_parsed.query or base_parsed.fragment
+            or base_parsed.port not in ({None, 80} if base_parsed.scheme == "http" else {None, 443})
+        ):
+            raise ValueError(f"isolated BASE_URI authority differs from configured source for {codename}")
+        expected_source_uri = base_uri.split(f"/dists/{codename}/", 1)[0]
+        if source_uri != expected_source_uri:
+            raise ValueError(f"isolated APT target root does not match configured source URI for {codename}")
+
+        exact_path = (directory / "exact-inrelease-path.txt").read_text().strip()
+        lists_root = (directory / "lists-path.txt").read_text().strip().rstrip("/")
+        if not exact_path.startswith(lists_root + "/") or not exact_path.endswith("InRelease"):
+            raise ValueError(f"isolated APT InRelease path is outside its dedicated lists directory for {codename}")
+        inrelease_file = directory / "InRelease"
+        release_codename, release_suite = parse_release_identity(inrelease_file.read_bytes())
+        if (release_codename, release_suite) != (codename, expected_suite):
+            raise ValueError(f"isolated APT InRelease identity differs from configured Dist for {codename}")
+
+        acquisitions.append({
+            "codename": codename,
+            "configuredDist": codename,
+            "suite": expected_suite,
+            "signedCodename": release_codename,
+            "signedSuite": release_suite,
+            "sourceUri": source_uri,
+            "baseUri": base_uri,
+            "aptVersion": apt_version,
+            "runId": run_manifest["runId"],
+            "runAttempt": run_manifest["runAttempt"],
+            "revision": run_manifest["revision"],
+            "tree": run_manifest["tree"],
+            "image": run_manifest["image"],
+            "imageId": run_manifest["imageId"],
+            "platform": run_manifest["platform"],
+            "sourceConfigFile": f"apt-sources/{source_relative}",
+            "sourceConfigSha256": sha256(source_config),
+            "isolatedSourceFile": isolated_source.relative_to(evidence_dir).as_posix(),
+            "isolatedSourceSha256": sha256(isolated_source),
+            "aptTargetEvidenceFile": target_path.relative_to(evidence_dir).as_posix(),
+            "aptTargetEvidenceSha256": sha256(target_path),
+            "sourceKeyrings": keyrings,
+            "exactInReleasePath": exact_path,
+            "inReleaseFile": inrelease_file.relative_to(evidence_dir).as_posix(),
+            "inReleaseSha256": sha256(inrelease_file),
+            "inReleaseSizeBytes": inrelease_file.stat().st_size,
+        })
+
+    combined_candidates: list[tuple[Path, str, str]] = []
+    for combined_file in sorted((evidence_dir / "apt-lists").glob("*InRelease")):
+        candidate_codename, candidate_suite = parse_release_identity(combined_file.read_bytes())
+        combined_candidates.append((combined_file, candidate_codename, candidate_suite))
+    for acquisition in acquisitions:
+        matches = [
+            path for path, codename, suite in combined_candidates
+            if (codename, suite) == (acquisition["codename"], acquisition["suite"])
+        ]
+        if not matches:
+            raise ValueError(f"combined APT update has no InRelease for {acquisition['codename']}")
+        if len(matches) != 1:
+            raise ValueError(f"combined APT update has ambiguous InRelease candidates for {acquisition['codename']}")
+        combined_file = matches[0]
+        isolated_file = evidence_dir / str(acquisition["inReleaseFile"])
+        if combined_file.read_bytes() != isolated_file.read_bytes():
+            raise ValueError(f"combined and isolated InRelease snapshots differ for {acquisition['codename']}")
+        acquisition["combinedInReleaseFile"] = combined_file.relative_to(evidence_dir).as_posix()
+        acquisition["combinedInReleaseSha256"] = sha256(combined_file)
+        acquisition["combinedInReleaseSizeBytes"] = combined_file.stat().st_size
+    return acquisitions
 
 
 def normalize_apt_trusted_paths(shell_path: Path, paths_path: Path) -> None:
@@ -388,14 +704,18 @@ def validate_apt_trusted_paths(paths_path: Path) -> None:
         raise ValueError("APT effective global trusted-keyring paths differ from the captured standard defaults")
 
 
-def signed_package_index_evidence(targets: list[dict[str, str]], metadata_directory: Path) -> list[dict[str, object]]:
+def signed_package_index_evidence(
+    targets: list[dict[str, str]],
+    metadata_directory: Path,
+    evidence_directory: Path | None = None,
+) -> list[dict[str, object]]:
     releases: dict[str, tuple[str, dict[str, tuple[str, int]]]] = {}
     evidence: list[dict[str, object]] = []
     for target in targets:
         if "Packages" not in target["identifier"]:
             continue
-        release_name = Path(target["releaseFile"]).name
-        release_path = metadata_directory / release_name
+        release_name = target["releaseFile"]
+        release_path = (evidence_directory / release_name) if evidence_directory else metadata_directory / Path(release_name).name
         if release_name not in releases:
             releases[release_name] = (sha256(release_path), parse_release_sha256(release_path.read_bytes()))
         release_sha, signed_rows = releases[release_name]
@@ -442,17 +762,21 @@ def signed_package_index_evidence(targets: list[dict[str, str]], metadata_direct
     return sorted(evidence, key=lambda item: (str(item["codename"]), str(item["component"]), str(item["architecture"]), str(item["canonicalPackagesPath"])))
 
 
-def signed_release_index_records(metadata_directory: Path, targets: list[dict[str, str]]) -> list[dict[str, object]]:
+def signed_release_index_records(
+    metadata_directory: Path,
+    targets: list[dict[str, str]],
+    evidence_directory: Path | None = None,
+) -> list[dict[str, object]]:
     records: list[dict[str, object]] = []
-    release_names = sorted({Path(target["releaseFile"]).name for target in targets})
+    release_names = sorted({target["releaseFile"] for target in targets})
     for release_name in release_names:
-        release_path = metadata_directory / release_name
+        release_path = (evidence_directory / release_name) if evidence_directory else metadata_directory / Path(release_name).name
         release_bytes = release_path.read_bytes()
         release_sha = sha256(release_path)
         codename, suite = parse_release_identity(release_bytes)
         for path, (digest, size) in sorted(parse_release_sha256(release_bytes).items()):
             records.append({
-                "releaseFile": release_path.name,
+                "releaseFile": release_name,
                 "releaseSha256": release_sha,
                 "codename": codename,
                 "suite": suite,
@@ -563,19 +887,31 @@ def main() -> int:
             EVIDENCE_BASE / "apt-trusted-paths.shell",
             EVIDENCE_BASE / "apt-trusted-paths.tsv",
         )
-        index_targets = validate_index_targets(EVIDENCE_BASE / "apt-index-targets.tsv", EVIDENCE_BASE / "apt-lists")
+        isolated_acquisitions = collect_isolated_release_acquisitions(EVIDENCE_BASE, manifest)
+        index_targets = validate_index_targets(
+            EVIDENCE_BASE / "apt-index-targets.tsv", EVIDENCE_BASE / "apt-lists", isolated_acquisitions
+        )
         validate_apt_trusted_paths(EVIDENCE_BASE / "apt-trusted-paths.tsv")
-        signed_indices = signed_package_index_evidence(index_targets, EVIDENCE_BASE / "apt-lists")
-        signed_release_indices = signed_release_index_records(EVIDENCE_BASE / "apt-lists", index_targets)
+        signed_indices = signed_package_index_evidence(
+            index_targets, EVIDENCE_BASE / "apt-lists", EVIDENCE_BASE
+        )
+        signed_release_indices = signed_release_index_records(
+            EVIDENCE_BASE / "apt-lists", index_targets, EVIDENCE_BASE
+        )
         inventory = parse_inventory(EVIDENCE_BASE / "dpkg-before.tsv")
         removals = parse_removals((EVIDENCE_BASE / "gnupg-purge-simulation.txt").read_text(), inventory)
         metadata_files = []
         for path in sorted((EVIDENCE_BASE / "apt-lists").iterdir()):
             if path.is_file():
                 metadata_files.append({"file": path.relative_to(EVIDENCE_BASE).as_posix(), "sha256": sha256(path), "sizeBytes": path.stat().st_size})
-        verified_release_names = {Path(target["releaseFile"]).name for target in index_targets}
         verified_package_names = {Path(target["filename"]).name for target in index_targets if "Packages" in target["identifier"]}
-        inrelease = [item for item in metadata_files if Path(item["file"]).name in verified_release_names]
+        inrelease = [
+            {"file": acquisition["inReleaseFile"], "sha256": acquisition["inReleaseSha256"], "sizeBytes": acquisition["inReleaseSizeBytes"]}
+            for acquisition in isolated_acquisitions
+        ] + [
+            {"file": acquisition["combinedInReleaseFile"], "sha256": acquisition["combinedInReleaseSha256"], "sizeBytes": acquisition["combinedInReleaseSizeBytes"]}
+            for acquisition in isolated_acquisitions
+        ]
         local_packages = [item for item in metadata_files if Path(item["file"]).name in verified_package_names]
         if not inrelease or not local_packages:
             raise RuntimeError("missing authenticated Release or local Packages metadata hashes")
@@ -590,6 +926,7 @@ def main() -> int:
             "imageId": manifest["imageId"],
             "platform": PLATFORM,
             "authenticatedInReleaseFiles": inrelease,
+            "isolatedReleaseAcquisitions": isolated_acquisitions,
             "signedReleaseIndexHashes": signed_release_indices,
             "packageIndexTargetBindings": signed_indices,
             "localAptIndexFiles": local_packages,

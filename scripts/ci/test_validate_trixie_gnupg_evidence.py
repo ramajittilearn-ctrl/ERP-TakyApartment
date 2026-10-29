@@ -55,9 +55,10 @@ class EvidenceFixture:
         pgdg_digest = hashlib.sha256(b"synthetic PGDG key").hexdigest()
         self.files["keyring-sha256.txt"] = f"{debian_digest}  {debian_key}\n{pgdg_digest}  {pgdg_key}\n".encode()
         self.files["apt-sources/sources.list.d/debian.sources"] = (
-            "Types: deb\nURIs: https://deb.debian.org/debian https://deb.debian.org/debian-security\n"
-            "Suites: trixie trixie-updates trixie-security\nComponents: main\n"
-            f"Signed-By: {debian_key}\n"
+            "Types: deb\nURIs: https://deb.debian.org/debian\nSuites: trixie trixie-updates\n"
+            "Components: main\n" + f"Signed-By: {debian_key}\n\n"
+            "Types: deb\nURIs: https://deb.debian.org/debian-security\nSuites: trixie-security\n"
+            "Components: main\n" + f"Signed-By: {debian_key}\n"
         ).encode()
         self.files["apt-sources/sources.list.d/pgdg.list"] = (
             f"deb [signed-by={pgdg_key}] http://apt.postgresql.org/pub/repos/apt trixie-pgdg main\n"
@@ -97,6 +98,7 @@ class EvidenceFixture:
             "imageId": self.run["imageId"],
             "platform": self.run["platform"],
             "authenticatedInReleaseFiles": [],
+            "isolatedReleaseAcquisitions": [],
             "signedReleaseIndexHashes": [],
             "packageIndexTargetBindings": [],
             "localAptIndexFiles": [],
@@ -110,9 +112,16 @@ class EvidenceFixture:
             "approvalState": "REQUIRES_INDEPENDENT_REVIEW_AND_LOCK_FREEZE",
         }
         target_rows = []
-        for codename, (suite, host, origin_path) in MODULE.EXPECTED_ORIGINS.items():
+        expected_run_sources = {
+            "trixie": "sources.list.d/debian.sources",
+            "trixie-updates": "sources.list.d/debian.sources",
+            "trixie-security": "sources.list.d/debian.sources",
+            "trixie-pgdg": "sources.list.d/pgdg.list",
+        }
+        for release_index, (codename, (suite, host, origin_path)) in enumerate(MODULE.EXPECTED_ORIGINS.items()):
             origin = f"https://{host}{origin_path}"
-            release_name = f"repo_dists_{codename}_InRelease"
+            combined_name = f"unrelated-name-{release_index}-InRelease"
+            isolated_name = f"isolated-releases/{codename}/InRelease"
             local_name = f"repo_dists_{codename}_main_binary-amd64_Packages.lz4"
             signed_path = "main/binary-amd64/Packages.xz"
             signed_hash = hashlib.sha256(f"signed index {codename}".encode()).hexdigest()
@@ -123,21 +132,65 @@ class EvidenceFixture:
                 "-----BEGIN PGP SIGNATURE-----\nZmFrZS1zaWduYXR1cmU=\n=abcd\n-----END PGP SIGNATURE-----\n"
             ).encode()
             local_bytes = f"synthetic local Packages fixture {codename}\n".encode()
-            self.files[f"apt-lists/{release_name}"] = release_bytes
+            self.files[f"apt-lists/{combined_name}"] = release_bytes
+            self.files[isolated_name] = release_bytes
             self.files[f"apt-lists/{local_name}"] = local_bytes
-            release_hash = digest(release_bytes)
-            local_hash = digest(local_bytes)
-            filename = f"/var/lib/apt/lists/{local_name}"
-            release_path = f"/var/lib/apt/lists/{release_name}"
-            base_uri = f"{origin}/dists/{codename}/"
+            source_relative = expected_run_sources[codename]
+            source_uri = f"http://{host}{origin_path}" if codename == "trixie-pgdg" else f"https://{host}{origin_path}"
+            source_key = pgdg_key if codename == "trixie-pgdg" else debian_key
+            source_digest = pgdg_digest if codename == "trixie-pgdg" else debian_digest
+            suffix = ".list" if codename == "trixie-pgdg" else ".sources"
+            isolated_source = f"isolated-releases/{codename}/source{suffix}"
+            if suffix == ".list":
+                source_text = f"deb [signed-by={source_key}] {source_uri} {codename} main\n"
+            else:
+                source_text = f"Types: deb\nURIs: {source_uri}\nSuites: {codename}\nComponents: main\nSigned-By: {source_key}\n"
+            self.files[isolated_source] = source_text.encode()
+            base_uri = f"{source_uri}/dists/{codename}/"
             uri = f"{base_uri}{signed_path}"
             meta_key = "main/binary-amd64/Packages"
-            target_rows.append("|".join(("Packages", codename, suite, "amd64", filename, uri, base_uri, meta_key, release_path, "main")))
-            self.proposal["authenticatedInReleaseFiles"].append({
-                "file": f"apt-lists/{release_name}", "sha256": release_hash, "sizeBytes": len(release_bytes),
+            filename = f"/var/lib/apt/lists/{local_name}"
+            target_row = "|".join(("Packages", codename, suite, "amd64", filename, uri, base_uri, meta_key, "main"))
+            target_rows.append(target_row)
+            isolated_target = f"isolated-releases/{codename}/apt-index-targets.tsv"
+            self.files[isolated_target] = (target_row + "\n").encode()
+            lists_root = f"/evidence/isolated-releases/{codename}/lists"
+            exact_release = f"{lists_root}/repo_dists_{codename}_InRelease"
+            exact_relative = exact_release.removeprefix("/evidence/")
+            self.files[exact_relative] = release_bytes
+            self.files[f"isolated-releases/{codename}/exact-inrelease-path.txt"] = (exact_release + "\n").encode()
+            self.files[f"isolated-releases/{codename}/lists-path.txt"] = (lists_root + "\n").encode()
+            self.files[f"isolated-releases/{codename}/original-source-relative.txt"] = (source_relative + "\n").encode()
+            self.files[f"isolated-releases/{codename}/configured-dist.txt"] = (codename + "\n").encode()
+            self.files[f"isolated-releases/{codename}/source-path.txt"] = (f"/tmp/source-{codename}{suffix}\n").encode()
+            self.files[f"isolated-releases/{codename}/apt-update.log"] = b"Hit: signed source\n"
+            combined_file = f"apt-lists/{combined_name}"
+            isolated_file_hash = digest(release_bytes)
+            combined_hash = digest(release_bytes)
+            local_hash = digest(local_bytes)
+            self.proposal["authenticatedInReleaseFiles"].extend([
+                {"file": combined_file, "sha256": combined_hash, "sizeBytes": len(release_bytes)},
+                {"file": isolated_name, "sha256": isolated_file_hash, "sizeBytes": len(release_bytes)},
+            ])
+            source_key_records = [{"path": source_key, "sha256": source_digest, "capturedFile": f"apt-keyrings/{source_digest}"}]
+            self.proposal["isolatedReleaseAcquisitions"].append({
+                "codename": codename, "configuredDist": codename, "suite": suite,
+                "signedCodename": codename, "signedSuite": suite, "sourceUri": source_uri,
+                "baseUri": base_uri, "aptVersion": "apt 3.0.3 (amd64)",
+                "runId": self.run["runId"], "runAttempt": self.run["runAttempt"],
+                "revision": self.run["revision"], "tree": self.run["tree"], "image": self.run["image"],
+                "imageId": self.run["imageId"], "platform": self.run["platform"],
+                "sourceConfigFile": f"apt-sources/{source_relative}",
+                "sourceConfigSha256": digest(self.files[f"apt-sources/{source_relative}"]),
+                "isolatedSourceFile": isolated_source, "isolatedSourceSha256": digest(source_text.encode()),
+                "aptTargetEvidenceFile": isolated_target, "aptTargetEvidenceSha256": digest((target_row + "\n").encode()),
+                "sourceKeyrings": source_key_records, "exactInReleasePath": exact_release,
+                "inReleaseFile": isolated_name, "inReleaseSha256": isolated_file_hash,
+                "inReleaseSizeBytes": len(release_bytes), "combinedInReleaseFile": combined_file,
+                "combinedInReleaseSha256": combined_hash, "combinedInReleaseSizeBytes": len(release_bytes),
             })
             self.proposal["signedReleaseIndexHashes"].append({
-                "releaseFile": release_name, "releaseSha256": release_hash, "codename": codename,
+                "releaseFile": isolated_name, "releaseSha256": isolated_file_hash, "codename": codename,
                 "suite": suite, "path": signed_path, "sha256": signed_hash, "size": signed_size,
             })
             self.proposal["localAptIndexFiles"].append({
@@ -146,7 +199,7 @@ class EvidenceFixture:
             self.proposal["packageIndexTargetBindings"].append({
                 "identifier": "Packages", "codename": codename, "suite": suite, "component": "main",
                 "architecture": "amd64", "filename": filename, "uri": uri, "baseUri": base_uri,
-                "metaKey": meta_key, "releaseFile": release_name, "releaseSha256": release_hash,
+                "metaKey": meta_key, "releaseFile": isolated_name, "releaseSha256": isolated_file_hash,
                 "canonicalPackagesPath": "main/binary-amd64/Packages",
                 "signedVariants": [{"path": signed_path, "sha256": signed_hash, "size": signed_size}],
                 "localAptFile": local_name, "localAptSha256": local_hash, "localAptSize": len(local_bytes),
@@ -215,8 +268,7 @@ class EvidenceValidationTests(unittest.TestCase):
             before = sorted(path.relative_to(fixture.root).as_posix() for path in fixture.root.rglob("*") if path.is_file())
             validated = MODULE.validate_proposal(fixture.root)
             self.assertEqual(validated.proposal_sha256, digest((fixture.root / "gnupg-removal-lock-proposal.json").read_bytes()))
-            checked_release_names = {Path(call.args[0]).name for call in self.verify_signature_mock.call_args_list}
-            self.assertEqual(checked_release_names, {f"repo_dists_{name}_InRelease" for name in MODULE.EXPECTED_ORIGINS})
+            self.assertEqual(self.verify_signature_mock.call_count, 4)
             fake_bin = Path(temp) / "fake-bin"
             fake_bin.mkdir()
             fake_gpgv = fake_bin / "gpgv"
@@ -249,6 +301,49 @@ class EvidenceValidationTests(unittest.TestCase):
                 fixture.write()
                 with self.assertRaisesRegex(ValueError, message):
                     MODULE.validate_proposal(fixture.root)
+
+    def test_isolated_release_must_match_exact_configured_source_root(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            acquisition = fixture.proposal["isolatedReleaseAcquisitions"][0]
+            acquisition["sourceUri"] = "https://mirror.example/debian"
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "isolated source URI differs from proposal acquisition"):
+                MODULE.validate_proposal(fixture.root)
+
+    def test_combined_and_isolated_release_snapshots_must_be_byte_identical(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            acquisition = fixture.proposal["isolatedReleaseAcquisitions"][0]
+            combined_path = fixture.root / acquisition["combinedInReleaseFile"]
+            combined_path.write_bytes(combined_path.read_bytes() + b"\n")
+            combined = next(item for item in fixture.proposal["authenticatedInReleaseFiles"] if item["file"] == acquisition["combinedInReleaseFile"])
+            combined["sha256"] = digest(combined_path.read_bytes())
+            combined["sizeBytes"] = combined_path.stat().st_size
+            acquisition["combinedInReleaseSha256"] = combined["sha256"]
+            acquisition["combinedInReleaseSizeBytes"] = combined["sizeBytes"]
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "snapshots differ"):
+                MODULE.validate_proposal(fixture.root)
+
+    def test_acquisition_hash_tampering_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            fixture.proposal["isolatedReleaseAcquisitions"][0]["inReleaseSha256"] = "0" * 64
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "hash/size differs from authenticated evidence"):
+                MODULE.validate_proposal(fixture.root)
+
+    def test_package_binding_cannot_reassign_derived_inrelease_candidate(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            binding = fixture.proposal["packageIndexTargetBindings"][0]
+            other_release = fixture.proposal["authenticatedInReleaseFiles"][2]
+            binding["releaseFile"] = other_release["file"]
+            binding["releaseSha256"] = other_release["sha256"]
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "authenticated InRelease evidence|independently derived target association"):
+                MODULE.validate_proposal(fixture.root)
 
     def test_run_identity_must_match_hosted_environment(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -295,19 +390,53 @@ class EvidenceValidationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "captured Signed-By keyring bytes"):
                 MODULE.validate_proposal(fixture.root)
 
-    def test_release_uses_only_source_keyrings_bound_to_its_origin_and_suite(self):
+    def test_isolated_acquisition_keyring_must_match_its_captured_source(self):
         with tempfile.TemporaryDirectory() as temp:
             fixture = self.fixture(temp)
-            source_keys = MODULE.validate_source_trust(fixture.root)
-            debian = MODULE.source_keyrings_for_release(fixture.root, source_keys, "trixie")
-            pgdg = MODULE.source_keyrings_for_release(fixture.root, source_keys, "trixie-pgdg")
-            self.assertEqual([path.name for path in debian], [digest(b"synthetic Debian archive key")])
-            self.assertEqual([path.name for path in pgdg], [digest(b"synthetic PGDG key")])
+            fixture.proposal["isolatedReleaseAcquisitions"][0]["sourceKeyrings"][0]["path"] = "/tmp/unbound.gpg"
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "keyrings differ from its source stanza"):
+                MODULE.validate_proposal(fixture.root)
 
-            pgdg_source = fixture.root / "apt-sources/sources.list.d/pgdg.list"
-            pgdg_source.write_text(pgdg_source.read_text().replace("apt.postgresql.org", "mirror.example.test"))
-            with self.assertRaisesRegex(ValueError, "no captured Signed-By keyring"):
-                MODULE.source_keyrings_for_release(fixture.root, source_keys, "trixie-pgdg")
+    def test_isolated_package_target_uri_is_bound_to_source_root(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            acquisition = fixture.proposal["isolatedReleaseAcquisitions"][0]
+            target_file = fixture.root / acquisition["aptTargetEvidenceFile"]
+            fields = target_file.read_text().strip().split("|")
+            fields[5] = fields[5].replace("deb.debian.org", "mirror.example.test")
+            target_file.write_text("|".join(fields) + "\n")
+            acquisition["aptTargetEvidenceSha256"] = digest(target_file.read_bytes())
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "target URI does not match"):
+                MODULE.validate_proposal(fixture.root)
+
+    def test_non_packages_target_uri_is_also_bound_to_source_root(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            acquisition = fixture.proposal["isolatedReleaseAcquisitions"][0]
+            target_file = fixture.root / acquisition["aptTargetEvidenceFile"]
+            fields = target_file.read_text().strip().split("|")
+            fields[0] = "Translations"
+            fields[5] = fields[5].replace("deb.debian.org", "mirror.example.test")
+            target_file.write_text("|".join(fields) + "\n")
+            acquisition["aptTargetEvidenceSha256"] = digest(target_file.read_bytes())
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "APT target URI does not match"):
+                MODULE.validate_proposal(fixture.root)
+
+    def test_isolated_acquisition_requires_packages_target(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            acquisition = fixture.proposal["isolatedReleaseAcquisitions"][0]
+            target_file = fixture.root / acquisition["aptTargetEvidenceFile"]
+            fields = target_file.read_text().strip().split("|")
+            fields[0] = "Translations"
+            target_file.write_text("|".join(fields) + "\n")
+            acquisition["aptTargetEvidenceSha256"] = digest(target_file.read_bytes())
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "contains no Packages target"):
+                MODULE.validate_proposal(fixture.root)
 
     def test_source_origin_binding_rejects_credentials_and_non_default_ports(self):
         for uri in (
@@ -398,18 +527,26 @@ class EvidenceValidationTests(unittest.TestCase):
     def test_proposal_signed_hash_rows_must_match_actual_inrelease(self):
         with tempfile.TemporaryDirectory() as temp:
             fixture = self.fixture(temp)
-            release_record = fixture.proposal["authenticatedInReleaseFiles"][0]
+            release_record = next(item for item in fixture.proposal["authenticatedInReleaseFiles"] if item["file"].startswith("isolated-releases/trixie/"))
             release_path = fixture.root / release_record["file"]
             original_row = fixture.proposal["signedReleaseIndexHashes"][0]
-            release_path.write_bytes(
-                release_path.read_bytes().replace(original_row["sha256"].encode(), b"0" * 64)
-            )
-            release_record["sha256"] = digest(release_path.read_bytes())
-            release_record["sizeBytes"] = release_path.stat().st_size
-            fixture.proposal["packageIndexTargetBindings"][0]["releaseSha256"] = release_record["sha256"]
-            fixture.proposal["signedReleaseIndexHashes"][0]["releaseSha256"] = release_record["sha256"]
+            changed = release_path.read_bytes().replace(original_row["sha256"].encode(), b"0" * 64)
+            release_path.write_bytes(changed)
+            acquisition = fixture.proposal["isolatedReleaseAcquisitions"][0]
+            combined = next(item for item in fixture.proposal["authenticatedInReleaseFiles"] if item["file"] == acquisition["combinedInReleaseFile"])
+            (fixture.root / combined["file"]).write_bytes(changed)
+            exact_relative = acquisition["exactInReleasePath"].removeprefix("/evidence/")
+            (fixture.root / exact_relative).write_bytes(changed)
+            release_record["sha256"] = digest(changed)
+            release_record["sizeBytes"] = len(changed)
+            combined["sha256"] = digest(changed)
+            combined["sizeBytes"] = len(changed)
+            acquisition["inReleaseSha256"] = digest(changed)
+            acquisition["combinedInReleaseSha256"] = digest(changed)
+            fixture.proposal["packageIndexTargetBindings"][0]["releaseSha256"] = digest(changed)
+            fixture.proposal["signedReleaseIndexHashes"][0]["releaseSha256"] = digest(changed)
             fixture.write()
-            with self.assertRaisesRegex(ValueError, "differ from InRelease SHA256 section"):
+            with self.assertRaisesRegex(ValueError, "signed index rows differ from isolated InRelease SHA256 section"):
                 MODULE.validate_proposal(fixture.root)
 
     def test_installed_inventory_and_simulation_must_match_proposal(self):
