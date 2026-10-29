@@ -11,6 +11,10 @@
     "bootstrapSuite": "trixie",
     "bootstrapCodename": "trixie",
     "bootstrapOrigin": "Debian",
+    "bookwormBootstrapPrimaryFingerprints": [
+      "B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8",
+      "4D64FEC119C2029067D6E791F8D2585B8783D481"
+    ],
     "maxMetadataAgeSeconds": 604800,
     "maxFutureClockSkewSeconds": 300
   },

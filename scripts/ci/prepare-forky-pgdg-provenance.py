@@ -211,9 +211,20 @@ def validate_release(
     }
 
 
-def verified_signers(status_text: str, trusted_primary_fingerprints: Iterable[str] | None = None) -> list[dict[str, str]]:
+def verified_signers(
+    status_text: str,
+    trusted_primary_fingerprints: Iterable[str] | None = None,
+    allowed_additional_signing_fingerprints: Iterable[str] = (),
+) -> list[dict[str, str]]:
     trusted = {item.upper() for item in trusted_primary_fingerprints} if trusted_primary_fingerprints is not None else None
+    additional = {item.upper() for item in allowed_additional_signing_fingerprints}
+    for fingerprint in (trusted or set()) | additional:
+        if not FINGERPRINT_RE.fullmatch(fingerprint):
+            raise ProvenanceError("OpenPGP trust metadata contains an invalid fingerprint")
     signers: list[dict[str, str]] = []
+    trusted_signer_found = False
+    current_signature_started = False
+    current_signature_has_validsig = False
     for line in status_text.splitlines():
         if "[GNUPG:] " not in line:
             continue
@@ -225,19 +236,49 @@ def verified_signers(status_text: str, trusted_primary_fingerprints: Iterable[st
             raise ProvenanceError(f"OpenPGP verifier reported unacceptable status: {code}")
         if code not in ALLOWED_GPG_STATUSES:
             raise ProvenanceError(f"OpenPGP verifier returned an unrecognized status: {code}")
+        if code == "NEWSIG":
+            if current_signature_started and not current_signature_has_validsig:
+                raise ProvenanceError("OpenPGP signature event has no valid signature record")
+            current_signature_started = True
+            current_signature_has_validsig = False
+            continue
+        if code in {"GOODSIG", "VALIDSIG"} and not current_signature_started:
+            raise ProvenanceError("OpenPGP signature status is not associated with a NEWSIG event")
         if code != "VALIDSIG":
             continue
+        if current_signature_has_validsig:
+            raise ProvenanceError("OpenPGP signature event contains duplicate valid signature records")
         if len(fields) < 11:
             raise ProvenanceError("OpenPGP verifier returned a truncated VALIDSIG record")
         signing_fingerprint = fields[1].upper()
         primary_fingerprint = fields[-1].upper() if len(fields[-1]) == 40 else signing_fingerprint
         if not FINGERPRINT_RE.fullmatch(signing_fingerprint) or not FINGERPRINT_RE.fullmatch(primary_fingerprint):
             raise ProvenanceError("OpenPGP verifier returned an invalid fingerprint")
-        if trusted is not None and primary_fingerprint not in trusted:
+        if trusted is not None and primary_fingerprint not in trusted and signing_fingerprint not in additional:
             raise ProvenanceError("OpenPGP signature primary fingerprint is not in the explicit trust set")
-        signers.append({"signingFingerprint": signing_fingerprint, "primaryFingerprint": primary_fingerprint})
+        if trusted is not None and primary_fingerprint in trusted:
+            trusted_signer_found = True
+        if trusted is None:
+            trust_basis = "keyring-signature-valid-no-explicit-primary-pin"
+        elif primary_fingerprint in trusted:
+            trust_basis = "trusted-primary"
+        else:
+            trust_basis = "artifact-recorded-additional-signing-fingerprint"
+        signers.append({
+            "signingFingerprint": signing_fingerprint,
+            "primaryFingerprint": primary_fingerprint,
+            "trustBasis": trust_basis,
+        })
+        current_signature_has_validsig = True
+    if not current_signature_started or not current_signature_has_validsig:
+        raise ProvenanceError("OpenPGP signature event has no valid signature record")
     if not signers:
         raise ProvenanceError("OpenPGP verifier returned no valid signature")
+    if trusted is not None and not trusted_signer_found:
+        raise ProvenanceError("OpenPGP verifier found no valid signature from an explicit trusted primary")
+    observed_signing_fingerprints = {item["signingFingerprint"] for item in signers}
+    if not additional.issubset(observed_signing_fingerprints):
+        raise ProvenanceError("artifact-recorded additional OpenPGP signer is absent from verified signatures")
     unique = {(item["signingFingerprint"], item["primaryFingerprint"]): item for item in signers}
     return [unique[key] for key in sorted(unique)]
 
@@ -367,7 +408,8 @@ def write_json(path: pathlib.Path, value: Any) -> None:
 
 
 def verify_gpgv(inrelease: pathlib.Path, keyring: pathlib.Path, log_dir: pathlib.Path,
-                trusted_primaries: Iterable[str] | None = None) -> list[dict[str, str]]:
+                trusted_primaries: Iterable[str] | None = None,
+                allowed_additional_signing_fingerprints: Iterable[str] = ()) -> list[dict[str, str]]:
     status_path = log_dir / (inrelease.name + ".gpg-status.txt")
     stderr_path = log_dir / (inrelease.name + ".gpg-stderr.txt")
     result = subprocess.run(
@@ -378,7 +420,7 @@ def verify_gpgv(inrelease: pathlib.Path, keyring: pathlib.Path, log_dir: pathlib
     stderr_path.write_text(result.stderr, encoding="utf-8")
     if result.returncode:
         raise ProvenanceError(f"InRelease signature verification failed for {inrelease.name}")
-    return verified_signers(result.stdout, trusted_primaries)
+    return verified_signers(result.stdout, trusted_primaries, allowed_additional_signing_fingerprints)
 
 
 def read_json(path: pathlib.Path) -> dict[str, Any]:
@@ -788,7 +830,14 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
             raise ProvenanceError("Bookworm InRelease bytes differ from the same-run source artifact manifest")
         copy_evidence(bookworm_inrelease, output_dir / "metadata/source-bookworm.InRelease")
         recorded_bookworm_signers = set(bootstrap.get("inReleaseSignerFingerprints", []))
-        bookworm_signers = verify_gpgv(bookworm_inrelease, base_keyring, log_dir, recorded_bookworm_signers)
+        bookworm_policy = policy["debianKeyringTransition"]
+        trusted_bookworm_primaries = set(bookworm_policy["bookwormBootstrapPrimaryFingerprints"])
+        additional_bookworm_signers = set(bootstrap.get("unverifiedAdditionalSignerFingerprints", []))
+        if not trusted_bookworm_primaries or not trusted_bookworm_primaries.issubset(recorded_bookworm_signers):
+            raise ProvenanceError("source artifact does not bind the pinned trusted Bookworm signer set")
+        bookworm_signers = verify_gpgv(
+            bookworm_inrelease, base_keyring, log_dir, trusted_bookworm_primaries, additional_bookworm_signers
+        )
         bookworm_body = cleartext_release_body(bookworm_inrelease.read_bytes())
         bookworm_release_info = validate_release(
             bookworm_body,

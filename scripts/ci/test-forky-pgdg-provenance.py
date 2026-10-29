@@ -124,24 +124,89 @@ class SignatureTests(unittest.TestCase):
         status = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
         self.assertEqual(module.verified_signers(status, {PRIMARY})[0]["primaryFingerprint"], PRIMARY)
 
+    def test_does_not_label_unpinned_keyring_signature_as_trusted_primary(self):
+        status = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
+        signer = module.verified_signers(status)[0]
+        self.assertEqual(signer["trustBasis"], "keyring-signature-valid-no-explicit-primary-pin")
+
+    def test_accepts_artifact_recorded_additional_signer_without_trusting_its_primary(self):
+        bookworm_primary = "B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8"
+        bookworm_signing = "4CB50190207B4758A3F73A796ED0E7B82643E131"
+        trixie_signing = "B8E5F13176D2A7A75220028078DBA3BC47EF2265"
+        trixie_primary = "04B54C3CDCA79751B16BC6B5225629DF75B188BD"
+        stable_signer = "4D64FEC119C2029067D6E791F8D2585B8783D481"
+        status = (
+            f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {bookworm_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {bookworm_primary}\n"
+            f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {trixie_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {trixie_primary}\n"
+            f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {stable_signer} 2026-10-28 1793218953 0 4 0 1 8 00 {stable_signer}\n"
+        )
+        signers = module.verified_signers(status, {bookworm_primary, stable_signer}, {trixie_signing})
+        self.assertEqual(
+            {signer["primaryFingerprint"] for signer in signers},
+            {bookworm_primary, trixie_primary, stable_signer},
+        )
+        self.assertEqual(
+            {signer["signingFingerprint"]: signer["trustBasis"] for signer in signers},
+            {
+                bookworm_signing: "trusted-primary",
+                stable_signer: "trusted-primary",
+                trixie_signing: "artifact-recorded-additional-signing-fingerprint",
+            },
+        )
+
+    def test_additional_signer_cannot_satisfy_trusted_primary_requirement(self):
+        extra_signing = "B8E5F13176D2A7A75220028078DBA3BC47EF2265"
+        extra_primary = "04B54C3CDCA79751B16BC6B5225629DF75B188BD"
+        status = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {extra_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {extra_primary}\n"
+        with self.assertRaisesRegex(module.ProvenanceError, "no valid signature from an explicit trusted primary"):
+            module.verified_signers(status, {PRIMARY}, {extra_signing})
+
+    def test_rejects_unknown_extra_signer_even_when_trusted_signer_is_present(self):
+        trusted = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
+        unknown_signing = "C" * 40
+        unknown_primary = "D" * 40
+        unknown = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {unknown_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {unknown_primary}\n"
+        with self.assertRaisesRegex(module.ProvenanceError, "not in the explicit trust set"):
+            module.verified_signers(trusted + unknown, {PRIMARY})
+
+    def test_rejects_artifact_additional_signer_absent_from_signature_stream(self):
+        status = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
+        with self.assertRaisesRegex(module.ProvenanceError, "additional OpenPGP signer is absent"):
+            module.verified_signers(status, {PRIMARY}, {"C" * 40})
+
+    def test_rejects_signature_event_without_validsig(self):
+        with self.assertRaisesRegex(module.ProvenanceError, "signature event has no valid signature record"):
+            module.verified_signers("[GNUPG:] NEWSIG\n[GNUPG:] GOODSIG ABCDEF Example\n", {PRIMARY})
+
+    def test_rejects_malformed_trust_fingerprints(self):
+        status = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
+        with self.assertRaisesRegex(module.ProvenanceError, "invalid fingerprint"):
+            module.verified_signers(status, {"not-a-fingerprint"})
+
     def test_rejects_unknown_primary_and_bad_or_expired_signature_status(self):
-        valid = f"[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
+        valid = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
         with self.assertRaisesRegex(module.ProvenanceError, "not in the explicit trust set"):
             module.verified_signers(valid, {"C" * 40})
         for status in ("BADSIG", "REVKEYSIG", "EXPKEYSIG", "KEYEXPIRED", "NO_PUBKEY", "ERRSIG"):
             with self.subTest(status=status), self.assertRaisesRegex(module.ProvenanceError, "unacceptable status"):
-                module.verified_signers(f"[GNUPG:] {status} {SIGNING}\n")
+                module.verified_signers(f"[GNUPG:] NEWSIG\n[GNUPG:] {status} {SIGNING}\n")
+
+    def test_rejects_bad_status_even_after_a_trusted_valid_signature(self):
+        trusted = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
+        for status in ("BADSIG", "REVKEYSIG", "EXPKEYSIG", "KEYEXPIRED", "NO_PUBKEY", "ERRSIG"):
+            with self.subTest(status=status), self.assertRaisesRegex(module.ProvenanceError, "unacceptable status"):
+                module.verified_signers(trusted + f"[GNUPG:] NEWSIG\n[GNUPG:] {status} {SIGNING}\n", {PRIMARY})
 
     def test_rejects_unrecognized_gpg_status_instead_of_ignoring_it(self):
-        valid = f"[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
+        valid = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
         with self.assertRaisesRegex(module.ProvenanceError, "unrecognized status"):
             module.verified_signers(valid + "[GNUPG:] FUTURE_FAILURE_STATUS\n", {PRIMARY})
 
     def test_rejects_absent_or_truncated_valid_signature(self):
         with self.assertRaisesRegex(module.ProvenanceError, "no valid signature"):
-            module.verified_signers("[GNUPG:] GOODSIG ABCDEF\n")
+            module.verified_signers("[GNUPG:] NEWSIG\n[GNUPG:] GOODSIG ABCDEF Example\n")
         with self.assertRaisesRegex(module.ProvenanceError, "truncated"):
-            module.verified_signers(f"[GNUPG:] VALIDSIG {SIGNING}\n")
+            module.verified_signers(f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {SIGNING}\n")
 
     def test_extracts_primary_fingerprints_without_treating_subkeys_as_primaries(self):
         listing = f"pub:-:1:1:ACCC4CF8:0:0:::::scESC:\nfpr:::::::::{PRIMARY}:\nsub:-:1:1:DEADBEEF:0:0:::::s:\nfpr:::::::::{SIGNING}:\n"
