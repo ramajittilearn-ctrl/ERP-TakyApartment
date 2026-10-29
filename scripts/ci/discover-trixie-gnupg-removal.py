@@ -18,10 +18,21 @@ IMAGE = "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887
 PLATFORM = "linux/amd64"
 EVIDENCE_BASE = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "phase4-container-scan" / "trixie-gnupg-discovery"
 PROTECTED_PREFIXES = (
-    "apt", "gpgv", "debian-archive-keyring", "debian-keyring", "postgresql",
+    "apt", "gpgv", "sqv", "debian-archive-keyring", "debian-keyring", "postgresql",
     "libpq", "libxml2", "libapt-pkg", "gosu", "ca-certificates",
 )
-ALLOWED_SUITES = {"trixie", "trixie-updates", "trixie-security", "trixie-pgdg"}
+ALLOWED_RELEASES = {
+    ("trixie", "stable"),
+    ("trixie-updates", "stable-updates"),
+    ("trixie-security", "stable-security"),
+    ("trixie-pgdg", "trixie-pgdg"),
+}
+EXPECTED_ORIGINS = {
+    "trixie": ("deb.debian.org", "/debian"),
+    "trixie-updates": ("deb.debian.org", "/debian"),
+    "trixie-security": ("deb.debian.org", "/debian-security"),
+    "trixie-pgdg": ("apt.postgresql.org", "/pub/repos/apt"),
+}
 
 CONTAINER_SCRIPT = r'''#!/bin/bash
 set -Eeuo pipefail
@@ -40,8 +51,16 @@ for file in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/source
   mkdir -p "$evidence/apt-sources/$(dirname "$relative")"
   sed -E 's#(https?://)[^/@[:space:]]+@#\1[REDACTED]@#g' "$file" > "$evidence/apt-sources/$relative"
 done
-find /usr/share/keyrings -maxdepth 1 -type f \( -name '*debian*' -o -name '*pgdg*' \) -print0 \
-  | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$evidence/keyring-sha256.txt"
+ bash -s -- "$evidence/apt-sources" "$evidence/source-trust.tsv" <<'SH'
+__SOURCE_SECURITY_COLLECTOR__
+SH
+: > "$evidence/keyring-sha256.txt"
+for keyring_dir in /usr/share/keyrings /etc/apt/trusted.gpg.d; do
+  [[ -d "$keyring_dir" ]] || continue
+  find "$keyring_dir" -maxdepth 1 -type f \( -name '*.gpg' -o -name '*.asc' -o -name '*.kbx' \) -print0 \
+    | LC_ALL=C sort -z | xargs -0 -r sha256sum >> "$evidence/keyring-sha256.txt"
+done
+if [[ -f /etc/apt/trusted.gpg ]]; then sha256sum /etc/apt/trusted.gpg >> "$evidence/keyring-sha256.txt"; fi
 dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\t${db:Status-Status}\n' | LC_ALL=C sort > "$evidence/dpkg-before.tsv"
 apt-mark showmanual | LC_ALL=C sort > "$evidence/apt-manual-before.txt"
 apt-mark showauto | LC_ALL=C sort > "$evidence/apt-auto-before.txt"
@@ -55,7 +74,27 @@ apt-get -o Acquire::AllowInsecureRepositories=false \
   -o Acquire::Check-Valid-Until=true \
   -o APT::Get::AllowUnauthenticated=false --error-on=any update > /tmp/apt-update.log 2>&1 || { rc=$?; sed -E 's#(https?://)[^/@[:space:]]+@#\1[REDACTED]@#g' /tmp/apt-update.log > "$evidence/apt-update.log"; exit "$rc"; }
 sed -E 's#(https?://)[^/@[:space:]]+@#\1[REDACTED]@#g' /tmp/apt-update.log > "$evidence/apt-update.log"
-apt-get indextargets --format '$(IDENTIFIER)|$(CODENAME)|$(SUITE)|$(ARCHITECTURE)|$(FILENAME)|$(URI)' > "$evidence/apt-index-targets.raw"
+for verifier in sqv gpgv; do
+  if command -v "$verifier" >/dev/null 2>&1; then
+    printf '%s\t%s\t' "$verifier" "$(command -v "$verifier")" >> "$evidence/apt-verifiers.tsv"
+    "$verifier" --version 2>&1 | head -n 1 >> "$evidence/apt-verifiers.tsv" || true
+  fi
+done
+if [[ ! -s "$evidence/apt-verifiers.tsv" ]]; then
+  echo 'No supported APT signature verifier (sqv or gpgv) is installed' >&2
+  exit 25
+fi
+apt-config dump | grep -Ei '^(APT::Key::|Dir[[:space:]]|Dir::Etc([[:space:]]|::Trusted))' > "$evidence/apt-signature-config.txt" || true
+apt-config shell TRUSTED Dir::Etc::Trusted/f TRUSTED_PARTS Dir::Etc::TrustedParts/d > "$evidence/apt-trusted-paths.shell"
+source "$evidence/apt-trusted-paths.shell"
+while [[ "${TRUSTED_PARTS:-}" != / && "${TRUSTED_PARTS:-}" == */ ]]; do TRUSTED_PARTS=${TRUSTED_PARTS%/}; done
+[[ "${TRUSTED:-}" == /etc/apt/trusted.gpg && "${TRUSTED_PARTS:-}" == /etc/apt/trusted.gpg.d ]] || {
+  echo "APT effective global trusted-keyring paths are not the captured standard defaults" >&2
+  exit 26
+}
+printf 'trusted\t%s\ntrustedParts\t%s\n' "$TRUSTED" "$TRUSTED_PARTS" > "$evidence/apt-trusted-paths.tsv"
+apt-get --version | head -n 1 > "$evidence/apt-version.txt"
+apt-get indextargets --format '$(IDENTIFIER)|$(CODENAME)|$(SUITE)|$(ARCHITECTURE)|$(FILENAME)|$(URI)|$(BASE_URI)|$(METAKEY)|$(RELEASEFILE)|$(COMPONENT)' > "$evidence/apt-index-targets.raw"
 if [[ ! -s "$evidence/apt-index-targets.raw" ]]; then
   echo 'APT reported no authenticated index targets' >&2
   exit 22
@@ -71,6 +110,101 @@ if ! grep -q 'InRelease$' "$evidence/apt-index-files.txt" || ! grep -q 'Packages
 fi
 apt-get --simulate purge --auto-remove gnupg > "$evidence/gnupg-purge-simulation.txt" 2>&1
 '''
+
+SOURCE_SECURITY_COLLECTOR = r'''set -Eeuo pipefail
+root=$1
+output=$2
+shopt -s nocasematch
+: > "$output"
+hash_keyring() {
+  local keyring=$1 source_file=$2 size digest
+  [[ "$keyring" == /* ]] || { echo "APT Signed-By path is not absolute: $keyring" >&2; exit 31; }
+  [[ -f "$keyring" ]] || { echo "APT Signed-By keyring is missing: $keyring" >&2; exit 32; }
+  if awk -F '\t' -v key="$keyring" -v source="$source_file" '$1 == key && $4 == source { found=1 } END { exit !found }' "$output"; then return 0; fi
+  if command -v sha256sum >/dev/null 2>&1; then digest=$(sha256sum "$keyring" | awk '{print $1}'); else digest=$(shasum -a 256 "$keyring" | awk '{print $1}'); fi
+  size=$(wc -c < "$keyring" | tr -d '[:space:]')
+  printf '%s\t%s\t%s\t%s\n' "$keyring" "$digest" "$size" "$source_file" >> "$output"
+}
+check_bypass() {
+  local source_text=$1 lower
+  lower=$(printf '%s' "$source_text" | tr '[:upper:]' '[:lower:]' | tr '\n' ' ' | tr '[]' '  ')
+  for pattern in \
+    '(^|[[:space:],])trusted[[:space:]]*=[[:space:]]*yes([[:space:],]|$)' \
+    '(^|[[:space:],])allow-insecure[[:space:]]*=[[:space:]]*yes([[:space:],]|$)' \
+    '(^|[[:space:],])allow-weak[[:space:]]*=[[:space:]]*yes([[:space:],]|$)' \
+    '(^|[[:space:],])allow-downgrade-to-insecure[[:space:]]*=[[:space:]]*yes([[:space:],]|$)' \
+    '(^|[[:space:],])check-valid-until[[:space:]]*=[[:space:]]*no([[:space:],]|$)' \
+    '(^|[[:space:]])trusted:[[:space:]]*yes([[:space:]]|$)' \
+    '(^|[[:space:]])allow-insecure:[[:space:]]*yes([[:space:]]|$)' \
+    '(^|[[:space:]])allow-weak:[[:space:]]*yes([[:space:]]|$)' \
+    '(^|[[:space:]])allow-downgrade-to-insecure:[[:space:]]*yes([[:space:]]|$)' \
+    '(^|[[:space:]])check-valid-until:[[:space:]]*no([[:space:]]|$)'; do
+    if [[ "$lower" =~ $pattern ]]; then
+      echo "APT source trust/freshness bypass is enabled: $pattern" >&2
+      exit 33
+    fi
+  done
+}
+for source in "$root/sources.list" "$root"/sources.list.d/*.list; do
+  [[ -f "$source" ]] || continue
+  while IFS= read -r line; do
+    [[ -n "${line//[[:space:]]/}" && ! "${line#${line%%[![:space:]]*}}" == \#* ]] || continue
+    check_bypass "$line"
+    lower_line=$(printf '%s' "$line" | tr '[:upper:]' '[:lower:]')
+    options=${line#*\[}; options=${options%%\]*}
+    lower_options=$(printf '%s' "$options" | tr '[:upper:]' '[:lower:]')
+    if [[ "$lower_line" == *apt.postgresql.org* && "$lower_options" != *signed-by=* ]]; then
+      echo "PGDG APT source has no explicit Signed-By keyring: $source" >&2
+      exit 34
+    fi
+    if [[ "$lower_options" == *signed-by=* ]]; then
+      signed_value=$(printf '%s\n' "$options" | sed -En 's/.*[Ss][Ii][Gg][Nn][Ee][Dd]-[Bb][Yy][[:space:]]*=[[:space:]]*([^]]*).*/\1/p' | tr ',' ' ')
+      found_path=0
+      for token in $signed_value; do
+        token=${token%\"}; token=${token#\"}; token=${token%\'}; token=${token#\'}
+        if [[ "$token" == /* ]]; then hash_keyring "$token" "${source#"$root"/}"; found_path=1; fi
+      done
+      [[ $found_path == 1 ]] || { echo "APT Signed-By option has no absolute keyring path: $source" >&2; exit 35; }
+    fi
+  done < <(sed -E 's/[[:space:]]+#.*$//' "$source")
+done
+for source in "$root"/sources.list.d/*.sources; do
+  [[ -f "$source" ]] || continue
+  while IFS= read -r -d $'\034' paragraph; do
+    [[ -n "${paragraph//[[:space:]]/}" ]] || continue
+    lower=$(printf '%s' "$paragraph" | tr '[:upper:]' '[:lower:]' | tr '\n' ' ')
+    [[ "$lower" =~ (^|[[:space:]])enabled:[[:space:]]*no([[:space:]]|$) ]] && continue
+    check_bypass "$paragraph"
+    signed_value=""
+    collecting=0
+    while IFS= read -r line; do
+      if [[ "$line" =~ ^signed-by:[[:space:]]*(.*)$ ]]; then
+        signed_value=${BASH_REMATCH[1]}
+        collecting=1
+      elif [[ $collecting == 1 && "$line" == [[:space:]]* ]]; then
+        signed_value+=" $line"
+      else
+        collecting=0
+      fi
+    done <<< "$paragraph"
+    if [[ "$lower" == *apt.postgresql.org* && -z "$signed_value" ]]; then
+      echo "PGDG APT source has no explicit Signed-By keyring: $source" >&2
+      exit 34
+    fi
+    if [[ -n "$signed_value" && "$signed_value" != *"BEGIN PGP PUBLIC KEY BLOCK"* ]]; then
+      found_path=0
+      for token in ${signed_value//,/ }; do
+        token=${token%\"}; token=${token#\"}; token=${token%\'}; token=${token#\'}
+        if [[ "$token" == /* ]]; then hash_keyring "$token" "${source#"$root"/}"; found_path=1; fi
+      done
+      [[ $found_path == 1 ]] || { echo "APT Signed-By field has no absolute keyring path or inline key: $source" >&2; exit 35; }
+    fi
+  done < <(awk 'BEGIN { RS="" } { lower=tolower($0); if (lower !~ /(^|\n)[ \t]*enabled:[ \t]*no([ \t]|\n|$)/) printf "%s\034", $0 }' "$source")
+done
+printf 'APT source trust policy: PASS\n' >> "$output"
+'''
+
+CONTAINER_SCRIPT = CONTAINER_SCRIPT.replace("__SOURCE_SECURITY_COLLECTOR__", SOURCE_SECURITY_COLLECTOR)
 
 
 def sha256(path: Path) -> str:
@@ -96,30 +230,214 @@ def parse_inventory(path: Path) -> dict[tuple[str, str], str]:
     return result
 
 
-def validate_index_targets(path: Path, metadata_directory: Path) -> None:
+def cleartext_release_body(raw: bytes) -> str:
+    lines = raw.decode("utf-8").splitlines()
+    while lines and not lines[-1].strip():
+        lines.pop()
+    if not lines or lines[0] != "-----BEGIN PGP SIGNED MESSAGE-----":
+        raise ValueError("malformed InRelease clear-sign armor")
+    try:
+        separator = lines.index("")
+    except ValueError as error:
+        raise ValueError("InRelease clear-sign headers are not terminated") from error
+    if separator < 2 or not any(line.startswith("Hash: ") for line in lines[1:separator]):
+        raise ValueError("InRelease clear-sign headers are incomplete")
+    signature_starts = [i for i, line in enumerate(lines) if line == "-----BEGIN PGP SIGNATURE-----"]
+    signature_ends = [i for i, line in enumerate(lines) if line == "-----END PGP SIGNATURE-----"]
+    if len(signature_starts) != 1 or len(signature_ends) != 1 or signature_ends[0] != len(lines) - 1:
+        raise ValueError("InRelease has duplicate, incomplete, or trailing signature framing")
+    signature_start = signature_starts[0]
+    if signature_start <= separator or signature_ends[0] <= signature_start + 1:
+        raise ValueError("InRelease signature framing is malformed")
+    body = lines[separator + 1 : signature_start]
+    return "\n".join(line[2:] if line.startswith("- ") else line for line in body) + "\n"
+
+
+def parse_release_sha256(raw: bytes) -> dict[str, tuple[str, int]]:
+    lines = cleartext_release_body(raw).splitlines()
+    found = False
+    in_sha256 = False
+    records: dict[str, tuple[str, int]] = {}
+    for line in lines:
+        if line == "SHA256:":
+            if found:
+                raise ValueError("InRelease contains duplicate SHA256 sections")
+            found = True
+            in_sha256 = True
+            continue
+        if in_sha256 and line and not line[0].isspace():
+            in_sha256 = False
+        if in_sha256:
+            match = re.fullmatch(r"\s+([0-9a-fA-F]{64})\s+([0-9]+)\s+([^\s]+)\s*", line)
+            if not match:
+                raise ValueError("InRelease SHA256 row is malformed")
+            digest, size, filename = match.groups()
+            if filename in records:
+                raise ValueError(f"InRelease contains duplicate SHA256 path {filename}")
+            records[filename] = (digest.lower(), int(size))
+    if not found or not records:
+        raise ValueError("InRelease has no usable SHA256 index records")
+    return records
+
+
+def parse_release_identity(raw: bytes) -> tuple[str, str]:
+    values: dict[str, str] = {}
+    for line in cleartext_release_body(raw).splitlines():
+        for field in ("Codename", "Suite"):
+            prefix = field + ": "
+            if line.startswith(prefix):
+                if field in values:
+                    raise ValueError(f"InRelease contains duplicate {field} fields")
+                values[field] = line[len(prefix) :]
+    if "Codename" not in values or "Suite" not in values:
+        raise ValueError("InRelease is missing Codename or Suite identity")
+    return values["Codename"], values["Suite"]
+
+
+def validate_index_targets(path: Path, metadata_directory: Path) -> list[dict[str, str]]:
     rows = [line.split("|") for line in path.read_text().splitlines() if line]
     if not rows:
         raise ValueError("APT reported no authenticated index targets")
-    observed_suites: set[str] = set()
+    observed_codenames: set[str] = set()
+    targets: list[dict[str, str]] = []
     for row in rows:
-        if len(row) != 6:
+        if len(row) != 10:
             raise ValueError("APT index-target output has unexpected framing")
-        identifier, codename, suite, _, filename, uri = row
-        if suite not in ALLOWED_SUITES or (codename and codename != "trixie"):
+        identifier, codename, suite, architecture, filename, uri, base_uri, meta_key, release_file, component = row
+        if (codename, suite) not in ALLOWED_RELEASES:
             raise ValueError(f"APT target is outside the approved Trixie suites: {suite!r}/{codename!r}")
-        observed_suites.add(suite)
+        observed_codenames.add(codename)
         parsed_uri = urlsplit(uri)
+        parsed_base = urlsplit(base_uri)
         if parsed_uri.scheme not in {"https", "http"} or not parsed_uri.hostname or parsed_uri.username or parsed_uri.password:
             raise ValueError("APT target URI is malformed or contains credentials")
-        if parsed_uri.port not in {None, 80, 443}:
+        if parsed_base.username or parsed_base.password or not parsed_base.hostname:
+            raise ValueError("APT base URI is malformed or contains credentials")
+        if parsed_uri.port not in ({None, 80} if parsed_uri.scheme == "http" else {None, 443}):
             raise ValueError("APT target URI uses a non-default port")
-        if not filename.startswith("/var/lib/apt/lists/"):
-            raise ValueError("APT target has an unexpected local path or unsupported source URI")
-        if "Packages" in identifier and not (metadata_directory / Path(filename).name).is_file():
-            raise ValueError(f"authenticated package index was not preserved: {filename}")
-    missing_suites = ALLOWED_SUITES - observed_suites
-    if missing_suites:
-        raise ValueError(f"APT did not provide all required Trixie suites: {', '.join(sorted(missing_suites))}")
+        if parsed_base.port not in ({None, 80} if parsed_base.scheme == "http" else {None, 443}):
+            raise ValueError("APT base URI uses a non-default port")
+        validate_expected_origin(codename, base_uri)
+        if parsed_uri.scheme != parsed_base.scheme or parsed_uri.netloc != parsed_base.netloc:
+            raise ValueError("APT target URI authority differs from its configured base URI")
+        if parsed_uri.query or parsed_uri.fragment or parsed_base.query or parsed_base.fragment:
+            raise ValueError("APT target URI contains query or fragment data")
+        if not filename.startswith("/var/lib/apt/lists/") or not release_file.startswith("/var/lib/apt/lists/"):
+            raise ValueError("APT target has an unexpected local path")
+        if not (metadata_directory / Path(filename).name).is_file():
+            raise ValueError(f"APT target index was not preserved: {filename}")
+        if not (metadata_directory / Path(release_file).name).is_file():
+            raise ValueError(f"APT target Release file was not preserved: {release_file}")
+        targets.append({
+            "identifier": identifier, "codename": codename, "suite": suite,
+            "architecture": architecture, "filename": filename, "uri": uri,
+            "baseUri": base_uri, "metaKey": meta_key, "releaseFile": release_file,
+            "component": component,
+        })
+    required_codenames = {codename for codename, _ in ALLOWED_RELEASES}
+    missing_codenames = required_codenames - observed_codenames
+    if missing_codenames:
+        raise ValueError(f"APT did not provide all required Trixie codenames: {', '.join(sorted(missing_codenames))}")
+    return targets
+
+
+def validate_expected_origin(codename: str, base_uri: str) -> None:
+    expected = EXPECTED_ORIGINS.get(codename)
+    parsed = urlsplit(base_uri)
+    if expected is None or parsed.scheme not in {"http", "https"} or parsed.hostname != expected[0] or parsed.path.rstrip("/") != expected[1]:
+        raise ValueError(f"APT base URI is not the approved origin for {codename}: {base_uri!r}")
+
+
+def validate_apt_trusted_paths(paths_path: Path) -> None:
+    values: dict[str, str] = {}
+    for line in paths_path.read_text().splitlines():
+        fields = line.split("\t")
+        if len(fields) != 2:
+            raise ValueError("APT effective trusted-path evidence has unexpected framing")
+        value = fields[1]
+        if fields[0].lower() == "trustedparts":
+            value = str(Path(value))
+        values[fields[0].lower()] = value
+    if values != {"trusted": "/etc/apt/trusted.gpg", "trustedparts": "/etc/apt/trusted.gpg.d"}:
+        raise ValueError("APT effective global trusted-keyring paths differ from the captured standard defaults")
+
+
+def signed_package_index_evidence(targets: list[dict[str, str]], metadata_directory: Path) -> list[dict[str, object]]:
+    releases: dict[str, tuple[str, dict[str, tuple[str, int]]]] = {}
+    evidence: list[dict[str, object]] = []
+    for target in targets:
+        if "Packages" not in target["identifier"]:
+            continue
+        release_name = Path(target["releaseFile"]).name
+        release_path = metadata_directory / release_name
+        if release_name not in releases:
+            releases[release_name] = (sha256(release_path), parse_release_sha256(release_path.read_bytes()))
+        release_sha, signed_rows = releases[release_name]
+        release_codename, release_suite = parse_release_identity(release_path.read_bytes())
+        if (release_codename, release_suite) != (target["codename"], target["suite"]):
+            raise ValueError("APT index-target identity differs from its signed InRelease identity")
+        base = urlsplit(target["baseUri"])
+        index_uri = urlsplit(target["uri"])
+        validate_expected_origin(target["codename"], target["baseUri"])
+        base_path = base.path.rstrip("/")
+        prefix = f"{base_path}/dists/{target['codename']}/"
+        if not index_uri.path.startswith(prefix):
+            raise ValueError(f"APT package URI is outside its codename Release path: {target['uri']}")
+        upstream_path = index_uri.path[len(prefix) :]
+        package_prefix = f"{target['component']}/binary-{target['architecture']}/"
+        if not upstream_path.startswith(package_prefix):
+            raise ValueError("APT package URI does not match its component and architecture")
+        meta_key = target["metaKey"]
+        if meta_key and upstream_path != meta_key and not upstream_path.startswith(meta_key + "."):
+            raise ValueError(f"APT MetaKey does not bind to package URI: {target['metaKey']!r}")
+        if not re.fullmatch(r".+/Packages(?:\.(?:gz|xz|bz2|lz4|zst))?", upstream_path):
+            raise ValueError(f"APT URI is not a supported Packages index: {upstream_path}")
+        canonical_path = re.sub(r"\.(?:gz|xz|bz2|lz4|zst)$", "", upstream_path)
+        signed_variants = []
+        for candidate in (canonical_path, *(canonical_path + ext for ext in (".xz", ".bz2", ".gz", ".lz4", ".zst"))):
+            if candidate in signed_rows:
+                digest, size = signed_rows[candidate]
+                signed_variants.append({"path": candidate, "sha256": digest, "size": size})
+        if not signed_variants:
+            raise ValueError(f"signed InRelease does not list a supported Packages variant for {upstream_path}")
+        local_path = metadata_directory / Path(target["filename"]).name
+        evidence.append({
+            "identifier": target["identifier"],
+            "codename": target["codename"], "suite": target["suite"],
+            "component": target["component"], "architecture": target["architecture"],
+            "filename": target["filename"], "uri": target["uri"],
+            "baseUri": target["baseUri"], "metaKey": meta_key,
+            "releaseFile": release_name, "releaseSha256": release_sha,
+            "canonicalPackagesPath": canonical_path,
+            "signedVariants": signed_variants, "localAptFile": local_path.name,
+            "localAptSha256": sha256(local_path), "localAptSize": local_path.stat().st_size,
+        })
+    if not evidence:
+        raise ValueError("no signed upstream Packages index records were bound to APT targets")
+    return sorted(evidence, key=lambda item: (str(item["codename"]), str(item["component"]), str(item["architecture"]), str(item["canonicalPackagesPath"])))
+
+
+def signed_release_index_records(metadata_directory: Path, targets: list[dict[str, str]]) -> list[dict[str, object]]:
+    records: list[dict[str, object]] = []
+    release_names = sorted({Path(target["releaseFile"]).name for target in targets})
+    for release_name in release_names:
+        release_path = metadata_directory / release_name
+        release_bytes = release_path.read_bytes()
+        release_sha = sha256(release_path)
+        codename, suite = parse_release_identity(release_bytes)
+        for path, (digest, size) in sorted(parse_release_sha256(release_bytes).items()):
+            records.append({
+                "releaseFile": release_path.name,
+                "releaseSha256": release_sha,
+                "codename": codename,
+                "suite": suite,
+                "path": path,
+                "sha256": digest,
+                "size": size,
+            })
+    if not records:
+        raise ValueError("no signed SHA256 index records were recovered from InRelease files")
+    return records
 
 
 def is_protected(name: str) -> bool:
@@ -201,17 +519,22 @@ def main() -> int:
         (EVIDENCE_BASE / "container.log").write_text(result.stdout)
         if result.returncode:
             raise RuntimeError(f"disposable image discovery failed with exit {result.returncode}")
-        validate_index_targets(EVIDENCE_BASE / "apt-index-targets.tsv", EVIDENCE_BASE / "apt-lists")
+        index_targets = validate_index_targets(EVIDENCE_BASE / "apt-index-targets.tsv", EVIDENCE_BASE / "apt-lists")
+        validate_apt_trusted_paths(EVIDENCE_BASE / "apt-trusted-paths.tsv")
+        signed_indices = signed_package_index_evidence(index_targets, EVIDENCE_BASE / "apt-lists")
+        signed_release_indices = signed_release_index_records(EVIDENCE_BASE / "apt-lists", index_targets)
         inventory = parse_inventory(EVIDENCE_BASE / "dpkg-before.tsv")
         removals = parse_removals((EVIDENCE_BASE / "gnupg-purge-simulation.txt").read_text(), inventory)
         metadata_files = []
         for path in sorted((EVIDENCE_BASE / "apt-lists").iterdir()):
             if path.is_file():
-                metadata_files.append({"file": path.relative_to(EVIDENCE_BASE).as_posix(), "sha256": sha256(path)})
-        inrelease = [item for item in metadata_files if item["file"].endswith("InRelease")]
-        packages = [item for item in metadata_files if "Packages" in item["file"]]
-        if not inrelease or not packages:
-            raise RuntimeError("missing authenticated Release or Packages metadata hashes")
+                metadata_files.append({"file": path.relative_to(EVIDENCE_BASE).as_posix(), "sha256": sha256(path), "sizeBytes": path.stat().st_size})
+        verified_release_names = {Path(target["releaseFile"]).name for target in index_targets}
+        verified_package_names = {Path(target["filename"]).name for target in index_targets if "Packages" in target["identifier"]}
+        inrelease = [item for item in metadata_files if Path(item["file"]).name in verified_release_names]
+        local_packages = [item for item in metadata_files if Path(item["file"]).name in verified_package_names]
+        if not inrelease or not local_packages:
+            raise RuntimeError("missing authenticated Release or local Packages metadata hashes")
         lock = {
             "schemaVersion": 1,
             "kind": "discovery-lock-proposal",
@@ -220,8 +543,13 @@ def main() -> int:
             "image": IMAGE,
             "imageId": manifest["imageId"],
             "platform": PLATFORM,
-            "authenticatedReleaseMetadata": inrelease,
-            "authenticatedPackagesMetadata": packages,
+            "authenticatedInReleaseFiles": inrelease,
+            "signedReleaseIndexHashes": signed_release_indices,
+            "packageIndexTargetBindings": signed_indices,
+            "localAptIndexFiles": local_packages,
+            "aptSignatureConfigSha256": sha256(EVIDENCE_BASE / "apt-signature-config.txt"),
+            "aptTrustedPathsSha256": sha256(EVIDENCE_BASE / "apt-trusted-paths.tsv"),
+            "sourceTrustEvidenceSha256": sha256(EVIDENCE_BASE / "source-trust.tsv"),
             "purgeSimulationSha256": sha256(EVIDENCE_BASE / "gnupg-purge-simulation.txt"),
             "removals": removals,
             "runtimeClearance": "NOT_EVALUATED",
