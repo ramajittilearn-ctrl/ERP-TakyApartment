@@ -86,6 +86,47 @@ class ReleaseTests(unittest.TestCase):
                 max_future_skew_seconds=300, require_valid_until=False, expected_suite="oldstable",
             )
 
+    def test_accepts_historical_trixie_release_only_when_snapshot_age_is_unbounded(self):
+        body = GOOD_RELEASE.replace("Suite: testing", "Suite: stable")
+        body = body.replace("Codename: forky", "Codename: trixie")
+        body = body.replace("Date: Wed, 28 Oct 2026 20:22:33 UTC", "Date: Sat, 12 Sep 2026 07:55:41 UTC")
+        body = body.replace("Valid-Until: Wed, 04 Nov 2026 20:22:33 UTC\n", "")
+        accepted = module.validate_release(
+            body, expected_origin="Debian", expected_codename="trixie", expected_component="main",
+            architecture="amd64", now=NOW, max_age_seconds=None, max_future_skew_seconds=300,
+            require_valid_until=False, expected_suite="stable",
+        )
+        self.assertEqual(accepted["date"], "2026-09-12T07:55:41Z")
+        with self.assertRaisesRegex(module.ProvenanceError, "freshness window"):
+            module.validate_release(
+                body, expected_origin="Debian", expected_codename="trixie", expected_component="main",
+                architecture="amd64", now=NOW, max_age_seconds=7 * 24 * 60 * 60,
+                max_future_skew_seconds=300, require_valid_until=False, expected_suite="stable",
+            )
+
+    def test_snapshot_age_exemptions_do_not_disable_current_repository_freshness_policy(self):
+        policy = module.read_json(module.POLICY_PATH)
+        transition = policy["debianKeyringTransition"]
+        fork = policy["debianForky"]
+        pgdg = policy["pgdg"]
+        self.assertIsNone(module.policy_max_age_seconds(
+            transition, "bookwormSnapshotMaxAgeSeconds", allow_unbounded=True, label="Bookworm snapshot"
+        ))
+        self.assertIsNone(module.policy_max_age_seconds(
+            transition, "trixieSnapshotMaxAgeSeconds", allow_unbounded=True, label="Trixie snapshot"
+        ))
+        self.assertEqual(module.policy_max_age_seconds(
+            fork, "maxMetadataAgeSeconds", allow_unbounded=False, label="current Debian Forky"
+        ), 604800)
+        self.assertEqual(module.policy_max_age_seconds(
+            pgdg, "maxMetadataAgeSeconds", allow_unbounded=False, label="PGDG"
+        ), 604800)
+        with self.assertRaisesRegex(module.ProvenanceError, "invalid current Debian Forky metadata freshness"):
+            module.policy_max_age_seconds(
+                {"maxMetadataAgeSeconds": None}, "maxMetadataAgeSeconds", allow_unbounded=False,
+                label="current Debian Forky",
+            )
+
     def test_historical_snapshot_age_exemption_still_rejects_future_dates(self):
         body = GOOD_RELEASE.replace("Suite: testing", "Suite: oldstable")
         body = body.replace("Codename: forky", "Codename: bookworm")
@@ -96,6 +137,18 @@ class ReleaseTests(unittest.TestCase):
                 body, expected_origin="Debian", expected_codename="bookworm", expected_component="main",
                 architecture="amd64", now=NOW, max_age_seconds=None, max_future_skew_seconds=300,
                 require_valid_until=False, expected_suite="oldstable",
+            )
+
+    def test_historical_trixie_snapshot_age_exemption_still_rejects_future_dates(self):
+        body = GOOD_RELEASE.replace("Suite: testing", "Suite: stable")
+        body = body.replace("Codename: forky", "Codename: trixie")
+        body = body.replace("Date: Wed, 28 Oct 2026 20:22:33 UTC", "Date: Thu, 29 Oct 2026 13:00:00 UTC")
+        body = body.replace("Valid-Until: Wed, 04 Nov 2026 20:22:33 UTC\n", "")
+        with self.assertRaisesRegex(module.ProvenanceError, "too far in the future"):
+            module.validate_release(
+                body, expected_origin="Debian", expected_codename="trixie", expected_component="main",
+                architecture="amd64", now=NOW, max_age_seconds=None, max_future_skew_seconds=300,
+                require_valid_until=False, expected_suite="stable",
             )
 
     def test_historical_snapshot_age_exemption_still_rejects_expired_valid_until(self):

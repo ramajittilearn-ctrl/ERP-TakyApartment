@@ -211,6 +211,20 @@ def validate_release(
     }
 
 
+def policy_max_age_seconds(
+    section: dict[str, Any], key: str, *, allow_unbounded: bool, label: str
+) -> int | None:
+    if key not in section:
+        raise ProvenanceError(f"policy does not define {label} metadata freshness")
+    value = section[key]
+    if value is None and allow_unbounded:
+        return None
+    minimum = 0 if allow_unbounded else 1
+    if type(value) is not int or value < minimum:
+        raise ProvenanceError(f"policy contains an invalid {label} metadata freshness")
+    return value
+
+
 def verified_signers(
     status_text: str,
     trusted_primary_fingerprints: Iterable[str] | None = None,
@@ -831,11 +845,9 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
         copy_evidence(bookworm_inrelease, output_dir / "metadata/source-bookworm.InRelease")
         recorded_bookworm_signers = set(bootstrap.get("inReleaseSignerFingerprints", []))
         bookworm_policy = policy["debianKeyringTransition"]
-        if "bookwormBootstrapMaxAgeSeconds" not in bookworm_policy:
-            raise ProvenanceError("policy does not define historical Bookworm snapshot freshness")
-        bookworm_max_age = bookworm_policy["bookwormBootstrapMaxAgeSeconds"]
-        if bookworm_max_age is not None and (type(bookworm_max_age) is not int or bookworm_max_age < 0):
-            raise ProvenanceError("policy contains an invalid historical Bookworm snapshot freshness")
+        bookworm_max_age = policy_max_age_seconds(
+            bookworm_policy, "bookwormSnapshotMaxAgeSeconds", allow_unbounded=True, label="Bookworm snapshot"
+        )
         trusted_bookworm_primaries = set(bookworm_policy["bookwormBootstrapPrimaryFingerprints"])
         additional_bookworm_signers = set(bootstrap.get("unverifiedAdditionalSignerFingerprints", []))
         if not trusted_bookworm_primaries or not trusted_bookworm_primaries.issubset(recorded_bookworm_signers):
@@ -915,6 +927,9 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
             raise ProvenanceError("artifact-derived keyring did not verify Trixie InRelease with a required signer")
         trixie_body = cleartext_release_body(trixie_inrelease.read_bytes())
         transition_policy = policy["debianKeyringTransition"]
+        trixie_max_age = policy_max_age_seconds(
+            transition_policy, "trixieSnapshotMaxAgeSeconds", allow_unbounded=True, label="Trixie snapshot"
+        )
         trixie_release_info = validate_release(
             trixie_body,
             expected_origin=transition_policy["bootstrapOrigin"],
@@ -922,7 +937,7 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
             expected_component="main",
             architecture=policy["architecture"],
             now=dt.datetime.now(dt.timezone.utc),
-            max_age_seconds=transition_policy["maxMetadataAgeSeconds"],
+            max_age_seconds=trixie_max_age,
             max_future_skew_seconds=transition_policy["maxFutureClockSkewSeconds"],
             require_valid_until=False,
         )
@@ -1012,8 +1027,10 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
         copy_evidence(debian_release_path, output_dir / "metadata/debian-forky.InRelease")
         copy_evidence(pgdg_release_path, output_dir / "metadata/pgdg-forky.InRelease")
 
-        max_age = transition_policy["maxMetadataAgeSeconds"]
-        max_skew = transition_policy["maxFutureClockSkewSeconds"]
+        max_age = policy_max_age_seconds(
+            debian_policy, "maxMetadataAgeSeconds", allow_unbounded=False, label="current Debian Forky"
+        )
+        max_skew = debian_policy["maxFutureClockSkewSeconds"]
         debian_release = release_evidence(
             inrelease=debian_release_path, keyring=debian_keyring,
             trusted_primaries=debian_policy["primaryFingerprints"],
@@ -1027,7 +1044,8 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
             inrelease=pgdg_release_path, keyring=pgdg_keyring, trusted_primaries=pgdg_primary_fingerprints,
             policy=policy, expected_origin=pgdg["origin"], expected_codename=pgdg["codename"],
             expected_component="main", expected_label=pgdg["label"], expected_suite=pgdg["suite"],
-            max_age=pgdg["maxMetadataAgeSeconds"], max_clock_skew=pgdg["maxFutureClockSkewSeconds"],
+            max_age=policy_max_age_seconds(pgdg, "maxMetadataAgeSeconds", allow_unbounded=False, label="PGDG"),
+            max_clock_skew=pgdg["maxFutureClockSkewSeconds"],
             require_valid_until=False, log_dir=log_dir,
         )[2]
 
