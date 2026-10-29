@@ -528,15 +528,25 @@ def validate_isolated_release_acquisitions(
             fail("isolated Release signed identity differs from configured Dist and source suite")
 
         exact_path = record["exactInReleasePath"]
-        expected_lists_prefix = f"/evidence/isolated-releases/{codename}/lists/"
-        if not isinstance(exact_path, str) or not exact_path.startswith(expected_lists_prefix) or not exact_path.endswith("InRelease"):
-            fail("isolated exact InRelease path is outside the dedicated APT lists directory")
-        exact_relative = exact_path.removeprefix("/evidence/")
-        exact_relative = safe_relative_path(exact_relative, "isolated exact InRelease path")
-        exact_evidence = evidence_dir / exact_relative
+        expected_lists_directory = PurePosixPath(f"/var/lib/apt/phase4-isolated/{codename}/lists")
+        exact_pure_path = PurePosixPath(exact_path) if isinstance(exact_path, str) else PurePosixPath(".")
+        if (
+            not exact_pure_path.is_absolute()
+            or exact_pure_path.parent != expected_lists_directory
+            or ".." in exact_pure_path.parts
+            or not exact_pure_path.name.endswith("InRelease")
+        ):
+            fail("isolated exact InRelease path is outside the disposable image's dedicated APT lists directory")
+        exact_path_record = evidence_dir / f"isolated-releases/{codename}/exact-inrelease-path.txt"
+        lists_path_record = evidence_dir / f"isolated-releases/{codename}/lists-path.txt"
+        if exact_path_record.read_text().strip() != exact_path or lists_path_record.read_text().strip() != expected_lists_directory.as_posix():
+            fail("isolated exact InRelease path differs from its captured APT lists-path records")
         copied_evidence = evidence_dir / inrelease_file
-        if not exact_evidence.is_file() or exact_evidence.is_symlink() or exact_evidence.read_bytes() != copied_evidence.read_bytes():
-            fail("isolated InRelease copy differs from the exact APT lists path")
+        if not copied_evidence.is_file() or copied_evidence.is_symlink():
+            fail("isolated InRelease copy is missing or unsafe")
+        digest_record = evidence_dir / f"isolated-releases/{codename}/exact-inrelease-digest.tsv"
+        if digest_record.read_text().strip().split("\t") != [record["inReleaseSha256"], str(record["inReleaseSizeBytes"])]:
+            fail("isolated InRelease copy differs from the digest captured at its exact APT path")
         verify_inrelease_signature(copied_evidence, selected_keyrings)
 
         combined_file = safe_relative_path(record["combinedInReleaseFile"], "combined InRelease file")

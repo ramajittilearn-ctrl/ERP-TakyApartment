@@ -100,6 +100,12 @@ class DiscoveryParsingTests(unittest.TestCase):
             self.assertTrue(evidence.is_dir())
             self.assertFalse(scanner_output.exists())
 
+    def test_isolated_apt_lists_stay_inside_disposable_image_filesystem(self):
+        self.assertIn('lists="/var/lib/apt/phase4-isolated/$codename/lists"', MODULE.CONTAINER_SCRIPT)
+        self.assertNotIn('lists="$suite_dir/lists"', MODULE.CONTAINER_SCRIPT)
+        self.assertIn('if [[ -e "$lists" ]]', MODULE.CONTAINER_SCRIPT)
+        self.assertIn('exact-inrelease-digest.tsv', MODULE.CONTAINER_SCRIPT)
+
     def test_workflow_validates_and_uploads_discovery_evidence_separately(self):
         workflow = SCRIPT.parents[2] / ".github/workflows/phase4-ci.yml"
         text = workflow.read_text()

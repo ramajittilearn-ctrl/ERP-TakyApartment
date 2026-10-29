@@ -6,7 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import subprocess
 import sys
@@ -155,7 +155,11 @@ select_suite_source() {
 
 for codename in trixie trixie-updates trixie-security trixie-pgdg; do
   suite_dir="$evidence/isolated-releases/$codename"
-  lists="$suite_dir/lists"
+  lists="/var/lib/apt/phase4-isolated/$codename/lists"
+  if [[ -e "$lists" ]]; then
+    echo "isolated APT lists path is not fresh for $codename" >&2
+    exit 46
+  fi
   mkdir -p "$lists/partial"
   selected_source="$suite_dir/source.selected"
   select_suite_source "$codename" "$selected_source"
@@ -190,7 +194,16 @@ for codename in trixie trixie-updates trixie-security trixie-pgdg; do
     exit 43
   fi
   printf '%s\n' "${inrelease_candidates[0]}" > "$suite_dir/exact-inrelease-path.txt"
+  original_sha256=$(sha256sum "${inrelease_candidates[0]}" | awk '{print $1}')
+  original_size=$(stat -c '%s' "${inrelease_candidates[0]}")
   cp "${inrelease_candidates[0]}" "$suite_dir/InRelease"
+  copied_sha256=$(sha256sum "$suite_dir/InRelease" | awk '{print $1}')
+  copied_size=$(stat -c '%s' "$suite_dir/InRelease")
+  if [[ "$original_sha256" != "$copied_sha256" || "$original_size" != "$copied_size" ]]; then
+    echo "copied isolated InRelease differs from its exact APT file for $codename" >&2
+    exit 45
+  fi
+  printf '%s\t%s\n' "$original_sha256" "$original_size" > "$suite_dir/exact-inrelease-digest.tsv"
 done
 apt-get indextargets --format '$(IDENTIFIER)|$(CODENAME)|$(SUITE)|$(ARCHITECTURE)|$(FILENAME)|$(URI)|$(BASE_URI)|$(METAKEY)|$(COMPONENT)' > "$evidence/apt-index-targets.raw"
 if [[ ! -s "$evidence/apt-index-targets.raw" ]]; then
@@ -613,9 +626,17 @@ def collect_isolated_release_acquisitions(
 
         exact_path = (directory / "exact-inrelease-path.txt").read_text().strip()
         lists_root = (directory / "lists-path.txt").read_text().strip().rstrip("/")
-        if not exact_path.startswith(lists_root + "/") or not exact_path.endswith("InRelease"):
+        exact_pure_path = PurePosixPath(exact_path)
+        if (
+            exact_pure_path.parent.as_posix() != lists_root
+            or ".." in exact_pure_path.parts
+            or not exact_pure_path.name.endswith("InRelease")
+        ):
             raise ValueError(f"isolated APT InRelease path is outside its dedicated lists directory for {codename}")
         inrelease_file = directory / "InRelease"
+        digest_record = (directory / "exact-inrelease-digest.tsv").read_text().strip().split("\t")
+        if digest_record != [sha256(inrelease_file), str(inrelease_file.stat().st_size)]:
+            raise ValueError(f"isolated APT InRelease copy differs from exact-path digest for {codename}")
         release_codename, release_suite = parse_release_identity(inrelease_file.read_bytes())
         if (release_codename, release_suite) != (codename, expected_suite):
             raise ValueError(f"isolated APT InRelease identity differs from configured Dist for {codename}")

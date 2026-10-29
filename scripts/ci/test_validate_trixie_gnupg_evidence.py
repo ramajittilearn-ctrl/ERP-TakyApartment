@@ -154,12 +154,13 @@ class EvidenceFixture:
             target_rows.append(target_row)
             isolated_target = f"isolated-releases/{codename}/apt-index-targets.tsv"
             self.files[isolated_target] = (target_row + "\n").encode()
-            lists_root = f"/evidence/isolated-releases/{codename}/lists"
+            lists_root = f"/var/lib/apt/phase4-isolated/{codename}/lists"
             exact_release = f"{lists_root}/repo_dists_{codename}_InRelease"
-            exact_relative = exact_release.removeprefix("/evidence/")
-            self.files[exact_relative] = release_bytes
             self.files[f"isolated-releases/{codename}/exact-inrelease-path.txt"] = (exact_release + "\n").encode()
             self.files[f"isolated-releases/{codename}/lists-path.txt"] = (lists_root + "\n").encode()
+            self.files[f"isolated-releases/{codename}/exact-inrelease-digest.tsv"] = (
+                f"{digest(release_bytes)}\t{len(release_bytes)}\n"
+            ).encode()
             self.files[f"isolated-releases/{codename}/original-source-relative.txt"] = (source_relative + "\n").encode()
             self.files[f"isolated-releases/{codename}/configured-dist.txt"] = (codename + "\n").encode()
             self.files[f"isolated-releases/{codename}/source-path.txt"] = (f"/tmp/source-{codename}{suffix}\n").encode()
@@ -309,6 +310,29 @@ class EvidenceValidationTests(unittest.TestCase):
             acquisition["sourceUri"] = "https://mirror.example/debian"
             fixture.write()
             with self.assertRaisesRegex(ValueError, "isolated source URI differs from proposal acquisition"):
+                MODULE.validate_proposal(fixture.root)
+
+    def test_exact_inrelease_path_must_be_inside_its_disposable_lists_directory(self):
+        invalid_paths = (
+            "/var/lib/apt/phase4-isolated/trixie-updates/lists/repo_dists_trixie_InRelease",
+            "/var/lib/apt/phase4-isolated/trixie/lists/../tmp/InRelease",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(path=invalid_path), tempfile.TemporaryDirectory() as temp:
+                fixture = self.fixture(temp)
+                fixture.proposal["isolatedReleaseAcquisitions"][0]["exactInReleasePath"] = invalid_path
+                fixture.write()
+                with self.assertRaisesRegex(ValueError, "outside the disposable image's dedicated APT lists directory"):
+                    MODULE.validate_proposal(fixture.root)
+
+    def test_exact_inrelease_digest_sidecar_must_match_captured_copy(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = self.fixture(temp)
+            (fixture.root / "isolated-releases/trixie/exact-inrelease-digest.tsv").write_text(
+                f"{'0' * 64}\t1\n"
+            )
+            fixture.write()
+            with self.assertRaisesRegex(ValueError, "differs from the digest captured at its exact APT path"):
                 MODULE.validate_proposal(fixture.root)
 
     def test_combined_and_isolated_release_snapshots_must_be_byte_identical(self):
@@ -535,14 +559,15 @@ class EvidenceValidationTests(unittest.TestCase):
             acquisition = fixture.proposal["isolatedReleaseAcquisitions"][0]
             combined = next(item for item in fixture.proposal["authenticatedInReleaseFiles"] if item["file"] == acquisition["combinedInReleaseFile"])
             (fixture.root / combined["file"]).write_bytes(changed)
-            exact_relative = acquisition["exactInReleasePath"].removeprefix("/evidence/")
-            (fixture.root / exact_relative).write_bytes(changed)
             release_record["sha256"] = digest(changed)
             release_record["sizeBytes"] = len(changed)
             combined["sha256"] = digest(changed)
             combined["sizeBytes"] = len(changed)
             acquisition["inReleaseSha256"] = digest(changed)
             acquisition["combinedInReleaseSha256"] = digest(changed)
+            (fixture.root / "isolated-releases/trixie/exact-inrelease-digest.tsv").write_text(
+                f"{digest(changed)}\t{len(changed)}\n"
+            )
             fixture.proposal["packageIndexTargetBindings"][0]["releaseSha256"] = digest(changed)
             fixture.proposal["signedReleaseIndexHashes"][0]["releaseSha256"] = digest(changed)
             fixture.write()
