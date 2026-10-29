@@ -75,7 +75,7 @@ symbols_path="$evidence_dir/nm-symbols.txt"
 environment_path="$evidence_dir/go-environment.txt"
 manifest_before_path="$evidence_dir/source-manifest-before.json"
 manifest_after_path="$evidence_dir/source-manifest-after.json"
-build_dir="$evidence_dir/builder-output"
+build_dir=""
 
 status=INCONCLUSIVE
 error_message=""
@@ -107,7 +107,7 @@ chi_prepare_git_blob=""
 x_net_prepare_git_blob=""
 production_command='go build -mod=vendor -trimpath -ldflags="-s -w -X github.com/rclone/rclone/fs.Version=v1.75.2" -o /out/rclone .'
 diagnostic_command='go build -mod=vendor -trimpath -ldflags="-X github.com/rclone/rclone/fs.Version=v1.75.2" -o /out/rclone-rebuilt-unstripped .'
-builder_argv='["docker","run","--pull=never","--rm","--network","none","--platform","linux/amd64","--read-only","--mount","type=bind,source=<source-root>,target=/src,readonly","--mount","type=bind,source=<evidence-dir>/builder-output,target=/out","--workdir","/src","<pinned-builder-image>","sh","-ec","build stripped+diagnostic binaries, list imports, capture build info and symbols"]'
+builder_argv='["docker","run","--pull=never","--rm","--network","none","--platform","linux/amd64","--read-only","--mount","type=bind,source=<source-root>,target=/src,readonly","--mount","type=bind,source=<run-owned-scratch-dir>,target=/out","--workdir","/src","<pinned-builder-image>","sh","-ec","build stripped+diagnostic binaries, list imports, capture build info and symbols"]'
 
 write_record() {
   local result_status="$1" result_error="$2"
@@ -225,17 +225,17 @@ on_exit() {
     status=FAIL
     error_message="Reconstruction failed with exit $rc; see retained evidence."
   fi
-  python3 - "$build_dir" <<'CLEANUP' >/dev/null 2>&1 || true
+  if [[ -n "$build_dir" ]]; then
+    python3 - "$build_dir" <<'CLEANUP' >/dev/null 2>&1 || true
 import shutil
 import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
-for name in ("tmp", "gocache", "gomodcache", "gopath", "home"):
-    path = root / name
-    if path.is_dir() and not path.is_symlink():
-        shutil.rmtree(path)
+if root.name.startswith("taky-rclone-reconstruction.") and root.is_dir() and not root.is_symlink():
+    shutil.rmtree(root)
 CLEANUP
+  fi
   write_record "$status" "$error_message" || true
   exit "$rc"
 }
@@ -266,6 +266,15 @@ case "$evidence_dir_real/" in
   "$source_root_real/"*) fail "evidence directory must not be inside the prepared source root" ;;
 esac
 [[ "$source_root_real" != "$evidence_dir_real" ]] || fail "evidence directory must be separate from the prepared source root"
+build_dir="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/taky-rclone-reconstruction.XXXXXX")" \
+  || fail "cannot create isolated builder scratch directory"
+build_dir_real="$(cd "$build_dir" && pwd -P)"
+case "$build_dir_real/" in
+  "$evidence_dir_real/"*) fail "builder scratch directory must stay outside the uploaded evidence tree" ;;
+esac
+case "$build_dir_real/" in
+  "$source_root_real/"*) fail "builder scratch directory must stay outside the prepared source root" ;;
+esac
 
 extracted_binary_sha256="$(sha256sum "$extracted_binary" | awk '{print $1}')"
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || fail "cannot locate the Git repository root"

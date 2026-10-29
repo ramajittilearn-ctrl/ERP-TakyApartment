@@ -49,6 +49,8 @@ operations_id=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 builder_id=sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 export FIXTURE_OPERATIONS_ID="$operations_id" FIXTURE_BUILDER_ID="$builder_id"
 export FIXTURE_REVISION="$revision" FIXTURE_TREE="$tree" FIXTURE_BINARY_MODE=match
+mkdir -p "$tmp/runner-temp"
+export RUNNER_TEMP="$tmp/runner-temp" FIXTURE_SCRATCH_CAPTURE="$tmp/scratch-paths.txt"
 cat > "$tmp/bin/docker" <<'DOCKER'
 #!/usr/bin/env bash
 set -Eeuo pipefail
@@ -79,7 +81,6 @@ if [[ "$1 $2" == 'image inspect' ]]; then
   exit 0
 fi
 if [[ "$1" == run ]]; then
-  [[ "${FIXTURE_RUN_MODE:-success}" != fail ]] || exit 42
   out_mount=''
   while (($#)); do
     case "$1" in
@@ -93,6 +94,10 @@ if [[ "$1" == run ]]; then
   [[ -n "$out_mount" ]] || exit 33
   out="${out_mount#*source=}"
   out="${out%%,*}"
+  printf '%s\n' "$out" >> "$FIXTURE_SCRATCH_CAPTURE"
+  mkdir -p "$out/tmp" "$out/gocache" "$out/gomodcache" "$out/gopath" "$out/home"
+  printf 'cache fixture\n' > "$out/gocache/cache-file"
+  [[ "${FIXTURE_RUN_MODE:-success}" != fail ]] || exit 42
   printf 'go version go1.27.3 linux/amd64\n' > "$out/go-version.txt"
   printf 'linux\namd64\nv1\n0\nlocal\n\n\n\noff\n\noff\n/out/gocache\n/out/gomodcache\n/out/gopath\n' > "$out/go-env.txt"
   printf 'test stripped binary\n' > "$out/rclone-rebuilt-stripped"
@@ -115,13 +120,19 @@ run_helper() {
   (cd "$repo" && bash "$helper" "$tmp/source" "$tmp/extracted-rclone" ops:test "$operations_id" "$revision" "$tree" "$evidence")
 }
 assert_no_builder_caches() {
-  local evidence="$1" name
-  for name in tmp gocache gomodcache gopath home; do
-    [[ ! -e "$evidence/builder-output/$name" ]] || fail "builder cache directory remained after EXIT cleanup: $name"
-  done
+  local evidence="$1"
+  [[ ! -e "$evidence/builder-output" ]] || fail "builder scratch leaked into uploaded evidence: $evidence/builder-output"
+}
+assert_scratch_removed() {
+  local evidence="$1" run_number="$2" scratch
+  scratch="$(sed -n "${run_number}p" "$FIXTURE_SCRATCH_CAPTURE")"
+  [[ -n "$scratch" ]] || fail "Docker stub did not capture scratch mount for run $run_number ($evidence)"
+  [[ "$scratch" == "$RUNNER_TEMP"/taky-rclone-reconstruction.* ]] || fail "scratch path is not uniquely prefixed/outside evidence: $scratch"
+  [[ ! -e "$scratch" ]] || fail "temporary builder scratch survived EXIT cleanup: $scratch"
 }
 run_helper "$tmp/evidence-pass"
 assert_no_builder_caches "$tmp/evidence-pass"
+assert_scratch_removed "$tmp/evidence-pass" 1
 python3 - "$tmp/evidence-pass/reconstruction.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -143,6 +154,8 @@ PY
 
 export FIXTURE_BINARY_MODE=mismatch
 if run_helper "$tmp/evidence-fail"; then fail 'binary mismatch unexpectedly passed'; fi
+assert_no_builder_caches "$tmp/evidence-fail"
+assert_scratch_removed "$tmp/evidence-fail" 2
 python3 - "$tmp/evidence-fail/reconstruction.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -164,6 +177,8 @@ d = json.load(open(sys.argv[1], encoding="utf-8"))
 assert d["status"] == "FAIL", d
 assert "source tree does not match source revision" in d["error"], d
 PY
+[[ "$(wc -l < "$FIXTURE_SCRATCH_CAPTURE")" -eq 2 ]] || fail 'source tree binding failure reached the Docker builder unexpectedly'
+[[ -z "$(find "$RUNNER_TEMP" -mindepth 1 -maxdepth 1 -print -quit)" ]] || fail 'scratch leaked after pre-Docker source tree binding failure'
 
 # Operations image labels are part of the immutable image binding.
 export FIXTURE_REVISION=dddddddddddddddddddddddddddddddddddddddd
@@ -174,12 +189,15 @@ d = json.load(open(sys.argv[1], encoding="utf-8"))
 assert d["status"] == "FAIL", d
 assert "revision/tree labels" in d["error"], d
 PY
+[[ "$(wc -l < "$FIXTURE_SCRATCH_CAPTURE")" -eq 2 ]] || fail 'image label failure reached the Docker builder unexpectedly'
+[[ -z "$(find "$RUNNER_TEMP" -mindepth 1 -maxdepth 1 -print -quit)" ]] || fail 'scratch leaked after pre-Docker image label failure'
 export FIXTURE_REVISION="$revision"
 
 # A builder failure must leave the prewritten machine-readable failure record.
 export FIXTURE_RUN_MODE=fail
 if run_helper "$tmp/evidence-builder-fail"; then fail 'stub builder failure unexpectedly passed'; fi
 assert_no_builder_caches "$tmp/evidence-builder-fail"
+assert_scratch_removed "$tmp/evidence-builder-fail" 3
 python3 - "$tmp/evidence-builder-fail/reconstruction.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1], encoding="utf-8"))
