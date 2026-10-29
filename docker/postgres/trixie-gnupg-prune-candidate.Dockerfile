@@ -40,7 +40,7 @@ RUN set -eux; \
     }; \
     verify_release_set() { \
       stage="$1"; \
-      output="$evidence/inrelease-freshness-$stage.tsv"; \
+      output="$evidence/inrelease-$stage.tsv"; \
       : > "$output"; \
       now="$(date -u +%s)"; \
       total_release_count="$(find /var/lib/apt/lists -maxdepth 1 -type f -name '*_InRelease' -print | wc -l | tr -d '[:space:]')"; \
