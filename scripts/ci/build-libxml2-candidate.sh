@@ -20,7 +20,7 @@ readonly evidence_dir="$RUNNER_TEMP/phase4-libxml2-candidate-evidence"
 mkdir -m 0700 -- "$evidence_dir"
 cat > "$evidence_dir/candidate-status.txt" <<'STATUS'
 Candidate status: isolated prototype only.
-This job runs four fixture-independent libxml2 self-tests, one targeted CVE regression, the package build, candidate-only PostgreSQL XML smoke test, pg_dump/pg_restore round-trip, and unsuppressed image scan. The full upstream fixture suite and public struct ABI/layout compatibility remain unverified. This does not establish owner UAT acceptance, production approval, or authorization to replace an operational image.
+This job runs four fixture-independent libxml2 self-tests, one targeted CVE regression, the package build, a public struct size/offset comparison, candidate-only PostgreSQL XML smoke test, pg_dump/pg_restore round-trip, and unsuppressed image scan. A layout match does not establish ABI or consumer compatibility; mismatches are recorded as incompatible layout. The full upstream fixture suite remains unverified. This does not establish owner UAT acceptance, production approval, or authorization to replace an operational image.
 STATUS
 
 readonly source_sha=$(jq -er '.sourceArtifact.digest | sub("^sha256:"; "")' "$input_dir/verified-inputs.json")
@@ -32,11 +32,13 @@ readonly regression_hook="$GITHUB_WORKSPACE/docker/postgres/libxml2-candidate-re
 readonly regression_hook_sha=$(sha256sum "$regression_hook" | awk '{print $1}')
 readonly self_test_runner="$GITHUB_WORKSPACE/scripts/ci/run-libxml2-candidate-self-tests.sh"
 readonly self_test_runner_sha=$(sha256sum "$self_test_runner" | awk '{print $1}')
+readonly abi_probe="$GITHUB_WORKSPACE/scripts/ci/probe-libxml2-public-layout.sh"
+readonly abi_probe_sha=$(sha256sum "$abi_probe" | awk '{print $1}')
 readonly runner_ca_sha=$(sha256sum "$runner_ca_bundle" | awk '{print $1}')
 [[ "$source_sha" =~ ^[a-f0-9]{64}$ && "$inrelease_sha" =~ ^[a-f0-9]{64}$ ]] || die 'verified input digest is malformed'
 [[ "$snapshot" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || die 'Debian snapshot is malformed'
 [[ "$checkout_revision" == "$provenance_checkout_revision" ]] || die 'candidate checkout revision differs from authenticated provenance workflow checkout'
-[[ "$regression_hook_sha" =~ ^[a-f0-9]{64}$ && "$self_test_runner_sha" =~ ^[a-f0-9]{64}$ ]] || die 'candidate regression hook or self-test runner is missing or has a malformed digest'
+[[ "$regression_hook_sha" =~ ^[a-f0-9]{64}$ && "$self_test_runner_sha" =~ ^[a-f0-9]{64}$ && "$abi_probe_sha" =~ ^[a-f0-9]{64}$ ]] || die 'candidate regression hook, self-test runner, or ABI probe is missing or has a malformed digest'
 [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]] || die 'GitHub run identity is malformed'
 
 readonly image="taky-libxml2-cve-candidate:${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
@@ -49,10 +51,12 @@ mkdir -p "$build_context/docker/postgres"
 cp "$regression_hook" "$build_context/docker/postgres/"
 mkdir -p "$build_context/scripts/ci"
 cp "$self_test_runner" "$build_context/scripts/ci/"
+cp "$abi_probe" "$build_context/scripts/ci/"
 [[ "$(sha256sum "$build_context/docker/postgres/libxml2-candidate-regression-hook.mk" | awk '{print $1}')" == "$regression_hook_sha" ]] || die 'candidate regression hook changed while staging the build context'
 [[ "$(sha256sum "$build_context/scripts/ci/run-libxml2-candidate-self-tests.sh" | awk '{print $1}')" == "$self_test_runner_sha" ]] || die 'candidate self-test runner changed while staging the build context'
-printf 'checkout_revision=%s\nhook_path=docker/postgres/libxml2-candidate-regression-hook.mk\nhook_sha256=%s\nself_test_runner_path=scripts/ci/run-libxml2-candidate-self-tests.sh\nself_test_runner_sha256=%s\n' \
-  "$checkout_revision" "$regression_hook_sha" "$self_test_runner_sha" \
+[[ "$(sha256sum "$build_context/scripts/ci/probe-libxml2-public-layout.sh" | awk '{print $1}')" == "$abi_probe_sha" ]] || die 'candidate ABI probe changed while staging the build context'
+printf 'checkout_revision=%s\nhook_path=docker/postgres/libxml2-candidate-regression-hook.mk\nhook_sha256=%s\nself_test_runner_path=scripts/ci/run-libxml2-candidate-self-tests.sh\nself_test_runner_sha256=%s\nabi_probe_path=scripts/ci/probe-libxml2-public-layout.sh\nabi_probe_sha256=%s\n' \
+  "$checkout_revision" "$regression_hook_sha" "$self_test_runner_sha" "$abi_probe_sha" \
   > "$evidence_dir/candidate-regression-hook-provenance.txt"
 cp "$input_dir/metadata/debian-trixie.InRelease" "$evidence_dir/"
 cp "$input_dir/metadata/debian-trixie.Sources.apt-cache" "$evidence_dir/"
@@ -90,6 +94,12 @@ for test_name in testapi testchar testdict testlimits; do
   docker run --rm --network=none --entrypoint cat "$image" "/usr/share/taky-libxml2-candidate/self-tests/$test_name.log" \
     > "$evidence_dir/libxml2-$test_name.log"
 done
+docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/abi-layout.tsv > "$evidence_dir/abi-layout.tsv"
+docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/abi-layout.diff > "$evidence_dir/abi-layout.diff"
+docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/abi-disposition.txt > "$evidence_dir/abi-disposition.txt"
+docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/abi-provenance.txt > "$evidence_dir/abi-provenance.txt"
+docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/base-headers.sha256 > "$evidence_dir/abi-base-headers.sha256"
+docker run --rm --network=none --entrypoint cat "$image" /usr/share/taky-libxml2-candidate/abi/candidate-headers.sha256 > "$evidence_dir/abi-candidate-headers.sha256"
 grep -Fxq '## Parsing non-recursive huge case' "$evidence_dir/cve-regression-test.log"
 grep -Fxq 'Ran 1 tests, no errors' "$evidence_dir/cve-regression-test.log"
 grep -Fxq 'Total 1 tests, no errors' "$evidence_dir/cve-regression-test.log"
