@@ -1,5 +1,13 @@
 # Phase 4 continuation checkpoint — 2026-10-28
 
+## Latest continuation — 2026-10-29 (live evidence)
+
+- PR #2 remains OPEN/Draft at remote head `0a9bedd28046f6aa1991501aa78829152f25e5cc`, base `release/phase4`, `REVIEW_REQUIRED`. Push run [40800992273](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40800992273) and PR run [40800998156](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40800998156) are still in progress. On both, required quality, source provenance, Stage 5, Agent UAT, and libxml2 candidate have passed; container verification is building/running; optional Forky provenance failed.
+- Forky failure artifact [12866390773](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40800998156/artifacts/12866390773) is a freshness rejection on the exact authenticated Trixie bootstrap snapshot `20261027T000000Z`, InRelease SHA-256 `0584fba32e13e0ab8285fb16c27adea1ec03a73669c18702821094fd6ca86675`, signed Date `2026-09-12T07:55:41Z`. This follows the prior Bookworm historical-bootstrap rejection. The optional check is non-gating and gives no image/CVE/production clearance.
+- Local commit `6049745` separates the age policy for historical Bookworm/Trixie bootstrap snapshots from live Forky/PGDG repository freshness. Only the two exact digest-bound historical snapshot call sites may omit max-age; future-date checks, any `Valid-Until` expiry, signature identity, signed index and package checks remain. Live Forky and PGDG still require 604800 seconds. Pstack architect and independent reviewer approved; focused suite 39/39, syntax, JSON/YAML, diff checks, and exact hosted Bookworm/Trixie source-artifact replays passed. Push this commit, then inspect exact-head runs and artifacts.
+- GitHub/local operational state: first commit attempt hit a shared Git index-lock write timeout during pack scanning; retry with fsmonitor disabled succeeded. No repository lock remains. Do not interrupt the active exact-head container jobs.
+- Remaining gates: finish exact-head CI and inspect container/Forky evidence; obtain independent GitHub approval; disposition raw Critical/High database and operations findings; identify and attest the actual production target; rehearse target-matched encrypted backup/restore, migration/rollback, immutable image pull, deployment and monitoring. Production remains **NO-GO**. Agent UAT is synthetic and does not equal Owner acceptance.
+
 ## Latest live continuation — 2026-10-29 (current check at 2026-10-29)
 
 ### Verified code and CI
