@@ -224,37 +224,125 @@ class SignatureTests(unittest.TestCase):
         signer = module.verified_signers(status)[0]
         self.assertEqual(signer["trustBasis"], "keyring-signature-valid-no-explicit-primary-pin")
 
-    def test_accepts_artifact_recorded_additional_signer_without_trusting_its_primary(self):
+    def test_bookworm_auxiliary_pair_is_artifact_bound_and_not_trusted_bookworm_primary(self):
         bookworm_primary = "B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8"
+        stable_primary = "4D64FEC119C2029067D6E791F8D2585B8783D481"
+        current_primary = "04B54C3CDCA79751B16BC6B5225629DF75B188BD"
         bookworm_signing = "4CB50190207B4758A3F73A796ED0E7B82643E131"
-        trixie_signing = "B8E5F13176D2A7A75220028078DBA3BC47EF2265"
-        trixie_primary = "04B54C3CDCA79751B16BC6B5225629DF75B188BD"
-        stable_signer = "4D64FEC119C2029067D6E791F8D2585B8783D481"
+        current_signing = "B8E5F13176D2A7A75220028078DBA3BC47EF2265"
+        bootstrap = {
+            "unverifiedAdditionalSignerFingerprints": [current_signing],
+            "requiredTrixieSignerFingerprints": [current_signing, module.TRIXIE_STABLE_RELEASE_PRIMARY],
+        }
+        auxiliary_pairs = module.derive_bookworm_bootstrap_auxiliary_signer_pairs(bootstrap, {current_primary})
         status = (
             f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {bookworm_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {bookworm_primary}\n"
-            f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {trixie_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {trixie_primary}\n"
-            f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {stable_signer} 2026-10-28 1793218953 0 4 0 1 8 00 {stable_signer}\n"
+            f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {current_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {current_primary}\n"
+            f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {stable_primary} 2026-10-28 1793218953 0 4 0 22 8 00 {stable_primary}\n"
         )
-        signers = module.verified_signers(status, {bookworm_primary, stable_signer}, {trixie_signing})
+        signers = module.verified_signers(status, {bookworm_primary, stable_primary}, auxiliary_pairs, auxiliary_pairs)
         self.assertEqual(
-            {signer["primaryFingerprint"] for signer in signers},
-            {bookworm_primary, trixie_primary, stable_signer},
-        )
-        self.assertEqual(
-            {signer["signingFingerprint"]: signer["trustBasis"] for signer in signers},
+            {item["signingFingerprint"]: item["trustBasis"] for item in signers},
             {
                 bookworm_signing: "trusted-primary",
-                stable_signer: "trusted-primary",
-                trixie_signing: "artifact-recorded-additional-signing-fingerprint",
+                current_signing: "artifact-listed-auxiliary-signature-pair",
+                stable_primary: "trusted-primary",
             },
         )
+        self.assertEqual(
+            module.derive_bookworm_transition_signer_pairs(signers),
+            module.BOOKWORM_TO_TRIXIE_SIGNER_PAIRS,
+        )
+        without_auxiliary = status.replace(
+            f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {current_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {current_primary}\n", ""
+        )
+        with self.assertRaisesRegex(module.ProvenanceError, "missing a required exact signer pair"):
+            module.verified_signers(without_auxiliary, {bookworm_primary, stable_primary}, auxiliary_pairs, auxiliary_pairs)
 
-    def test_additional_signer_cannot_satisfy_trusted_primary_requirement(self):
-        extra_signing = "B8E5F13176D2A7A75220028078DBA3BC47EF2265"
-        extra_primary = "04B54C3CDCA79751B16BC6B5225629DF75B188BD"
-        status = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {extra_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {extra_primary}\n"
+    def test_bookworm_auxiliary_pair_requires_artifact_signer_and_policy_primary(self):
+        current_signing, current_primary = module.BOOKWORM_BOOTSTRAP_AUXILIARY_SIGNER_PAIR
+        cases = [
+            ({"unverifiedAdditionalSignerFingerprints": [], "requiredTrixieSignerFingerprints": [current_signing]}, {current_primary}),
+            ({"unverifiedAdditionalSignerFingerprints": [current_signing], "requiredTrixieSignerFingerprints": []}, {current_primary}),
+            ({"unverifiedAdditionalSignerFingerprints": [current_signing], "requiredTrixieSignerFingerprints": [current_signing]}, {"D" * 40}),
+        ]
+        for bootstrap, primaries in cases:
+            with self.subTest(bootstrap=bootstrap), self.assertRaisesRegex(module.ProvenanceError, "does not bind the exact Bookworm auxiliary"):
+                module.derive_bookworm_bootstrap_auxiliary_signer_pairs(bootstrap, primaries)
+
+    def test_accepts_forky_only_with_exact_bookworm_pair_and_current_primary(self):
+        bookworm_primary = "B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8"
+        bookworm_signing = "4CB50190207B4758A3F73A796ED0E7B82643E131"
+        current_primary = "04B54C3CDCA79751B16BC6B5225629DF75B188BD"
+        current_signing = "B8E5F13176D2A7A75220028078DBA3BC47EF2265"
+        verified_bookworm = [
+            {"signingFingerprint": bookworm_signing, "primaryFingerprint": bookworm_primary, "trustBasis": "trusted-primary"},
+            {"signingFingerprint": current_signing, "primaryFingerprint": current_primary, "trustBasis": "artifact-listed-auxiliary-signature-pair"},
+        ]
+        allowed_pairs = module.derive_bookworm_transition_signer_pairs(verified_bookworm)
+        status = (
+            f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {bookworm_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {bookworm_primary}\n"
+            f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {current_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {current_primary}\n"
+        )
+        signers = module.verified_signers(status, {current_primary}, allowed_pairs)
+        self.assertEqual({(item["signingFingerprint"], item["primaryFingerprint"]) for item in signers}, {
+            (bookworm_signing, bookworm_primary), (current_signing, current_primary),
+        })
+        self.assertEqual(
+            {item["signingFingerprint"]: item["trustBasis"] for item in signers},
+            {bookworm_signing: "artifact-bound-bookworm-signature-pair", current_signing: "trusted-primary"},
+        )
+
+    def test_current_primary_only_signature_is_accepted(self):
+        current_primary = "04B54C3CDCA79751B16BC6B5225629DF75B188BD"
+        status = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {current_primary} 2026-10-28 1793218953 0 4 0 1 8 00 {current_primary}\n"
+        signers = module.verified_signers(status, {current_primary}, module.BOOKWORM_TO_TRIXIE_SIGNER_PAIRS)
+        self.assertEqual(len(signers), 1)
+        self.assertEqual(signers[0]["trustBasis"], "trusted-primary")
+
+    def test_bookworm_pair_only_cannot_satisfy_current_primary_requirement(self):
+        signing, primary = next(iter(module.BOOKWORM_TO_TRIXIE_SIGNER_PAIRS))
+        status = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {signing} 2026-10-28 1793218953 0 4 0 1 8 00 {primary}\n"
         with self.assertRaisesRegex(module.ProvenanceError, "no valid signature from an explicit trusted primary"):
-            module.verified_signers(status, {PRIMARY}, {extra_signing})
+            module.verified_signers(status, {"04B54C3CDCA79751B16BC6B5225629DF75B188BD"}, module.BOOKWORM_TO_TRIXIE_SIGNER_PAIRS)
+
+    def test_same_bookworm_primary_with_different_subkey_is_rejected(self):
+        wrong_signing = "C" * 40
+        bookworm_primary = "B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8"
+        status = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {wrong_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {bookworm_primary}\n"
+        with self.assertRaisesRegex(module.ProvenanceError, "not in the explicit trust set"):
+            module.verified_signers(status, {"04B54C3CDCA79751B16BC6B5225629DF75B188BD"}, module.BOOKWORM_TO_TRIXIE_SIGNER_PAIRS)
+
+    def test_trixie_requires_both_exact_release_signer_pairs(self):
+        current_primary = "04B54C3CDCA79751B16BC6B5225629DF75B188BD"
+        current_signing, _ = module.TRIXIE_CURRENT_ARCHIVE_SIGNER_PAIR
+        stable_signing, stable_primary = module.TRIXIE_STABLE_RELEASE_SIGNER_PAIR
+        bookworm_signing, bookworm_primary = next(iter(module.BOOKWORM_TO_TRIXIE_SIGNER_PAIRS))
+        required = {module.TRIXIE_CURRENT_ARCHIVE_SIGNER_PAIR, module.TRIXIE_STABLE_RELEASE_SIGNER_PAIR}
+        allowed_extra = module.BOOKWORM_TO_TRIXIE_SIGNER_PAIRS
+        rows = {
+            "current": f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {current_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {current_primary}\n",
+            "stable": f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {stable_signing} 2026-10-28 1793218953 0 4 0 22 8 00 {stable_primary}\n",
+            "bookworm": f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {bookworm_signing} 2026-10-28 1793218953 0 4 0 1 8 00 {bookworm_primary}\n",
+        }
+        all_rows = rows["current"] + rows["stable"] + rows["bookworm"]
+        signers = module.verified_signers(all_rows, {current_primary, stable_primary}, allowed_extra, required, True)
+        self.assertEqual(len(signers), 3)
+        self.assertEqual(
+            {item["signingFingerprint"]: item["trustBasis"] for item in signers},
+            {
+                current_signing: "trusted-primary-exact-pair",
+                stable_signing: "trusted-primary-exact-pair",
+                bookworm_signing: "artifact-bound-bookworm-signature-pair",
+            },
+        )
+        for missing in ("current", "stable"):
+            with self.subTest(missing=missing), self.assertRaisesRegex(module.ProvenanceError, "missing a required exact signer pair"):
+                reduced = rows["stable" if missing == "current" else "current"] + rows["bookworm"]
+                module.verified_signers(reduced, {current_primary, stable_primary}, allowed_extra, required, True)
+        wrong_current = rows["current"].replace(current_signing, "C" * 40)
+        with self.assertRaisesRegex(module.ProvenanceError, "exact required signer set"):
+            module.verified_signers(wrong_current + rows["stable"] + rows["bookworm"], {current_primary, stable_primary}, allowed_extra, required, True)
 
     def test_rejects_unknown_extra_signer_even_when_trusted_signer_is_present(self):
         trusted = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
@@ -264,10 +352,13 @@ class SignatureTests(unittest.TestCase):
         with self.assertRaisesRegex(module.ProvenanceError, "not in the explicit trust set"):
             module.verified_signers(trusted + unknown, {PRIMARY})
 
-    def test_rejects_artifact_additional_signer_absent_from_signature_stream(self):
+    def test_rejects_bookworm_pair_absent_from_verified_bootstrap_signers(self):
+        verified_bookworm = [{"signingFingerprint": PRIMARY, "primaryFingerprint": PRIMARY, "trustBasis": "trusted-primary"}]
+        with self.assertRaisesRegex(module.ProvenanceError, "did not observe the pinned transition signer pair"):
+            module.derive_bookworm_transition_signer_pairs(verified_bookworm)
         status = f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {SIGNING} 2026-10-28 1793218953 0 4 0 1 8 00 {PRIMARY}\n"
-        with self.assertRaisesRegex(module.ProvenanceError, "additional OpenPGP signer is absent"):
-            module.verified_signers(status, {PRIMARY}, {"C" * 40})
+        with self.assertRaisesRegex(module.ProvenanceError, "not in the pinned transition policy"):
+            module.verified_signers(status, {PRIMARY}, {("C" * 40, "D" * 40)})
 
     def test_rejects_signature_event_without_validsig(self):
         with self.assertRaisesRegex(module.ProvenanceError, "signature event has no valid signature record"):

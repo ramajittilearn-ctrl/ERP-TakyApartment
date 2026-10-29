@@ -28,6 +28,23 @@ CONSUMER_TEST_PATH = ROOT / "scripts/ci/consume-libxml2-provenance.test.mjs"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 FINGERPRINT_RE = re.compile(r"^[0-9A-F]{40}$")
 APT_HELPER_FALLBACKS = (pathlib.Path("/usr/lib/apt/apt-helper"),)
+BOOKWORM_TO_TRIXIE_SIGNER_PAIRS = frozenset({
+    ("4CB50190207B4758A3F73A796ED0E7B82643E131", "B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8"),
+})
+BOOKWORM_BOOTSTRAP_AUXILIARY_SIGNER_PAIR = (
+    "B8E5F13176D2A7A75220028078DBA3BC47EF2265",
+    "04B54C3CDCA79751B16BC6B5225629DF75B188BD",
+)
+TRIXIE_CURRENT_ARCHIVE_SIGNER_PAIR = BOOKWORM_BOOTSTRAP_AUXILIARY_SIGNER_PAIR
+TRIXIE_STABLE_RELEASE_SIGNER_PAIR = (
+    "41587F7DB8C774BCCF131416762F67A0B2C39DE4",
+    "41587F7DB8C774BCCF131416762F67A0B2C39DE4",
+)
+KNOWN_ADDITIONAL_SIGNER_PAIRS = (
+    BOOKWORM_TO_TRIXIE_SIGNER_PAIRS
+    | {BOOKWORM_BOOTSTRAP_AUXILIARY_SIGNER_PAIR, TRIXIE_STABLE_RELEASE_SIGNER_PAIR}
+)
+TRIXIE_STABLE_RELEASE_PRIMARY = "41587F7DB8C774BCCF131416762F67A0B2C39DE4"
 BAD_GPG_STATUSES = {
     "BADSIG", "ERRSIG", "EXPSIG", "EXPKEYSIG", "REVKEYSIG", "KEYREVOKED",
     "SIGEXPIRED", "KEYEXPIRED", "NO_PUBKEY", "NODATA", "FAILURE",
@@ -228,11 +245,20 @@ def policy_max_age_seconds(
 def verified_signers(
     status_text: str,
     trusted_primary_fingerprints: Iterable[str] | None = None,
-    allowed_additional_signing_fingerprints: Iterable[str] = (),
+    allowed_additional_signer_pairs: Iterable[tuple[str, str]] = (),
+    required_signer_pairs: Iterable[tuple[str, str]] = (),
+    restrict_to_required_signer_pairs: bool = False,
 ) -> list[dict[str, str]]:
     trusted = {item.upper() for item in trusted_primary_fingerprints} if trusted_primary_fingerprints is not None else None
-    additional = {item.upper() for item in allowed_additional_signing_fingerprints}
-    for fingerprint in (trusted or set()) | additional:
+    additional = {(signing.upper(), primary.upper()) for signing, primary in allowed_additional_signer_pairs}
+    required_pairs = {(signing.upper(), primary.upper()) for signing, primary in required_signer_pairs}
+    if additional and trusted is None:
+        raise ProvenanceError("additional OpenPGP signer pairs require an explicit trusted primary set")
+    if not additional.issubset(KNOWN_ADDITIONAL_SIGNER_PAIRS) or not required_pairs.issubset(KNOWN_ADDITIONAL_SIGNER_PAIRS):
+        raise ProvenanceError("OpenPGP signer pair is not in the pinned transition policy")
+    if required_pairs and trusted is None:
+        raise ProvenanceError("required OpenPGP signer pairs require an explicit trusted primary set")
+    for fingerprint in (trusted or set()) | {item for pair in additional | required_pairs for item in pair}:
         if not FINGERPRINT_RE.fullmatch(fingerprint):
             raise ProvenanceError("OpenPGP trust metadata contains an invalid fingerprint")
     signers: list[dict[str, str]] = []
@@ -268,16 +294,19 @@ def verified_signers(
         primary_fingerprint = fields[-1].upper() if len(fields[-1]) == 40 else signing_fingerprint
         if not FINGERPRINT_RE.fullmatch(signing_fingerprint) or not FINGERPRINT_RE.fullmatch(primary_fingerprint):
             raise ProvenanceError("OpenPGP verifier returned an invalid fingerprint")
-        if trusted is not None and primary_fingerprint not in trusted and signing_fingerprint not in additional:
+        additional_pair = (signing_fingerprint, primary_fingerprint)
+        if restrict_to_required_signer_pairs and required_pairs and primary_fingerprint in trusted and additional_pair not in required_pairs and additional_pair not in additional:
+            raise ProvenanceError("OpenPGP signature pair is not in the exact required signer set")
+        if trusted is not None and primary_fingerprint not in trusted and additional_pair not in additional:
             raise ProvenanceError("OpenPGP signature primary fingerprint is not in the explicit trust set")
         if trusted is not None and primary_fingerprint in trusted:
             trusted_signer_found = True
         if trusted is None:
             trust_basis = "keyring-signature-valid-no-explicit-primary-pin"
         elif primary_fingerprint in trusted:
-            trust_basis = "trusted-primary"
+            trust_basis = "trusted-primary-exact-pair" if additional_pair in required_pairs else "trusted-primary"
         else:
-            trust_basis = "artifact-recorded-additional-signing-fingerprint"
+            trust_basis = "artifact-listed-auxiliary-signature-pair" if additional_pair == BOOKWORM_BOOTSTRAP_AUXILIARY_SIGNER_PAIR else "artifact-bound-bookworm-signature-pair"
         signers.append({
             "signingFingerprint": signing_fingerprint,
             "primaryFingerprint": primary_fingerprint,
@@ -290,11 +319,35 @@ def verified_signers(
         raise ProvenanceError("OpenPGP verifier returned no valid signature")
     if trusted is not None and not trusted_signer_found:
         raise ProvenanceError("OpenPGP verifier found no valid signature from an explicit trusted primary")
-    observed_signing_fingerprints = {item["signingFingerprint"] for item in signers}
-    if not additional.issubset(observed_signing_fingerprints):
-        raise ProvenanceError("artifact-recorded additional OpenPGP signer is absent from verified signatures")
+    observed_pairs = {(item["signingFingerprint"], item["primaryFingerprint"]) for item in signers}
+    if not required_pairs.issubset(observed_pairs):
+        raise ProvenanceError("OpenPGP verifier is missing a required exact signer pair")
     unique = {(item["signingFingerprint"], item["primaryFingerprint"]): item for item in signers}
     return [unique[key] for key in sorted(unique)]
+
+
+def derive_bookworm_transition_signer_pairs(bookworm_signers: Iterable[dict[str, str]]) -> set[tuple[str, str]]:
+    verified_bookworm_pairs = {
+        (item["signingFingerprint"].upper(), item["primaryFingerprint"].upper())
+        for item in bookworm_signers
+        if item.get("trustBasis") == "trusted-primary"
+    }
+    allowed = set(BOOKWORM_TO_TRIXIE_SIGNER_PAIRS).intersection(verified_bookworm_pairs)
+    if not allowed:
+        raise ProvenanceError("artifact-bound Bookworm verification did not observe the pinned transition signer pair")
+    return allowed
+
+
+def derive_bookworm_bootstrap_auxiliary_signer_pairs(
+    bootstrap: dict[str, Any], current_debian_primaries: Iterable[str]
+) -> set[tuple[str, str]]:
+    pair = BOOKWORM_BOOTSTRAP_AUXILIARY_SIGNER_PAIR
+    artifact_signers = {item.upper() for item in bootstrap.get("unverifiedAdditionalSignerFingerprints", [])}
+    required_trixie_signers = {item.upper() for item in bootstrap.get("requiredTrixieSignerFingerprints", [])}
+    current_primaries = {item.upper() for item in current_debian_primaries}
+    if pair[0] not in artifact_signers or pair[0] not in required_trixie_signers or pair[1] not in current_primaries:
+        raise ProvenanceError("source artifact does not bind the exact Bookworm auxiliary Trixie signer pair")
+    return {pair}
 
 
 def parse_apt_print_uris(text: str) -> list[dict[str, Any]]:
@@ -423,7 +476,9 @@ def write_json(path: pathlib.Path, value: Any) -> None:
 
 def verify_gpgv(inrelease: pathlib.Path, keyring: pathlib.Path, log_dir: pathlib.Path,
                 trusted_primaries: Iterable[str] | None = None,
-                allowed_additional_signing_fingerprints: Iterable[str] = ()) -> list[dict[str, str]]:
+                allowed_additional_signer_pairs: Iterable[tuple[str, str]] = (),
+                required_signer_pairs: Iterable[tuple[str, str]] = (),
+                restrict_to_required_signer_pairs: bool = False) -> list[dict[str, str]]:
     status_path = log_dir / (inrelease.name + ".gpg-status.txt")
     stderr_path = log_dir / (inrelease.name + ".gpg-stderr.txt")
     result = subprocess.run(
@@ -434,7 +489,10 @@ def verify_gpgv(inrelease: pathlib.Path, keyring: pathlib.Path, log_dir: pathlib
     stderr_path.write_text(result.stderr, encoding="utf-8")
     if result.returncode:
         raise ProvenanceError(f"InRelease signature verification failed for {inrelease.name}")
-    return verified_signers(result.stdout, trusted_primaries, allowed_additional_signing_fingerprints)
+    return verified_signers(
+        result.stdout, trusted_primaries, allowed_additional_signer_pairs, required_signer_pairs,
+        restrict_to_required_signer_pairs,
+    )
 
 
 def read_json(path: pathlib.Path) -> dict[str, Any]:
@@ -602,12 +660,18 @@ def verify_apt_package_index(
 
 def release_evidence(
     *, inrelease: pathlib.Path, keyring: pathlib.Path, trusted_primaries: Iterable[str] | None,
+    allowed_additional_signer_pairs: Iterable[tuple[str, str]] = (),
+    required_signer_pairs: Iterable[tuple[str, str]] = (),
+    restrict_to_required_signer_pairs: bool = False,
     policy: dict[str, Any], expected_origin: str, expected_codename: str,
     expected_component: str, expected_label: str | None, expected_suite: str | None,
     max_age: int, max_clock_skew: int, require_valid_until: bool,
     log_dir: pathlib.Path,
 ) -> tuple[str, list[dict[str, str]], dict[str, Any]]:
-    signers = verify_gpgv(inrelease, keyring, log_dir, trusted_primaries)
+    signers = verify_gpgv(
+        inrelease, keyring, log_dir, trusted_primaries, allowed_additional_signer_pairs,
+        required_signer_pairs, restrict_to_required_signer_pairs,
+    )
     body = cleartext_release_body(inrelease.read_bytes())
     now = dt.datetime.now(dt.timezone.utc)
     parsed = validate_release(
@@ -849,12 +913,16 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
             bookworm_policy, "bookwormSnapshotMaxAgeSeconds", allow_unbounded=True, label="Bookworm snapshot"
         )
         trusted_bookworm_primaries = set(bookworm_policy["bookwormBootstrapPrimaryFingerprints"])
-        additional_bookworm_signers = set(bootstrap.get("unverifiedAdditionalSignerFingerprints", []))
         if not trusted_bookworm_primaries or not trusted_bookworm_primaries.issubset(recorded_bookworm_signers):
             raise ProvenanceError("source artifact does not bind the pinned trusted Bookworm signer set")
-        bookworm_signers = verify_gpgv(
-            bookworm_inrelease, base_keyring, log_dir, trusted_bookworm_primaries, additional_bookworm_signers
+        bookworm_auxiliary_pairs = derive_bookworm_bootstrap_auxiliary_signer_pairs(
+            bootstrap, policy["debianForky"]["primaryFingerprints"]
         )
+        bookworm_signers = verify_gpgv(
+            bookworm_inrelease, base_keyring, log_dir, trusted_bookworm_primaries,
+            bookworm_auxiliary_pairs, bookworm_auxiliary_pairs,
+        )
+        bookworm_transition_signer_pairs = derive_bookworm_transition_signer_pairs(bookworm_signers)
         bookworm_body = cleartext_release_body(bookworm_inrelease.read_bytes())
         bookworm_release_info = validate_release(
             bookworm_body,
@@ -922,9 +990,20 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
         recorded_trixie_signers = set(trixie.get("releaseSignerFingerprints", []))
         if not required_trixie_signers or not required_trixie_signers.issubset(recorded_trixie_signers):
             raise ProvenanceError("source artifact does not bind its required Trixie archive signer set")
-        base_trixie_signers = verify_gpgv(trixie_inrelease, base_keyring, log_dir, recorded_trixie_signers)
-        if not any(item["primaryFingerprint"] in required_trixie_signers for item in base_trixie_signers):
-            raise ProvenanceError("artifact-derived keyring did not verify Trixie InRelease with a required signer")
+        current_debian_primaries = set(debian_policy["primaryFingerprints"])
+        trusted_trixie_primaries = current_debian_primaries | {TRIXIE_STABLE_RELEASE_PRIMARY}
+        required_trixie_pairs = {
+            TRIXIE_CURRENT_ARCHIVE_SIGNER_PAIR,
+            TRIXIE_STABLE_RELEASE_SIGNER_PAIR,
+        }
+        base_trixie_signers = verify_gpgv(
+            trixie_inrelease, base_keyring, log_dir, trusted_trixie_primaries,
+            bookworm_transition_signer_pairs, required_trixie_pairs, True,
+        )
+        if not any(item["primaryFingerprint"] in current_debian_primaries for item in base_trixie_signers):
+            raise ProvenanceError("artifact-derived keyring did not verify Trixie InRelease with the current Debian primary")
+        if not any(item["primaryFingerprint"] == TRIXIE_STABLE_RELEASE_PRIMARY for item in base_trixie_signers):
+            raise ProvenanceError("artifact-derived keyring did not verify Trixie InRelease with the required stable-release primary")
         trixie_body = cleartext_release_body(trixie_inrelease.read_bytes())
         transition_policy = policy["debianKeyringTransition"]
         trixie_max_age = policy_max_age_seconds(
@@ -1034,6 +1113,7 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
         debian_release = release_evidence(
             inrelease=debian_release_path, keyring=debian_keyring,
             trusted_primaries=debian_policy["primaryFingerprints"],
+            allowed_additional_signer_pairs=bookworm_transition_signer_pairs,
             policy=policy, expected_origin=debian_policy["origin"], expected_codename=debian_policy["codename"],
             expected_component=debian_policy["component"], expected_label=None, expected_suite=None,
             max_age=max_age, max_clock_skew=max_skew, require_valid_until=True, log_dir=log_dir,
@@ -1124,6 +1204,26 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
                            "rotatedKeyringPackage": {**upgraded_package_result, "filename": upgraded_package.name,
                                                      "indexOrigin": "debian-trixie", "indexSha256": trixie_index_info["sha256"]},
                            "extractedKeyringSha256": debian_keyring_hash, "fingerprints": debian_fingerprints},
+            },
+            "signerTrustPolicy": {
+                "trustedCurrentDebianPrimaryFingerprints": sorted(debian_policy["primaryFingerprints"]),
+                "bookwormBootstrapAuxiliarySignerPairs": [
+                    {"signingFingerprint": signing, "primaryFingerprint": primary}
+                    for signing, primary in sorted(bookworm_auxiliary_pairs)
+                ],
+                "trixieRequiredSignerPairs": [
+                    {"signingFingerprint": signing, "primaryFingerprint": primary}
+                    for signing, primary in sorted(required_trixie_pairs)
+                ],
+                "additionalBookwormTrustedSignerPairsForTrixieAndForky": [
+                    {"signingFingerprint": signing, "primaryFingerprint": primary}
+                    for signing, primary in sorted(bookworm_transition_signer_pairs)
+                ],
+                "bookwormPairEvidence": {
+                    "inReleaseSha256": bookworm_release_info["inReleaseSha256"],
+                    "keyringSha256": sha256_file(base_keyring),
+                    "verifiedSigners": bookworm_signers,
+                },
             },
             "debianForky": {"release": debian_release, "allowedPrimaryFingerprints": debian_policy["primaryFingerprints"],
                             "fingerprintAuthority": "https://ftp-master.debian.org/keys.html",
