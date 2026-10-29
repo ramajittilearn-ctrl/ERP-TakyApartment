@@ -128,12 +128,16 @@ select_suite_source() {
         {
           raw=$0; line=$0; sub(/^[[:space:]]+/, "", line)
           if (line == "" || line ~ /^#/ || tolower(line) !~ /^deb[[:space:]]/) next
-          n=split(line, fields, /[[:space:]]+/); suite_index=3
-          if (fields[2] ~ /^\[/) {
-            if (fields[2] !~ /\]$/) exit 4
-            suite_index=4
+          sub(/^[Dd][Ee][Bb][[:space:]]+/, "", line)
+          if (substr(line, 1, 1) == "[") {
+            close_bracket=index(line, "]")
+            if (!close_bracket) exit 4
+            line=substr(line, close_bracket + 1)
+            sub(/^[[:space:]]+/, "", line)
           }
-          if (fields[suite_index] == wanted) { hits++; if (hits > 1) exit 3; print raw }
+          n=split(line, fields, /[[:space:]]+/)
+          if (n < 2) exit 5
+          if (fields[2] == wanted) { hits++; if (hits > 1) exit 3; print raw }
         }
         END { if (hits > 1) exit 3 }
       ' "$source_file" > "$fragment"
