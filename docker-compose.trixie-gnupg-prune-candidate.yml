@@ -28,6 +28,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    security_opt: ["no-new-privileges:true"]
     restart: unless-stopped
     networks: [private]
 networks:

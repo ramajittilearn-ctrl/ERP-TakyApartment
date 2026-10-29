@@ -32,6 +32,8 @@ bookworm_compatibility_report="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-bookworm-c
 bookworm_metadata_container="${project}-bookworm-candidate-metadata"
 bookworm_refresh_evidence_dir="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-container-scan/bookworm-candidate-refresh"
 trixie_gnupg_metadata_container="${project}-trixie-gnupg-candidate-metadata"
+trixie_nnp_container="${project}-trixie-nnp-lifecycle"
+trixie_nnp_volume="${project}-trixie-nnp-database"
 trixie_gnupg_evidence_dir="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-container-scan/trixie-gnupg-candidate"
 if [[ -e "$bookworm_compatibility_report" || -e "$bookworm_refresh_evidence_dir" ]]; then
   echo "Refusing to overwrite pre-existing Bookworm candidate evidence" >&2
@@ -176,6 +178,7 @@ MAIN_COMPOSE_CONFIG="$main_compose_config" ALPINE_COMPOSE_CONFIG="$candidate_com
       prune.services.db.build.args.TRIXIE_GOSU_COMMIT !== process.env.TRIXIE_GOSU_COMMIT ||
       prune.services.db.build.args.TRIXIE_GOSU_USER_MODULE_VERSION !== process.env.TRIXIE_GOSU_USER_MODULE_VERSION ||
       prune.services.db.build.args.TRIXIE_GOSU_X_SYS_MODULE_VERSION !== process.env.TRIXIE_GOSU_X_SYS_MODULE_VERSION ||
+      JSON.stringify(prune.services.db.security_opt ?? []) !== JSON.stringify(["no-new-privileges:true"]) ||
       prune.volumes.database.name !== "taky-erp-trixie-gnupg-prune-candidate-database" ||
       (prune.services.db.ports ?? []).length !== 0 || projects.has(prune.name) || volumes.has(prune.volumes.database.name) || images.has(prune.services.db.image)) {
       throw new Error(`Trixie GnuPG prune candidate Compose identity changed: ${JSON.stringify({name: prune.name, image: prune.services.db.image, dockerfile: prune.services.db.build.dockerfile, volume: prune.volumes.database.name})}`);
@@ -223,10 +226,10 @@ cleanup() {
   trap - EXIT
   set +e
   rm -f -- "$gosu_operational_binary" "$gosu_alpine_binary" "$gosu_debian_trixie_binary" "$gosu_debian_bookworm_binary" "$gosu_trixie_gnupg_candidate_binary" "$rclone_operations_binary"
-  for name in "$app" "$validator" "$database" "$probe" "$bookworm_metadata_container" "$trixie_gnupg_metadata_container"; do
+  for name in "$app" "$validator" "$database" "$probe" "$bookworm_metadata_container" "$trixie_gnupg_metadata_container" "$trixie_nnp_container"; do
     remove_owned_resource container "$name" || cleanup_failed=1
   done
-  for name in "$db_volume" "$attachments_volume"; do
+  for name in "$db_volume" "$attachments_volume" "$trixie_nnp_volume"; do
     remove_owned_resource volume "$name" || cleanup_failed=1
   done
   remove_owned_resource network "$network" || cleanup_failed=1
@@ -631,6 +634,91 @@ docker create --platform linux/amd64 --label "$ownership_label=$project" \
   --name "$trixie_gnupg_metadata_container" "$trixie_gnupg_db_image" >/dev/null
 docker cp "$trixie_gnupg_metadata_container:/usr/share/taky-trixie-gnupg-candidate/." "$trixie_gnupg_evidence_dir/"
 docker rm "$trixie_gnupg_metadata_container" >/dev/null
+
+if docker inspect "$trixie_nnp_container" >/dev/null 2>&1; then
+  echo "Refusing pre-existing Trixie NNP lifecycle container: $trixie_nnp_container" >&2
+  exit 1
+fi
+create_owned_volume "$trixie_nnp_volume"
+docker run --detach --platform linux/amd64 \
+  --name "$trixie_nnp_container" --label "$ownership_label=$project" --network none \
+  --mount "type=volume,source=$trixie_nnp_volume,target=/var/lib/postgresql/data" \
+  --env POSTGRES_DB=taky_nnp --env POSTGRES_USER=taky_ci \
+  --env "POSTGRES_PASSWORD=$database_password" \
+  --health-cmd "pg_isready -U taky_ci -d taky_nnp" \
+  --health-interval 2s --health-timeout 3s --health-retries 30 \
+  --security-opt no-new-privileges:true \
+  "$trixie_gnupg_db_image" >/dev/null
+
+trixie_nnp_healthy=false
+for _ in $(seq 1 60); do
+  state="$(docker inspect --format '{{.State.Health.Status}}' "$trixie_nnp_container" 2>/dev/null || true)"
+  if [[ "$state" == healthy ]]; then
+    trixie_nnp_healthy=true
+    break
+  fi
+  if [[ "$state" == unhealthy ]]; then
+    docker logs "$trixie_nnp_container" >&2
+    exit 1
+  fi
+  sleep 2
+done
+if [[ "$trixie_nnp_healthy" != true ]]; then
+  docker logs "$trixie_nnp_container" >&2
+  echo "Timed out waiting for NNP lifecycle database health" >&2
+  exit 1
+fi
+
+trixie_nnp_security_opt="$(docker inspect --format '{{json .HostConfig.SecurityOpt}}' "$trixie_nnp_container")"
+grep -Fq 'no-new-privileges:true' <<<"$trixie_nnp_security_opt"
+assert_trixie_nnp_processes() {
+  docker exec "$trixie_nnp_container" sh -ec '
+  grep -q "^NoNewPrivs:[[:space:]]*1$" /proc/1/status
+  for comm in /proc/[0-9]*/comm; do
+    if [ "$(cat "$comm")" = postgres ]; then
+      grep -q "^NoNewPrivs:[[:space:]]*1$" "${comm%comm}status"
+      exit 0
+    fi
+  done
+  echo "No PostgreSQL process with NoNewPrivs=1 was found" >&2
+  exit 1
+  '
+}
+assert_trixie_nnp_processes
+docker exec "$trixie_nnp_container" psql -U taky_ci -d taky_nnp -v ON_ERROR_STOP=1 \
+  -c 'CREATE TABLE nnp_lifecycle (id integer PRIMARY KEY); INSERT INTO nnp_lifecycle VALUES (1);' >/dev/null
+docker restart "$trixie_nnp_container" >/dev/null
+trixie_nnp_healthy=false
+for _ in $(seq 1 60); do
+  state="$(docker inspect --format '{{.State.Health.Status}}' "$trixie_nnp_container" 2>/dev/null || true)"
+  if [[ "$state" == healthy ]]; then
+    trixie_nnp_healthy=true
+    break
+  fi
+  if [[ "$state" == unhealthy ]]; then
+    docker logs "$trixie_nnp_container" >&2
+    exit 1
+  fi
+  sleep 2
+done
+if [[ "$trixie_nnp_healthy" != true ]]; then
+  docker logs "$trixie_nnp_container" >&2
+  echo "Timed out waiting for NNP lifecycle database health after restart" >&2
+  exit 1
+fi
+trixie_nnp_security_opt_after_restart="$(docker inspect --format '{{json .HostConfig.SecurityOpt}}' "$trixie_nnp_container")"
+[[ "$trixie_nnp_security_opt_after_restart" == "$trixie_nnp_security_opt" ]]
+assert_trixie_nnp_processes
+trixie_nnp_persisted="$(docker exec "$trixie_nnp_container" psql -U taky_ci -d taky_nnp -Atc 'SELECT count(*) FROM nnp_lifecycle')"
+[[ "$trixie_nnp_persisted" == 1 ]]
+{
+  printf 'candidate_image=%s\n' "$(docker image inspect --format '{{.Id}}' "$trixie_gnupg_db_image")"
+  printf 'container_security_opt=%s\n' "$trixie_nnp_security_opt"
+  printf 'postgres_no_new_privileges=1\n'
+  printf 'fresh_initdb=PASS\nrestart_health=PASS\npersisted_marker_rows=%s\n' "$trixie_nnp_persisted"
+} > "$trixie_gnupg_evidence_dir/no-new-privileges-lifecycle.txt"
+cat "$trixie_gnupg_evidence_dir/no-new-privileges-lifecycle.txt"
+
 trixie_candidate_image_id="$(docker image inspect --format '{{.Id}}' "$trixie_gnupg_db_image")"
 trixie_candidate_scan_image_id="$(jq -er '.imageId' "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan/debian-trixie-gnupg-prune-database.metadata.json")"
 if [[ "$trixie_candidate_image_id" != "$trixie_candidate_scan_image_id" ]]; then
@@ -638,6 +726,7 @@ if [[ "$trixie_candidate_image_id" != "$trixie_candidate_scan_image_id" ]]; then
   exit 1
 fi
 for evidence_file in candidate-build-inputs.txt candidate-lock-provenance.json \
+  no-new-privileges-lifecycle.txt \
   dpkg-before.tsv dpkg-after.tsv purge-simulation.txt removed-packages.tsv \
   apt-update-before-purge.log apt-update-after-purge.log \
   inrelease-before-purge.tsv inrelease-after-purge.tsv \
