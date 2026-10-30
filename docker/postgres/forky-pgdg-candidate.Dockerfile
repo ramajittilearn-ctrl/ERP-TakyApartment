@@ -51,6 +51,7 @@ RUN --network=none set -eux; \
     test "$(dpkg-query --show --showformat='${Architecture}' postgresql-17)" = 'amd64'; \
     libxml_version="$(dpkg-query --show --showformat='${Version}' libxml2-16)"; \
     dpkg --compare-versions "$libxml_version" ge '2.15.4+dfsg-1'; \
+    install -d -o root -g root -m 0755 /docker-entrypoint-initdb.d; \
     install -d -o postgres -g postgres /var/lib/postgresql/data; \
     rm -rf /tmp/forky-packages /var/lib/apt/lists/* /var/cache/apt/archives/*.deb
 
