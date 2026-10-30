@@ -50,10 +50,11 @@ function fixture() {
   const rootBytes = Buffer.from('authenticated postgresql package fixture');
   const item = {
     package: 'postgresql-17', version: '17.11-1.pgdg14+2', architecture: 'amd64',
-    filename: 'postgresql-17_17.11-1.pgdg14+2_amd64.deb', origins: ['pgdg-forky'],
-    indexOrigin: 'pgdg-forky', sha256: sha256(rootBytes), size: rootBytes.length,
+    filename: 'pool/main/p/postgresql-17/postgresql-17_17.11-1.pgdg14+2_amd64.deb',
+    aptUri: 'https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-17/postgresql-17_17.11-1.pgdg14+2_amd64.deb', origins: ['pgdg-forky'],
+    sha256: sha256(rootBytes), size: rootBytes.length,
   };
-  files.set('packages/' + item.filename, rootBytes);
+  files.set('packages/postgresql-17_17.11-1.pgdg14+2_amd64.deb', rootBytes);
   files.set('metadata/debian-forky.InRelease', Buffer.from('signed Debian Release evidence'));
   files.set('metadata/pgdg-forky.InRelease', Buffer.from('signed PGDG Release evidence'));
   const manifest = {
@@ -83,6 +84,31 @@ test('accepts same-run manifest and exact package bytes, and extracts a safe ZIP
   assert.equal(validateManifest(extractZip(zip(files)), env).workflow.GITHUB_RUN_ID, '42');
 });
 
+test('accepts Debian all-architecture epoch packages with APT-escaped local names', () => {
+  const files = fixture(), manifest = JSON.parse(files.get('provenance.json'));
+  const bytes = Buffer.from('authenticated Debian all-architecture package');
+  manifest.dependencyClosure.packages.push({
+    package: 'libaudit-common', version: '1:4.1.2-1', architecture: 'all',
+    filename: 'pool/main/a/audit/libaudit-common_4.1.2-1_all.deb',
+    aptUri: 'https://deb.debian.org/debian/pool/main/a/audit/libaudit-common_4.1.2-1_all.deb',
+    origins: ['debian-forky'], sha256: sha256(bytes), size: bytes.length,
+  });
+  files.set('packages/libaudit-common_1%3a4.1.2-1_all.deb', bytes);
+  const tildeBytes = Buffer.from('authenticated prerelease-version package');
+  manifest.dependencyClosure.packages.push({
+    package: 'libfoo', version: '1.2~rc1-1', architecture: 'amd64',
+    filename: 'pool/main/libf/libfoo/libfoo_1.2~rc1-1_amd64.deb',
+    aptUri: 'https://deb.debian.org/debian/pool/main/libf/libfoo/libfoo_1.2~rc1-1_amd64.deb',
+    origins: ['debian-forky'], sha256: sha256(tildeBytes), size: tildeBytes.length,
+  });
+  files.set('packages/libfoo_1.2~rc1-1_amd64.deb', tildeBytes);
+  const manifestBytes = Buffer.from(JSON.stringify(manifest));
+  files.set('provenance.json', manifestBytes);
+  files.set('status.json', Buffer.from(JSON.stringify({ status: 'PASS', manifestSha256: sha256(manifestBytes) })));
+  assert.equal(validateManifest(files, env).dependencyClosure.packages.length, 3);
+  assert.equal(validateManifest(extractZip(zip(files)), env).dependencyClosure.packages.length, 3);
+});
+
 test('rejects run identity, manifest digest, package byte, origin, and clearance changes', () => {
   const mismatch = fixture();
   assert.throws(() => validateManifest(mismatch, { ...env, GITHUB_RUN_ATTEMPT: '1' }), /workflow binding/);
@@ -94,11 +120,10 @@ test('rejects run identity, manifest digest, package byte, origin, and clearance
   assert.throws(() => validateManifest(badPackage, env), /Package bytes differ/);
   const badOrigin = fixture(), originManifest = JSON.parse(badOrigin.get('provenance.json'));
   originManifest.dependencyClosure.packages[0].origins = ['debian-forky'];
-  originManifest.dependencyClosure.packages[0].indexOrigin = 'debian-forky';
   const originBytes = Buffer.from(JSON.stringify(originManifest));
   badOrigin.set('provenance.json', originBytes);
   badOrigin.set('status.json', Buffer.from(JSON.stringify({ status: 'PASS', manifestSha256: sha256(originBytes) })));
-  assert.throws(() => validateManifest(badOrigin, env), /Pinned PostgreSQL package/);
+  assert.throws(() => validateManifest(badOrigin, env), /Package download URI origin/);
   const badClearance = fixture(), clearManifest = JSON.parse(badClearance.get('provenance.json'));
   clearManifest.clearance.productionClearance = true;
   const clearBytes = Buffer.from(JSON.stringify(clearManifest));
@@ -114,6 +139,22 @@ test('rejects ZIP traversal, extra files, and corrupt entry bytes', () => {
   const corrupt = zip(files);
   corrupt[40] ^= 0xff;
   assert.throws(() => extractZip(corrupt), /ZIP|entry|header/);
+});
+
+test('rejects malformed signed paths, URI origins, encoded separators, and root Architecture all', () => {
+  for (const mutate of [
+    (item) => { item.filename = 'pool/../escape.deb'; },
+    (item) => { item.aptUri = 'https://evil.example/pool/main/p/postgresql-17/package.deb'; },
+    (item) => { item.aptUri = 'https://apt.postgresql.org/pub/repos/apt/pool%2fmain/p/postgresql-17/package.deb'; },
+    (item) => { item.architecture = 'all'; item.filename = 'pool/main/p/postgresql-17/postgresql-17_17.11-1.pgdg14+2_all.deb'; },
+  ]) {
+    const files = fixture(), manifest = JSON.parse(files.get('provenance.json'));
+    mutate(manifest.dependencyClosure.packages[0]);
+    const manifestBytes = Buffer.from(JSON.stringify(manifest));
+    files.set('provenance.json', manifestBytes);
+    files.set('status.json', Buffer.from(JSON.stringify({ status: 'PASS', manifestSha256: sha256(manifestBytes) })));
+    assert.throws(() => validateManifest(files, env));
+  }
 });
 
 test('requires HTTPS GitHub API origin before any authenticated request', () => {

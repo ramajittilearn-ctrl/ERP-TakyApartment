@@ -57,7 +57,7 @@ function safeName(name) {
     ? name === 'metadata/' || name === 'packages/'
     : name === 'provenance.json' || name === 'status.json' ||
       (name.startsWith('metadata/') && !name.slice(9).includes('/') && /^[A-Za-z0-9_.+-]+$/.test(name.slice(9))) ||
-      (name.startsWith('packages/') && !name.slice(9).includes('/') && /^[A-Za-z0-9_.+-]+\.deb$/.test(name.slice(9)));
+      (name.startsWith('packages/') && !name.slice(9).includes('/') && /^[a-z0-9][a-z0-9+.-]*_(?:[0-9]+%3a)?[A-Za-z0-9.+~_-]+_(?:amd64|all)\.deb$/.test(name.slice(9)));
   if (!valid) fail('Unexpected ZIP entry path: ' + name);
   return directory;
 }
@@ -130,6 +130,40 @@ function parseJson(files, name) {
   try { return JSON.parse(bytes.toString('utf8')); } catch { fail('Invalid JSON: ' + name); }
 }
 
+function expectedArchiveName(item) {
+  const version = item.version.replace(/^([0-9]+):/, '$1%3a');
+  return `${item.package}_${version}_${item.architecture}.deb`;
+}
+
+function validatePackageLocation(item) {
+  if (!/^[a-z0-9][a-z0-9+.-]*$/.test(item.package || '') ||
+      !/^(?:[0-9]+:)?[A-Za-z0-9.+~_-]+$/.test(item.version || '') ||
+      !['amd64', 'all'].includes(item.architecture) ||
+      !/^pool\/(?:[A-Za-z0-9.+~_-]+\/)*[A-Za-z0-9.+~_-]+\.deb$/.test(item.filename || '') ||
+      item.filename.split('/').some((part) => part === '.' || part === '..')) {
+    fail('Malformed signed package identity or Filename path');
+  }
+  const signedVersion = item.version.replace(/^[0-9]+:/, '');
+  const signedBasename = `${item.package}_${signedVersion}_${item.architecture}.deb`;
+  if (!item.filename.endsWith('/' + signedBasename)) fail('Signed Filename does not match package identity');
+  const baseByOrigin = {
+    'debian-forky': 'https://deb.debian.org/debian',
+    'pgdg-forky': 'https://apt.postgresql.org/pub/repos/apt',
+  };
+  const base = baseByOrigin[item.origins?.[0]];
+  let uri;
+  try { uri = new URL(item.aptUri); } catch { fail('Invalid package download URI'); }
+  if (!base || uri.protocol !== 'https:' || uri.origin !== new URL(base).origin || uri.username || uri.password || uri.search || uri.hash) {
+    fail('Package download URI origin is not allowlisted');
+  }
+  const basePath = new URL(base).pathname;
+  if (!uri.pathname.startsWith(basePath + '/') || /%(?:2f|5c)/i.test(uri.pathname)) fail('Package download URI escapes its repository path');
+  let relativePath;
+  try { relativePath = decodeURIComponent(uri.pathname.slice(basePath.length + 1)); }
+  catch { fail('Package download URI has invalid percent encoding'); }
+  if (relativePath !== item.filename) fail('Package download URI differs from signed Filename');
+}
+
 export function validateManifest(files, env) {
   const manifest = parseJson(files, 'provenance.json');
   const status = parseJson(files, 'status.json');
@@ -158,13 +192,13 @@ export function validateManifest(files, env) {
   const seenIds = new Set(), seenFiles = new Set(), packageFiles = [...files.keys()].filter((n) => n.startsWith('packages/'));
   if (packageFiles.length !== closure.packages.length) fail('Package file count differs from authenticated closure');
   for (const item of closure.packages) {
-    if (!/^[a-z0-9][a-z0-9+.-]*$/.test(item.package || '') || !/^[A-Za-z0-9.+:~_-]+$/.test(item.version || '') ||
-        item.architecture !== 'amd64' || !/^[a-f0-9]{64}$/.test(item.sha256 || '') ||
+    if (!/^[a-f0-9]{64}$/.test(item.sha256 || '') ||
         !Number.isSafeInteger(item.size) || item.size < 1 || !Array.isArray(item.origins) || item.origins.length !== 1 ||
-        !ALLOWED_ORIGINS.has(item.origins[0]) || item.indexOrigin !== item.origins[0] ||
-        !/^[a-z0-9][a-z0-9+.-]*_[A-Za-z0-9.+:~_-]+_amd64\.deb$/.test(item.filename || '')) fail('Malformed or untrusted package closure row');
+        !ALLOWED_ORIGINS.has(item.origins[0]) ||
+        typeof item.filename !== 'string' || typeof item.aptUri !== 'string') fail('Malformed or untrusted package closure row');
+    validatePackageLocation(item);
     const id = item.package + ':' + item.architecture;
-    const file = 'packages/' + item.filename;
+    const file = 'packages/' + expectedArchiveName(item);
     if (seenIds.has(id) || seenFiles.has(file)) fail('Duplicate package identity or filename in closure');
     seenIds.add(id); seenFiles.add(file);
     const bytes = files.get(file);

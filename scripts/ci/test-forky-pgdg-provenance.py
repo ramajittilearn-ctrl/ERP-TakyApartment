@@ -52,6 +52,13 @@ class Deb822Tests(unittest.TestCase):
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_root_package_policy_pins_amd64_architecture(self):
+        root = module.read_json(module.POLICY_PATH)["rootPackage"]
+        self.assertEqual(root, {
+            "name": "postgresql-17", "version": "17.11-1.pgdg14+2",
+            "architecture": "amd64", "requiredOrigin": "apt.postgresql.org",
+        })
+
     def test_debian_policy_context_binds_repository_and_signers_for_transition(self):
         policy = module.read_json(module.POLICY_PATH)
         debian_policy, trusted_primaries = module.debian_forky_policy_context(policy)

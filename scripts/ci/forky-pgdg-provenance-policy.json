@@ -5,6 +5,7 @@
   "rootPackage": {
     "name": "postgresql-17",
     "version": "17.11-1.pgdg14+2",
+    "architecture": "amd64",
     "requiredOrigin": "apt.postgresql.org"
   },
   "debianKeyringTransition": {

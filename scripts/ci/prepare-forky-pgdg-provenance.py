@@ -1181,7 +1181,9 @@ def execute(output_dir: pathlib.Path, status: dict[str, Any]) -> None:
         if len(package_ids) != len(package_results):
             raise ProvenanceError("APT dependency plan contains multiple versions of one package architecture")
         root_results = [item for item in package_results if item["package"] == root["name"]]
-        if len(root_results) != 1 or root_results[0]["version"] != root["version"] or "pgdg-forky" not in root_results[0]["origins"]:
+        if (len(root_results) != 1 or root_results[0]["version"] != root["version"]
+            or root_results[0]["architecture"] != root["architecture"]
+            or "pgdg-forky" not in root_results[0]["origins"]):
             raise ProvenanceError("APT-selected root package does not match the pinned PGDG identity")
 
         # Store a compact, reviewable package inventory; raw signed indexes remain alongside it.
