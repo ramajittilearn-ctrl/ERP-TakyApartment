@@ -1,6 +1,15 @@
 # Phase 4 Production Readiness
 
-## Latest live continuation — 2026-10-30 13:12 Asia/Bangkok
+
+## Latest live continuation — 2026-10-30 14:26 Asia/Bangkok
+
+PR #2 remains OPEN / `REVIEW_REQUIRED` / `BLOCKED` at exact head `8132adb46eae820f0e8808e4ffa109204cb96a48` (tree `363e841c1ba698a4e50ccaadede208b5a734e825`). Exact-head push run [41017188983](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41017188983) and pull_request run [41017194713](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41017194713) both passed all 8 jobs. Independent artifact audit by `/root/head_artifact_audit` passed: Stage 5 is 52 checks/17 migrations; synthetic Agent UAT 90/90; restore matrix 8/8 on both events. Matrix SHA-256 values: push `2a103803cb0e006a3f0b7365af67980bedfd9124112fdffbea99ca1b3621bf52`; PR `0182013d5deb0c96a5fd9f6dbbd0119e04f4b63ce139057c9b733725ad2644e3`.
+
+Raw scan artifacts [push 12960966039](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41017188983/artifacts/12960966039) and [PR 12960339902](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41017194713/artifacts/12960339902) retain Bookworm 2 Critical/66 High, operational Trixie 1 Critical/61 High, GnuPG-pruned Trixie 1 Critical/54 High, and Operations 1 UNKNOWN. Independent exact-head audit confirms candidate image and evidence bindings; scanner clearance, CVE disposition, production image selection, and production clearance remain false. The Oct 28 Trivy 0.76.1 positive-control gap for CVE-2026-6653 was not rerun against the Oct 30 candidate scan database; zero findings do not grant clearance.
+
+One approving GitHub review is required and none is recorded. No exact production target/registry, deployment workflow/environment, target-matched recovery/rollback, publication/pull or post-deployment evidence exists. No protected branch or production/UAT environment changed. Production remains **NO-GO**. Detailed artifact IDs, synthetic financial result, and concurrent-worktree caution are in `docs/project-execution/checkpoint.md`. Report 21 remains exact evidence for parent code head `95d4d87`, not the documentation-only head `8132adb`.
+
+## Previous live continuation — 2026-10-30 13:12 Asia/Bangkok
 
 PR #2 is OPEN / `REVIEW_REQUIRED` / `BLOCKED` at head `95d4d87f8c3bc84d9ce11703aecccbf821fbd5ee`. Exact-head PR run [41010629513](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41010629513) and push run [41010622769](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41010622769) both passed all eight jobs; independent artifact audit confirmed bindings and evidence. Stage 5 passed 52 checks/17 migrations, and both restore matrices passed 8/8. Details are in [exact-head verification 21](21-forky-exact-head-verification-20261030.md). Reports 19 and 20 remain historical for heads `f2e50b9` and `13d9857`.
 
