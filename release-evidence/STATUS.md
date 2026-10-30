@@ -1,7 +1,15 @@
 # Phase 4 Production Readiness
 
 
-## Latest live continuation — 2026-10-30 14:26 Asia/Bangkok
+## Latest live continuation — 2026-10-30 14:55 Asia/Bangkok
+
+PR #2 remains OPEN / `REVIEW_REQUIRED` / `BLOCKED` for PR head `369042288a223b29cb81fc4a81d247b193639bea` at capture time. Exact push run [41020294367](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41020294367) and PR run [41020302193](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41020302193) fail at pinned Ubuntu Jammy security source provenance because the snapshot endpoint returned HTTP 503 in both CI runs; a direct HEAD probe at 2026-10-30T07:55:15Z returned HTTP 500. Dependent candidate artifact verification fails closed; candidate/container jobs skip. Quality, Stage 5, synthetic Agent UAT and Forky PGDG provenance pass both runs. The parent code head `8132adb` passed 8/8 on both events; `3690422` contains documentation only.
+
+The Trivy 0.76.1 CVE-2026-6653 positive-control rerun remains incomplete. The downloaded macOS ARM64 release archive hash matches its pinned hash; executable hash is recorded in the continuation checkpoint. A temporary anonymous Docker config bypassed the locally hung desktop credential helper and downloaded the 130.79 MiB vulnerability DB, but extraction failed because the host had only 672 MiB free. No current DB finding result exists; the previous coverage gap remains open. PR approval, raw security disposition, target-specific recovery/rollback, publication/pull, deployment and post-deployment evidence remain open. Production remains **NO-GO**.
+
+The prior 14:26 exact-head success entry is historical for parent `8132adb`; see the current failed run links above. Details and next actions are recorded in `docs/project-execution/checkpoint.md`.
+
+## Previous live continuation — 2026-10-30 14:26 Asia/Bangkok
 
 PR #2 remains OPEN / `REVIEW_REQUIRED` / `BLOCKED` at exact head `8132adb46eae820f0e8808e4ffa109204cb96a48` (tree `363e841c1ba698a4e50ccaadede208b5a734e825`). Exact-head push run [41017188983](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41017188983) and pull_request run [41017194713](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41017194713) both passed all 8 jobs. Independent artifact audit by `/root/head_artifact_audit` passed: Stage 5 is 52 checks/17 migrations; synthetic Agent UAT 90/90; restore matrix 8/8 on both events. Matrix SHA-256 values: push `2a103803cb0e006a3f0b7365af67980bedfd9124112fdffbea99ca1b3621bf52`; PR `0182013d5deb0c96a5fd9f6dbbd0119e04f4b63ce139057c9b733725ad2644e3`.
 
