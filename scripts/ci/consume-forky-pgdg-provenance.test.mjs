@@ -168,19 +168,19 @@ test('requires HTTPS GitHub API origin before any authenticated request', () => 
 });
 
 test('uses a longer bounded timeout for large artifact downloads than API metadata', async () => {
-  const originalFetch = globalThis.fetch, originalTimeout = AbortSignal.timeout;
+  const originalFetch = globalThis.fetch, originalTimeout = globalThis.AbortSignal.timeout;
   const observedTimeouts = [];
-  globalThis.fetch = async () => new Response('ok');
-  AbortSignal.timeout = (milliseconds) => {
+  globalThis.fetch = async () => new globalThis.Response('ok');
+  globalThis.AbortSignal.timeout = (milliseconds) => {
     observedTimeouts.push(milliseconds);
-    return new AbortController().signal;
+    return new globalThis.AbortController().signal;
   };
   try {
     await fetchLimited('https://api.github.com/metadata', {}, 100, 'metadata');
     await fetchLimited('https://api.github.com/artifact.zip', {}, 100, 'artifact', 5 * 60_000);
   } finally {
     globalThis.fetch = originalFetch;
-    AbortSignal.timeout = originalTimeout;
+    globalThis.AbortSignal.timeout = originalTimeout;
   }
   assert.deepEqual(observedTimeouts, [20_000, 300_000]);
 });
