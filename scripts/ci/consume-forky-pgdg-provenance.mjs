@@ -10,6 +10,8 @@ const MAX_ENTRIES = 1000;
 const MAX_ENTRY_BYTES = 200 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 900 * 1024 * 1024;
 const MAX_JSON_BYTES = 4 * 1024 * 1024;
+const METADATA_TIMEOUT_MS = 20_000;
+const ARTIFACT_DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
 const REPOSITORY = 'ramajittilearn-ctrl/ERP-TakyApartment';
 const ROOT = { package: 'postgresql-17', version: '17.11-1.pgdg14+2', architecture: 'amd64', origin: 'apt.postgresql.org' };
 const ALLOWED_ORIGINS = new Set(['debian-forky', 'pgdg-forky']);
@@ -249,11 +251,11 @@ async function readLimited(response, limit, label) {
   }
   return Buffer.concat(chunks, total);
 }
-async function fetchLimited(url, headers, limit, label) {
+export async function fetchLimited(url, headers, limit, label, timeoutMs = METADATA_TIMEOUT_MS) {
   let current = new URL(url);
   const h = new globalThis.Headers(headers);
   for (let i = 0; i <= 5; i += 1) {
-    const response = await fetch(current, { headers: h, redirect: 'manual', signal: globalThis.AbortSignal.timeout(20000) });
+    const response = await fetch(current, { headers: h, redirect: 'manual', signal: globalThis.AbortSignal.timeout(timeoutMs) });
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       if (i === 5 || !response.headers.get('location')) fail(label + ' redirected too many times');
       const next = new URL(response.headers.get('location'), current);
@@ -280,7 +282,7 @@ async function fetchArtifact(env, artifactId, digest, name, runId, attempt) {
   catch (e) { if (e instanceof SyntaxError) fail('Invalid artifact metadata JSON'); throw e; }
   validateArtifactMetadata((listing.artifacts || []).find((item) => String(item.id) === artifactId), artifactId, name, run, digest);
   const url = api + '/repos/' + repoPath + '/actions/artifacts/' + artifactId + '/zip';
-  const zip = await fetchLimited(url, headers, MAX_ZIP_BYTES, 'Forky provenance ZIP');
+  const zip = await fetchLimited(url, headers, MAX_ZIP_BYTES, 'Forky provenance ZIP', ARTIFACT_DOWNLOAD_TIMEOUT_MS);
   if (sha256(zip) !== digest) fail('Downloaded artifact ZIP digest mismatch');
   return zip;
 }

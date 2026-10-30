@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import test from 'node:test';
 import { deflateRawSync } from 'node:zlib';
-import { extractZip, githubApiBase, validateManifest } from './consume-forky-pgdg-provenance.mjs';
+import { extractZip, fetchLimited, githubApiBase, validateManifest } from './consume-forky-pgdg-provenance.mjs';
 
 const env = {
   GITHUB_REPOSITORY: 'ramajittilearn-ctrl/ERP-TakyApartment',
@@ -165,4 +165,22 @@ test('requires HTTPS GitHub API origin before any authenticated request', () => 
     'https://github.example.test/api/v3', 'https://github.example.test/?token=secret',
     'https://github.example.test/#fragment', 'not a URL',
   ]) assert.throws(() => githubApiBase(value), /GitHub API base URL/);
+});
+
+test('uses a longer bounded timeout for large artifact downloads than API metadata', async () => {
+  const originalFetch = globalThis.fetch, originalTimeout = AbortSignal.timeout;
+  const observedTimeouts = [];
+  globalThis.fetch = async () => new Response('ok');
+  AbortSignal.timeout = (milliseconds) => {
+    observedTimeouts.push(milliseconds);
+    return new AbortController().signal;
+  };
+  try {
+    await fetchLimited('https://api.github.com/metadata', {}, 100, 'metadata');
+    await fetchLimited('https://api.github.com/artifact.zip', {}, 100, 'artifact', 5 * 60_000);
+  } finally {
+    globalThis.fetch = originalFetch;
+    AbortSignal.timeout = originalTimeout;
+  }
+  assert.deepEqual(observedTimeouts, [20_000, 300_000]);
 });
