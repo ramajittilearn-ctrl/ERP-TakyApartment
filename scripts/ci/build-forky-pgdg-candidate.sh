@@ -88,6 +88,16 @@ docker exec "$container_name" env PGPASSWORD=synthetic-candidate-only-password s
 grep -Fq 'xml-ok' "$evidence_dir/dump-restore-smoke.txt" || die 'PostgreSQL dump/restore result is missing'
 
 docker restart "$container_name" > "$evidence_dir/restart.txt"
+restarted_ready=false
+for _ in $(seq 1 90); do
+  if docker exec "$container_name" env PGPASSWORD=synthetic-candidate-only-password pg_isready \
+    -h 127.0.0.1 -U taky_candidate -d taky_candidate >/dev/null 2>&1; then
+    restarted_ready=true
+    break
+  fi
+  sleep 2
+done
+[[ "$restarted_ready" == true ]] || { docker logs "$container_name" > "$evidence_dir/container.log" 2>&1 || true; die 'PostgreSQL Forky candidate did not become healthy after restart'; }
 docker exec "$container_name" env PGPASSWORD=synthetic-candidate-only-password psql \
   -h 127.0.0.1 -U taky_candidate -d taky_candidate -v ON_ERROR_STOP=1 -Atc \
   "SELECT xpath('/root/item/text()', value)::text FROM candidate_xml" > "$evidence_dir/restart-persistence.txt"
