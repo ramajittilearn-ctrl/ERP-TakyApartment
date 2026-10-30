@@ -209,6 +209,8 @@ jobs:
           node-version: "22"
 
       - name: Verify consumer and fail-closed package artifact contract
+        env:
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/phase4-python-cache
         run: |
           node --check scripts/ci/consume-forky-pgdg-provenance.mjs
           node --test scripts/ci/consume-forky-pgdg-provenance.test.mjs
