@@ -386,6 +386,34 @@ echo "Building isolated Trixie GnuPG-prune candidate on operational image $trixi
 build_trixie_gnupg_candidate_image "$trixie_gnupg_db_image" "$db_image" "$trixie_operational_image_id" "$trixie_candidate_lock_sha256"
 legacy_trixie_db_image="postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
 legacy_bookworm_db_image="postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27"
+pull_pinned_restore_source() {
+  local image="$1" pinned_digest image_id platform repo_digests
+  pinned_digest="${image##*@}"
+  if [[ ! "$image" =~ ^postgres:17\.11-(trixie|bookworm)@sha256:[a-f0-9]{64}$ ]]; then
+    echo "Legacy restore source is not a supported digest-pinned PostgreSQL 17.11 image: $image" >&2
+    return 1
+  fi
+  docker pull --platform linux/amd64 "$image" >&2
+  repo_digests="$(docker image inspect --format '{{json .RepoDigests}}' "$image")"
+  if ! jq -e --arg digest "$pinned_digest" 'any(.[]?; endswith($digest))' <<< "$repo_digests" >/dev/null; then
+    echo "Pulled restore source does not report its pinned repository digest: $image ($repo_digests)" >&2
+    return 1
+  fi
+  platform="$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$image")"
+  if [[ "$platform" != linux/amd64 ]]; then
+    echo "Pulled restore source has unexpected platform: $image ($platform)" >&2
+    return 1
+  fi
+  image_id="$(docker image inspect --format '{{.Id}}' "$image")"
+  if [[ ! "$image_id" =~ ^sha256:[a-f0-9]{64}$ || "$(docker image inspect --format '{{.Id}}' "$image")" != "$image_id" ]]; then
+    echo "Pulled restore source image ID is invalid or unstable: $image ($image_id)" >&2
+    return 1
+  fi
+  printf '%s\n' "$image_id"
+}
+echo "Pulling and verifying digest-pinned legacy PostgreSQL restore sources"
+legacy_trixie_db_image_id="$(pull_pinned_restore_source "$legacy_trixie_db_image")"
+legacy_bookworm_db_image_id="$(pull_pinned_restore_source "$legacy_bookworm_db_image")"
 restore_probe_failures=0
 restore_matrix_report="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-restore-matrix-${project}.txt"
 if [[ -e "$restore_matrix_report" ]]; then
@@ -414,6 +442,10 @@ for route in "${restore_routes[@]}"; do
   IFS='|' read -r source_label source_db_image target_label target_db_image <<< "$route"
   source_image_id="$(docker image inspect --format '{{.Id}}' "$source_db_image")"
   target_image_id="$(docker image inspect --format '{{.Id}}' "$target_db_image")"
+  case "$source_label:$source_db_image" in
+    "trixie:$legacy_trixie_db_image") [[ "$source_image_id" == "$legacy_trixie_db_image_id" ]] || { echo "Pinned Trixie source image ID changed after preflight pull" >&2; exit 1; } ;;
+    "bookworm:$legacy_bookworm_db_image") [[ "$source_image_id" == "$legacy_bookworm_db_image_id" ]] || { echo "Pinned Bookworm source image ID changed after preflight pull" >&2; exit 1; } ;;
+  esac
   printf 'RUN source=%s image=%s image_id=%s target=%s image=%s image_id=%s\n' "$source_label" "$source_db_image" "$source_image_id" "$target_label" "$target_db_image" "$target_image_id"
   route_report="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-restore-${source_label}-to-${target_label}.txt"
   route_compatibility_report="$bookworm_compatibility_report"
