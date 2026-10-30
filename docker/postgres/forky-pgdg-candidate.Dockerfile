@@ -19,10 +19,33 @@ RUN --network=none set -eux; \
     chmod 0755 /usr/sbin/policy-rc.d; \
     mkdir -p /etc/postgresql-common; \
     printf 'create_main_cluster = false\nstart_conf = disabled\n' > /etc/postgresql-common/createcluster.conf; \
-    dpkg --unpack /tmp/forky-packages/*.deb; \
-    DEBIAN_FRONTEND=noninteractive dpkg --configure --pending; \
-    test -z "$(dpkg --audit)"; \
-    apt-get --no-download check; \
+    set -- /tmp/forky-packages/*.deb; \
+    package_count=$#; \
+    attempt=1; install_complete=false; \
+    while [ "$attempt" -le "$package_count" ]; do \
+      for archive in /tmp/forky-packages/*.deb; do \
+        package_name="$(dpkg-deb --field "$archive" Package)"; \
+        package_version="$(dpkg-deb --field "$archive" Version)"; \
+        package_arch="$(dpkg-deb --field "$archive" Architecture)"; \
+        package_states="$(dpkg-query --show --showformat='${Version}|${Architecture}|${db:Status-Status}\n' "$package_name" 2>/dev/null || true)"; \
+        for package_state in installed unpacked half-configured triggers-awaited triggers-pending; do \
+          if printf '%s\n' "$package_states" | grep --fixed-strings --line-regexp --quiet "$package_version|$package_arch|$package_state"; then continue 2; fi; \
+        done; \
+        if ! dpkg --unpack "$archive"; then printf 'Deferred package until Pre-Depends are configured: %s\n' "$package_name"; fi; \
+      done; \
+      if ! DEBIAN_FRONTEND=noninteractive dpkg --configure --pending; then printf 'Some packages remain pending configuration (attempt %s)\n' "$attempt"; fi; \
+      all_packages_installed=true; \
+      for archive in /tmp/forky-packages/*.deb; do \
+        package_name="$(dpkg-deb --field "$archive" Package)"; \
+        package_version="$(dpkg-deb --field "$archive" Version)"; \
+        package_arch="$(dpkg-deb --field "$archive" Architecture)"; \
+        package_states="$(dpkg-query --show --showformat='${Version}|${Architecture}|${db:Status-Status}\n' "$package_name" 2>/dev/null || true)"; \
+        if ! printf '%s\n' "$package_states" | grep --fixed-strings --line-regexp --quiet "$package_version|$package_arch|installed"; then all_packages_installed=false; printf 'Package not installed at its authenticated tuple: %s %s %s\n' "$package_name" "$package_version" "$package_arch"; fi; \
+      done; \
+      if [ "$all_packages_installed" = true ] && test -z "$(dpkg --audit)" && apt-get --no-download check; then install_complete=true; break; fi; \
+      attempt=$((attempt + 1)); \
+    done; \
+    test "$install_complete" = true; \
     rm -f /usr/sbin/policy-rc.d; \
     test "$(dpkg-query --show --showformat='${Version}' postgresql-17)" = '17.11-1.pgdg14+2'; \
     test "$(dpkg-query --show --showformat='${Architecture}' postgresql-17)" = 'amd64'; \
