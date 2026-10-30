@@ -138,7 +138,7 @@ for suite in trixie bookworm; do
     -c 'CREATE INDEX restore_probe_label_idx ON restore_probe(label);'
   docker exec "$source_container" env PGPASSWORD=synthetic-restore-only-password psql \
     -h 127.0.0.1 -U taky_restore -d "$source_db" -AtF '|' -v ON_ERROR_STOP=1 \
-    -c "SELECT current_setting('lc_collate'), datcollversion, pg_database_collation_actual_version(oid) FROM pg_database WHERE datname = current_database();" \
+    -c "SELECT datcollate, datcollversion, pg_database_collation_actual_version(oid) FROM pg_database WHERE datname = current_database();" \
     > "$evidence_dir/${suite}-source-collation-version.txt"
   docker exec "$source_container" env PGPASSWORD=synthetic-restore-only-password psql \
     -h 127.0.0.1 -U taky_restore -d "$source_db" -AtF '|' -v ON_ERROR_STOP=1 \
@@ -167,7 +167,7 @@ for suite in trixie bookworm; do
     > "$evidence_dir/${suite}-restore-data-integrity.txt"
   docker exec "$container_name" env PGPASSWORD=synthetic-candidate-only-password psql \
     -h 127.0.0.1 -U taky_candidate -d "$target_db" -AtF '|' -v ON_ERROR_STOP=1 \
-    -c "SELECT datcollversion, pg_database_collation_actual_version(oid) FROM pg_database WHERE datname = current_database();" \
+    -c "SELECT datcollate, datcollversion, pg_database_collation_actual_version(oid) FROM pg_database WHERE datname = current_database();" \
     > "$evidence_dir/${suite}-candidate-collation-version.txt"
   docker exec "$container_name" env PGPASSWORD=synthetic-candidate-only-password psql \
     -h 127.0.0.1 -U taky_candidate -d "$target_db" -AtF '|' -v ON_ERROR_STOP=1 \
