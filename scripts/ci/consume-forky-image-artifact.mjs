@@ -56,7 +56,7 @@ const artifactName = `forky-pgdg-docker-image-${runId}-${runAttempt}`;
 const api = 'https://api.github.com';
 const headers = { authorization: `Bearer ${token}`, accept: 'application/vnd.github+json', 'x-github-api-version': '2022-11-28' };
 async function getJson(url) {
-  const response = await fetchImpl(url, { headers, signal: AbortSignal.timeout(20_000) });
+  const response = await fetchImpl(url, { headers, signal: globalThis.AbortSignal.timeout(20_000) });
   if (!response.ok) fail(`GitHub API request failed (${response.status})`);
   return response.json();
 }
