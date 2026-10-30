@@ -480,7 +480,7 @@ docker run --detach --platform linux/amd64 \
   --mount "type=volume,source=$db_volume,target=/var/lib/postgresql/data" \
   --env POSTGRES_DB=taky_ci --env POSTGRES_USER=taky_ci \
   --env "POSTGRES_PASSWORD=$database_password" \
-  --health-cmd "pg_isready -U taky_ci -d taky_ci" \
+  --health-cmd "pg_isready -h 127.0.0.1 -U taky_ci -d taky_ci" \
   --health-interval 2s --health-timeout 3s --health-retries 30 \
   "$db_image" >/dev/null
 
@@ -645,7 +645,7 @@ docker run --detach --platform linux/amd64 \
   --mount "type=volume,source=$trixie_nnp_volume,target=/var/lib/postgresql/data" \
   --env POSTGRES_DB=taky_nnp --env POSTGRES_USER=taky_ci \
   --env "POSTGRES_PASSWORD=$database_password" \
-  --health-cmd "pg_isready -U taky_ci -d taky_nnp" \
+  --health-cmd "pg_isready -h 127.0.0.1 -U taky_ci -d taky_nnp" \
   --health-interval 2s --health-timeout 3s --health-retries 30 \
   --security-opt no-new-privileges:true \
   "$trixie_gnupg_db_image" >/dev/null

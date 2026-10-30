@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: ${RESTORE_PASSWORD:?Set isolated restore password}
     volumes: [restore_database:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U taky -d taky_restore_test"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U taky -d taky_restore_test"]
       interval: 2s
       timeout: 5s
       retries: 30

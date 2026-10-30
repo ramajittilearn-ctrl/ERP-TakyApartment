@@ -171,7 +171,7 @@ const compose = {
       ports: [`127.0.0.1:${port}:5432`],
       volumes: ["database:/var/lib/postgresql/data"],
       healthcheck: {
-        test: ["CMD-SHELL", `pg_isready -U ${role} -d taky_phase2_test`],
+        test: ["CMD-SHELL", `pg_isready -h 127.0.0.1 -U ${role} -d taky_phase2_test`],
         interval: "1s",
         timeout: "3s",
         retries: 30,

@@ -116,7 +116,7 @@ for suite in trixie bookworm; do
   docker volume create --label "com.taky.candidate.run=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" "$source_volume" >/dev/null
   docker run --detach --name "$source_container" --network none \
     --label "com.taky.candidate.run=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
-    --health-cmd 'pg_isready -U taky_restore -d restore_seed' --health-interval 2s \
+    --health-cmd 'pg_isready -h 127.0.0.1 -U taky_restore -d restore_seed' --health-interval 2s \
     --health-timeout 3s --health-retries 45 --health-start-period 10s \
     --volume "$source_volume:/var/lib/postgresql/data" \
     --env POSTGRES_DB="$source_db" --env POSTGRES_USER=taky_restore \

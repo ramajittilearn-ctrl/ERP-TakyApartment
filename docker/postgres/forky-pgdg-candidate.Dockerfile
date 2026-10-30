@@ -66,7 +66,7 @@ ENV PATH="/usr/lib/postgresql/17/bin:${PATH}" \
     PGDATA="/var/lib/postgresql/data"
 VOLUME ["/var/lib/postgresql/data"]
 EXPOSE 5432
-HEALTHCHECK --interval=5s --timeout=3s --start-period=30s --retries=12 CMD pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" || exit 1
+HEALTHCHECK --interval=5s --timeout=3s --start-period=30s --retries=12 CMD pg_isready -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" || exit 1
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["postgres"]
 

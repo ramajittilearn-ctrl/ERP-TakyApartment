@@ -223,7 +223,7 @@ docker run --detach --platform linux/amd64 \
   --mount "type=volume,source=$source_db_volume,target=/var/lib/postgresql/data" \
   --env POSTGRES_DB=taky_ci --env POSTGRES_USER=taky_ci \
   --env "POSTGRES_PASSWORD=$database_password" \
-  --health-cmd "pg_isready -U taky_ci -d taky_ci" \
+  --health-cmd "pg_isready -h 127.0.0.1 -U taky_ci -d taky_ci" \
   --health-interval 2s --health-timeout 3s --health-retries 30 \
   "$source_db_image" >/dev/null
 
@@ -233,7 +233,7 @@ docker run --detach --platform linux/amd64 \
   --mount "type=volume,source=$restore_db_volume,target=/var/lib/postgresql/data" \
   --env POSTGRES_DB=taky_restore_test --env POSTGRES_USER=taky_ci \
   --env "POSTGRES_PASSWORD=$database_password" \
-  --health-cmd "pg_isready -U taky_ci -d taky_restore_test" \
+  --health-cmd "pg_isready -h 127.0.0.1 -U taky_ci -d taky_restore_test" \
   --health-interval 2s --health-timeout 3s --health-retries 30 \
   "$target_db_image" >/dev/null
 

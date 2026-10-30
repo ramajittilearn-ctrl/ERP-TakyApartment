@@ -253,7 +253,7 @@ export async function loadRemediationPlan(runId, directory = ".") {
       compose.services["validator-host-bridge"].ports[0] !==
         "127.0.0.1:3835:3835" ||
       compose.services.db.healthcheck.test[1] !==
-        `pg_isready -U ${role} -d taky_phase2_test` ||
+        `pg_isready -h 127.0.0.1 -U ${role} -d taky_phase2_test` ||
       !network ||
       !evidenceNetwork ||
       !bridgeNetwork ||
