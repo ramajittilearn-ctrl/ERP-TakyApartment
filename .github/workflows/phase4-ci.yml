@@ -169,8 +169,21 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: forky-pgdg-provenance-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/phase4-forky-pgdg-provenance/
+          path: |
+            ${{ runner.temp }}/phase4-forky-pgdg-provenance/metadata/**
+            ${{ runner.temp }}/phase4-forky-pgdg-provenance/packages/**
+            ${{ runner.temp }}/phase4-forky-pgdg-provenance/provenance.json
+            ${{ runner.temp }}/phase4-forky-pgdg-provenance/status.json
           if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Forky and PGDG provenance diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forky-pgdg-provenance-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/phase4-forky-pgdg-provenance/logs/**
+          if-no-files-found: ignore
           retention-days: 30
 
   forky-pgdg-artifact-verification:

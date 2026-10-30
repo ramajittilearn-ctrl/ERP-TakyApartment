@@ -173,6 +173,18 @@ class DiscoveryParsingTests(unittest.TestCase):
         self.assertIn("${{ runner.temp }}/trixie-gnupg-discovery/", text)
         self.assertIn("${{ runner.temp }}/phase4-container-scan/", text)
 
+    def test_forky_consumer_artifact_excludes_diagnostics_and_uploads_them_separately(self):
+        workflow = SCRIPT.parents[2] / ".github/workflows/phase4-ci.yml"
+        text = workflow.read_text()
+        artifact = text.split("name: forky-pgdg-provenance-${{ github.run_id }}-${{ github.run_attempt }}", 1)[1].split("\n      - name:", 1)[0]
+        diagnostics = text.split("name: forky-pgdg-provenance-logs-${{ github.run_id }}-${{ github.run_attempt }}", 1)[1].split("\n  forky-pgdg-artifact-verification:", 1)[0]
+        self.assertIn("/metadata/**", artifact)
+        self.assertIn("/packages/**", artifact)
+        self.assertIn("/provenance.json", artifact)
+        self.assertIn("/status.json", artifact)
+        self.assertNotIn("/logs/**", artifact)
+        self.assertIn("path: ${{ runner.temp }}/phase4-forky-pgdg-provenance/logs/**", diagnostics)
+
     def test_plan_is_sorted_and_bound_to_installed_version_and_architecture(self):
         inventory = {
             ("zlib1g", "amd64"): "1:1.3.dfsg-3",
