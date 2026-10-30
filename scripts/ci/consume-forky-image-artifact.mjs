@@ -36,6 +36,28 @@ async function readJson(file) {
   try { return JSON.parse(await fs.readFile(file, 'utf8')); }
   catch { fail(`Missing or invalid JSON evidence: ${path.basename(file)}`); }
 }
+async function resolveArtifactEvidence(root) {
+  const expected = ['candidate-image-artifact.json', 'candidate-image-inspect.json', 'candidate-image.tar.gz'];
+  const found = new Map(expected.map((name) => [name, []]));
+  let entriesSeen = 0;
+  async function walk(directory, depth) {
+    if (depth > 4) fail('Candidate image artifact directory nesting exceeds the allowed depth');
+    for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+      if (++entriesSeen > 100) fail('Candidate image artifact contains too many paths');
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isSymbolicLink()) fail('Candidate image artifact contains a symbolic link');
+      if (entry.isDirectory()) await walk(entryPath, depth + 1);
+      else if (entry.isFile() && found.has(entry.name)) found.get(entry.name).push(entryPath);
+    }
+  }
+  await walk(root, 0);
+  for (const [name, paths] of found) {
+    if (paths.length !== 1) fail(`Expected exactly one ${name} in the downloaded artifact`);
+  }
+  const directories = new Set([...found.values()].map((paths) => path.dirname(paths[0])));
+  if (directories.size !== 1) fail('Candidate image artifact evidence files must share one directory');
+  return Object.fromEntries([...found].map(([name, paths]) => [name, paths[0]]));
+}
 async function inspectImage(ref, execute) {
   const { stdout } = await execute('docker', ['image', 'inspect', ref], { maxBuffer: 8 * 1024 * 1024 });
   const rows = JSON.parse(stdout);
@@ -75,8 +97,9 @@ if (String(artifact.id) !== artifactId || artifact.expired || artifact.name !== 
 }
 
 const dir = required(env, 'ARTIFACT_DIR');
-const manifest = await readJson(path.join(dir, 'candidate-image-artifact.json'));
-const savedInspect = await readJson(path.join(dir, 'candidate-image-inspect.json'));
+const evidenceFiles = await resolveArtifactEvidence(dir);
+const manifest = await readJson(evidenceFiles['candidate-image-artifact.json']);
+const savedInspect = await readJson(evidenceFiles['candidate-image-inspect.json']);
 if (manifest.schemaVersion !== 1 || manifest.repository !== REPOSITORY || manifest.runId !== runId ||
     manifest.runAttempt !== runAttempt || manifest.event !== env.GITHUB_EVENT_NAME || manifest.revision !== revision ||
     manifest.tree !== (await execute('git', ['rev-parse', 'HEAD^{tree}'])).stdout.trim() ||
@@ -85,10 +108,10 @@ if (manifest.schemaVersion !== 1 || manifest.repository !== REPOSITORY || manife
 }
 const imageRef = `taky-erp-postgres:17.11-forky-pgdg-candidate-${revision.slice(0, 12)}`;
 if (manifest.imageRef !== imageRef || savedInspect.Id !== manifest.imageId ||
-    sha256(await fs.readFile(path.join(dir, 'candidate-image-inspect.json'))) !== manifest.inspectSha256) {
+    sha256(await fs.readFile(evidenceFiles['candidate-image-inspect.json'])) !== manifest.inspectSha256) {
   fail('Candidate image reference, ID, or inspect evidence digest mismatch');
 }
-const tarPath = path.join(dir, 'candidate-image.tar.gz');
+const tarPath = evidenceFiles['candidate-image.tar.gz'];
 if (await sha256File(tarPath) !== manifest.tarSha256) fail('Candidate image tar SHA-256 mismatch');
 function validateLabels(image) {
   if (image.Id !== manifest.imageId) fail('Candidate Docker image ID differs from the Stage 5-tested source image');

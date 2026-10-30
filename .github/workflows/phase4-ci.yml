@@ -394,6 +394,7 @@ jobs:
         with:
           artifact-ids: ${{ needs.forky-pgdg-artifact-verification.outputs.image_artifact_id }}
           path: ${{ runner.temp }}/phase4-forky-image-artifact
+          merge-multiple: true
 
       - name: Verify artifact provenance and load exact candidate image
         env:

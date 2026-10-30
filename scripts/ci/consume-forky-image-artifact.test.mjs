@@ -28,12 +28,16 @@ const labels = {
 };
 const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
-async function fixture(overrides = {}) {
+async function fixture(overrides = {}, layout = 'flat') {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'forky-image-artifact-test-'));
+  const evidenceDir = layout === 'artifact-name'
+    ? path.join(dir, `forky-pgdg-docker-image-${runId}-${runAttempt}`)
+    : dir;
+  await fs.mkdir(evidenceDir, { recursive: true });
   const tarBytes = Buffer.from('synthetic docker archive');
   const inspect = { Id: imageId, Config: { Labels: labels } };
-  await fs.writeFile(path.join(dir, 'candidate-image.tar.gz'), tarBytes);
-  await fs.writeFile(path.join(dir, 'candidate-image-inspect.json'), JSON.stringify(inspect));
+  await fs.writeFile(path.join(evidenceDir, 'candidate-image.tar.gz'), tarBytes);
+  await fs.writeFile(path.join(evidenceDir, 'candidate-image-inspect.json'), JSON.stringify(inspect));
   const manifest = {
     schemaVersion: 1,
     repository,
@@ -45,10 +49,10 @@ async function fixture(overrides = {}) {
     imageRef: `taky-erp-postgres:17.11-forky-pgdg-candidate-${revision.slice(0, 12)}`,
     imageId,
     tarSha256: hash(tarBytes),
-    inspectSha256: hash(await fs.readFile(path.join(dir, 'candidate-image-inspect.json'))),
+    inspectSha256: hash(await fs.readFile(path.join(evidenceDir, 'candidate-image-inspect.json'))),
   };
   if (overrides.manifest) Object.assign(manifest, overrides.manifest);
-  await fs.writeFile(path.join(dir, 'candidate-image-artifact.json'), JSON.stringify(manifest));
+  await fs.writeFile(path.join(evidenceDir, 'candidate-image-artifact.json'), JSON.stringify(manifest));
   const env = {
     SOURCE_ARTIFACT_ID: '67890',
     SOURCE_ARTIFACT_DIGEST: `sha256:${artifactDigest}`,
@@ -84,7 +88,7 @@ async function fixture(overrides = {}) {
     const body = url.endsWith(`/runs/${runId}`) ? run : artifact;
     return { ok: true, json: async () => body };
   };
-  return { dir, env, calls, execute, fetchImpl };
+  return { dir, evidenceDir, env, calls, execute, fetchImpl };
 }
 
 for (const [name, overrides] of [
@@ -104,8 +108,39 @@ for (const [name, overrides] of [
 test('rejects a candidate tar SHA-256 mismatch before docker load', async () => {
   const data = await fixture();
   try {
-    await fs.writeFile(path.join(data.dir, 'candidate-image.tar.gz'), 'tampered archive');
+    await fs.writeFile(path.join(data.evidenceDir, 'candidate-image.tar.gz'), 'tampered archive');
     await assert.rejects(consumeForkyImageArtifact({ ...data, log() {} }), /tar SHA-256 mismatch/);
     assert.equal(data.calls.some(([command, args]) => command === 'docker' && args[0] === 'load'), false);
   } finally { await fs.rm(data.dir, { recursive: true, force: true }); }
 });
+
+test('rejects duplicate evidence filenames anywhere under the artifact directory', async () => {
+  const data = await fixture();
+  try {
+    const duplicateDir = path.join(data.dir, 'duplicate');
+    await fs.mkdir(duplicateDir);
+    await fs.writeFile(path.join(duplicateDir, 'candidate-image-artifact.json'), '{}');
+    await assert.rejects(consumeForkyImageArtifact({ ...data, log() {} }), /exactly one candidate-image-artifact\.json/);
+    assert.equal(data.calls.some(([command, args]) => command === 'docker' && args[0] === 'load'), false);
+  } finally { await fs.rm(data.dir, { recursive: true, force: true }); }
+});
+
+test('rejects symbolic links in downloaded artifact paths before docker load', async () => {
+  const data = await fixture();
+  try {
+    await fs.symlink('candidate-image-artifact.json', path.join(data.dir, 'artifact-link'));
+    await assert.rejects(consumeForkyImageArtifact({ ...data, log() {} }), /symbolic link/);
+    assert.equal(data.calls.some(([command, args]) => command === 'docker' && args[0] === 'load'), false);
+  } finally { await fs.rm(data.dir, { recursive: true, force: true }); }
+});
+
+for (const layout of ['flat', 'artifact-name']) {
+  test(`accepts files from ${layout} download layout and loads the verified image`, async () => {
+    const data = await fixture({}, layout);
+    try {
+      const result = await consumeForkyImageArtifact({ ...data, log() {} });
+      assert.deepEqual(result, { imageId, artifactId: '67890' });
+      assert.equal(data.calls.some(([command, args]) => command === 'docker' && args[0] === 'load'), true);
+    } finally { await fs.rm(data.dir, { recursive: true, force: true }); }
+  });
+}
