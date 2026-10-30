@@ -19,7 +19,10 @@ RUN --network=none set -eux; \
     chmod 0755 /usr/sbin/policy-rc.d; \
     mkdir -p /etc/postgresql-common; \
     printf 'create_main_cluster = false\nstart_conf = disabled\n' > /etc/postgresql-common/createcluster.conf; \
-    DEBIAN_FRONTEND=noninteractive apt-get --no-download --yes --no-install-recommends install /tmp/forky-packages/*.deb; \
+    dpkg --unpack /tmp/forky-packages/*.deb; \
+    DEBIAN_FRONTEND=noninteractive dpkg --configure --pending; \
+    test -z "$(dpkg --audit)"; \
+    apt-get --no-download check; \
     rm -f /usr/sbin/policy-rc.d; \
     test "$(dpkg-query --show --showformat='${Version}' postgresql-17)" = '17.11-1.pgdg14+2'; \
     test "$(dpkg-query --show --showformat='${Architecture}' postgresql-17)" = 'amd64'; \
