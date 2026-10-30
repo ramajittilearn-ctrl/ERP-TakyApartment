@@ -1,6 +1,14 @@
 # Phase 4 Production Readiness
 
-## Latest live continuation — 2026-10-29
+## Latest live continuation — 2026-10-30 12:20 Asia/Bangkok
+
+PR #2 is OPEN / `REVIEW_REQUIRED` / `BLOCKED` at head `f2e50b9662b9c83eba07f0642641fbe0703dac31`. Exact-head PR run [41005172907](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41005172907) and push run [41005168490](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41005168490) both passed all eight jobs. Independent exact-head artifact audit passed; the restore matrix has eight routes, Stage 5 passed 52 checks/17 migrations, and the Forky candidate remains candidate-only. Full artifact IDs, digests, matrix hash, and limits are in [exact-head verification 19](19-forky-exact-head-verification-20261030.md).
+
+Raw database findings remain: Bookworm 2 Critical/66 High, Trixie 1 Critical/61 High, and GnuPG-pruned Trixie 1 Critical/54 High; Operations has one finding. Candidate security clearance, CVE disposition, production image selection, and production clearance remain false. Debian's current tracker lists Trixie `util-linux 2.41.5-0+deb13u1` vulnerable to CVE-2026-76642; preserve the raw scan and do not infer a fix from DSA-6442-1.
+
+One GitHub approving review is still required and none is recorded. The repo has no configured production deployment environment/workflow and no exact production target/registry attestation. Target-matched recovery/rollback, image publication/pull, deployment and post-deployment evidence remain open. No protected branch or production/UAT environment was changed. Production remains **NO-GO**.
+
+## Previous live continuation — 2026-10-29
 
 PR #2 remains OPEN/Draft at remote head d698b435dad086c396e33f5c13c17a44f893c879 with REVIEW_REQUIRED. Exact-head push run 40802134265 passed required quality, source provenance, Stage 5, Agent UAT, libxml2 candidate, container verification, and all four database restore routes; the optional Forky provenance job failed. PR run 40802140759 passed required quality, source provenance, Stage 5, Agent UAT and libxml2 candidate, but failed container verification on the Trixie-source to Bookworm-target restore route with a local PostgreSQL socket missing before locale checks. Its container artifact 12866797989 records one failing route. The push artifact 12867410315 records all four routes passing. Both artifacts bind the same source tree 74d4c5fa67cd538f70e50808f63902bfd355f201, so treat the PR route failure as unresolved pending an exact-head rerun; its cause is unproven. If repeated, capture container health/state/logs before cleanup.
 

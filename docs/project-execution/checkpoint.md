@@ -1,4 +1,12 @@
-## Latest continuation checkpoint — 2026-10-30 11:49 Asia/Bangkok
+## Latest continuation checkpoint — 2026-10-30 12:20 Asia/Bangkok
+
+- Active checkout at checkpoint capture: `/Users/ramajittipasutanavin/.codex/worktrees/forky-gosu-remediation`, branch `codex/forky-gosu-remediation-20261030`, head `f2e50b9662b9c83eba07f0642641fbe0703dac31`. Exact-head PR run [41005172907](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41005172907) and push run [41005168490](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41005168490) passed all 8 jobs; independent artifact audit passed. Durable exact-head report: `release-evidence/19-forky-exact-head-verification-20261030.md`.
+- Stage 5: 52 checks/17 migrations; synthetic rent `1000.00` persisted and invoice/payment/receipt totals reconciled at `1050.01`. Restore matrix: 8/8 routes, matrix SHA-256 `4c48173cfdfc4e75f16b1cf4a43b5cd93dedf0a6c66435b88b527075d8b9ca2d`; Forky image ID `sha256:d4163fd7eb1f91e9a4f0cce6121a8e82d3510b60a8e1f72a14afd608cb3a75a3`.
+- Reconciled backlog: `SEC-IMG-CI-01` candidate build/restore/scan work is complete; `SEC-DB-COLLATION-01` has 8/8 synthetic routes. Operational Trixie/Candidate security disposition remains open; Forky stays candidate-only with all release clearance flags false.
+- PR #2 is OPEN / `REVIEW_REQUIRED` / `BLOCKED`; one approving GitHub review is required and none is recorded. No exact production target or deployment environment/workflow is configured. Remaining: security/CVE disposition, target and registry attestation, target-matched backup/restore and migration rollback, publication/pull, deployment, and post-deployment evidence. Production remains **NO-GO**.
+- Preserve concurrent worktrees: `trixie-gnupg-candidate-recovery` at `5982007`, this worktree at `f2e50b9`, and `forky-restore-matrix` at `504ed62`; re-check live ownership before integrating.
+
+## Previous continuation checkpoint — 2026-10-30 11:49 Asia/Bangkok
 
 - Active checkout: `/Users/ramajittipasutanavin/.codex/worktrees/forky-gosu-remediation`, branch `codex/forky-gosu-remediation-20261030`, HEAD `22b7768b094fb5736016314b62ef2c49827131fb`. PR #2 targets protected `release/phase4`, is OPEN, `REVIEW_REQUIRED`, and merge-blocked; no protected branch, UAT, or production environment was changed.
 - Exact-head PR run [41002658175](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41002658175) and push run [41002654468](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/41002654468) both completed SUCCESS with all 8 jobs. Quality, synthetic Agent UAT, Stage 5, source provenance/candidate builds, Forky provenance/candidate, and container verification passed.
