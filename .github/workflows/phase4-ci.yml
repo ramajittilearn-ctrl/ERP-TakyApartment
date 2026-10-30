@@ -194,6 +194,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [required-quality, forky-pgdg-provenance]
     if: always() && needs.required-quality.result == 'success' && needs.forky-pgdg-provenance.result == 'success'
+    outputs:
+      image_artifact_id: ${{ steps.upload-forky-image.outputs.artifact-id }}
+      image_artifact_digest: ${{ steps.upload-forky-image.outputs.artifact-digest }}
     timeout-minutes: 90
     permissions:
       actions: read
@@ -217,6 +220,8 @@ jobs:
         run: |
           node --check scripts/ci/consume-forky-pgdg-provenance.mjs
           node --test scripts/ci/consume-forky-pgdg-provenance.test.mjs
+          node --check scripts/ci/consume-forky-image-artifact.mjs
+          node --test scripts/ci/consume-forky-image-artifact.test.mjs
           python3 -m py_compile scripts/ci/validate_forky_candidate_inputs.py
           python3 -m unittest scripts.ci.test_validate_forky_candidate_inputs -v
           python3 scripts/ci/test-forky-pgdg-provenance.py -v
@@ -270,6 +275,35 @@ jobs:
           candidate_image="taky-erp-postgres:17.11-forky-pgdg-candidate-${GITHUB_SHA:0:12}"
           export STAGE5_FORKY_CANDIDATE_IMAGE="$candidate_image"
           node scripts/verify-stage5-runtime.mjs
+
+      - name: Export exact Stage 5-tested Forky candidate image
+        if: steps.forky-stage5.outcome == 'success'
+        env:
+          IMAGE_EVIDENCE: ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence
+        run: |
+          set -Eeuo pipefail
+          IMAGE_REF="taky-erp-postgres:17.11-forky-pgdg-candidate-${GITHUB_SHA:0:12}"
+          image_id="$(docker image inspect --format '{{.Id}}' "$IMAGE_REF")"
+          docker save "$IMAGE_REF" | gzip -1 > "$IMAGE_EVIDENCE/candidate-image.tar.gz"
+          tar_sha256="$(sha256sum "$IMAGE_EVIDENCE/candidate-image.tar.gz" | awk '{print $1}')"
+          inspect_sha256="$(sha256sum "$IMAGE_EVIDENCE/candidate-image-inspect.json" | awk '{print $1}')"
+          printf '{"schemaVersion":1,"repository":"%s","runId":"%s","runAttempt":"%s","event":"%s","revision":"%s","tree":"%s","imageRef":"%s","imageId":"%s","tarSha256":"%s","inspectSha256":"%s"}\n' \
+            "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_EVENT_NAME" "$GITHUB_SHA" \
+            "$(git rev-parse 'HEAD^{tree}')" "$IMAGE_REF" "$image_id" "$tar_sha256" "$inspect_sha256" \
+            > "$IMAGE_EVIDENCE/candidate-image-artifact.json"
+
+      - name: Upload exact Stage 5-tested Forky image
+        id: upload-forky-image
+        if: steps.forky-stage5.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forky-pgdg-docker-image-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence/candidate-image.tar.gz
+            ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence/candidate-image-artifact.json
+            ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence/candidate-image-inspect.json
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Finalize candidate and ERP integration evidence
         if: always()
@@ -342,15 +376,32 @@ jobs:
   container-verification:
     name: container-verification
     runs-on: ubuntu-24.04
-    needs: required-quality
+    needs: [required-quality, forky-pgdg-artifact-verification]
     timeout-minutes: 45
     permissions:
+      actions: read
       contents: read
+    env:
+      PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - name: Download exact same-run Forky image artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          artifact-ids: ${{ needs.forky-pgdg-artifact-verification.outputs.image_artifact_id }}
+          path: ${{ runner.temp }}/phase4-forky-image-artifact
+
+      - name: Verify artifact provenance and load exact candidate image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_ARTIFACT_ID: ${{ needs.forky-pgdg-artifact-verification.outputs.image_artifact_id }}
+          SOURCE_ARTIFACT_DIGEST: ${{ needs.forky-pgdg-artifact-verification.outputs.image_artifact_digest }}
+          ARTIFACT_DIR: ${{ runner.temp }}/phase4-forky-image-artifact
+        run: node scripts/ci/consume-forky-image-artifact.mjs
 
       - name: Set up Go for exact gosu binary vulnerability analysis
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0

@@ -478,6 +478,58 @@ process.stdout.write(JSON.stringify({
 )"
 node -e 'const backup=JSON.parse(process.argv[1]);const restored=JSON.parse(process.argv[2]);if(restored.file!==backup.file||restored.checksum!==backup.checksum||!Number.isSafeInteger(restored.attachments)||restored.attachments!==1)process.exit(1)' "$backup_json" "$restore_json"
 
+if [[ "$target_label" == forky ]]; then
+  source_server_version="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc "SHOW server_version")"
+  target_server_version="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc "SHOW server_version")"
+  source_server_version_num="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc "SHOW server_version_num")"
+  target_server_version_num="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc "SHOW server_version_num")"
+  for version in "$source_server_version" "$target_server_version"; do
+    if [[ ! "$version" =~ ^17\.11(\ \(Debian\ 17\.11-[0-9]+\.pgdg[0-9]+\+[0-9]+\))?$ ]]; then
+      printf 'Forky route PostgreSQL version is not 17.11: %q\n' "$version" >&2
+      exit 1
+    fi
+  done
+  if [[ "$source_server_version_num" != 170011 || "$target_server_version_num" != 170011 ]]; then
+    printf 'Forky route server_version_num mismatch: source=%q target=%q expected=170011\n' \
+      "$source_server_version_num" "$target_server_version_num" >&2
+    exit 1
+  fi
+  source_installed_extensions="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc \
+    "SELECT extname || '|' || extversion FROM pg_extension ORDER BY extname")"
+  target_installed_extensions="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc \
+    "SELECT extname || '|' || extversion FROM pg_extension ORDER BY extname")"
+  if [[ "$source_installed_extensions" != "$target_installed_extensions" ]]; then
+    diff -u <(printf '%s\n' "$source_installed_extensions") <(printf '%s\n' "$target_installed_extensions") || true
+    echo "Forky restore changed installed PostgreSQL extension names or versions" >&2
+    exit 1
+  fi
+  source_available_extensions="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc \
+    "SELECT name || '|' || default_version || '|' || COALESCE(installed_version, '') FROM pg_available_extensions ORDER BY name")"
+  target_available_extensions="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc \
+    "SELECT name || '|' || default_version || '|' || COALESCE(installed_version, '') FROM pg_available_extensions ORDER BY name")"
+  source_image_id="$(docker image inspect --format '{{.Id}}' "$source_db_image")"
+  target_image_id="$(docker image inspect --format '{{.Id}}' "$target_db_image")"
+  {
+    printf 'source_database_image=%s\nsource_database_image_id=%s\ntarget_database_image=%s\ntarget_database_image_id=%s\n' \
+      "$source_db_image" "$source_image_id" "$target_db_image" "$target_image_id"
+    printf 'source_server_version=%s\nsource_server_version_num=%s\ntarget_server_version=%s\ntarget_server_version_num=%s\n' \
+      "$source_server_version" "$source_server_version_num" "$target_server_version" "$target_server_version_num"
+    printf '\n[source_installed_extensions]\n%s\n\n[restored_installed_extensions]\n%s\n' \
+      "$source_installed_extensions" "$target_installed_extensions"
+    printf '\n[source_available_extensions]\n%s\n\n[target_available_extensions]\n%s\n' \
+      "$source_available_extensions" "$target_available_extensions"
+  } > "$compatibility_report"
+  echo "Forky restore preserved PostgreSQL 17.11 (170011) and installed extension names/versions."
+fi
+if [[ "$target_label" == forky ]]; then
+  source_restored_collation="$(docker exec "$source_db" psql -X -U taky_ci -d taky_ci -Atc "$collation_query")"
+  target_restored_collation="$(docker exec "$restore_db" psql -X -U taky_ci -d taky_restore_test -Atc "$collation_query")"
+  {
+    printf '\n[source_database_collation_after_restore]\nprovider|datcollate|datctype|recorded_version|actual_version\n%s\n' "$source_restored_collation"
+    printf '\n[restored_database_collation]\nprovider|datcollate|datctype|recorded_version|actual_version\n%s\n' "$target_restored_collation"
+  } >> "$compatibility_report"
+fi
+
 restored_rooms="$(docker exec "$restore_db" psql -U taky_ci -d taky_restore_test -Atc 'SELECT count(*) FROM "Room"')"
 if [[ "$restored_rooms" != 15 ]]; then
   echo "Isolated restore room count mismatch: expected 15, got ${restored_rooms:-unavailable}" >&2

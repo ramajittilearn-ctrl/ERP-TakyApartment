@@ -115,6 +115,7 @@ CMD ["postgres"]
 
 LABEL org.opencontainers.image.base.name="${DEBIAN_FORKY_BASE}" \
       org.opencontainers.image.revision="${CANDIDATE_REVISION}" \
+      org.opencontainers.image.tree="${CANDIDATE_TREE}" \
       io.taky.candidate.tree="${CANDIDATE_TREE}" \
       io.taky.postgres.gosu.builder="${GOSU_BUILDER_IMAGE}" \
       io.taky.postgres.gosu.commit="${GOSU_COMMIT}" \

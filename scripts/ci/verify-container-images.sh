@@ -70,6 +70,7 @@ debian_trixie_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_trixie_compose_
 debian_bookworm_db_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.image)')"
 debian_bookworm_db_base_image="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.POSTGRES_BASE_IMAGE)')"
 trixie_gnupg_db_image="$(CANDIDATE_COMPOSE_CONFIG="$trixie_gnupg_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.image)')"
+forky_candidate_db_image="taky-erp-postgres:17.11-forky-pgdg-candidate-${GITHUB_SHA:0:12}"
 trixie_gnupg_dockerfile="$(CANDIDATE_COMPOSE_CONFIG="$trixie_gnupg_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.dockerfile)')"
 debian_bookworm_dockerfile="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.dockerfile)')"
 debian_bookworm_main_snapshot="$(CANDIDATE_COMPOSE_CONFIG="$debian_bookworm_compose_config" node -e 'process.stdout.write(JSON.parse(process.env.CANDIDATE_COMPOSE_CONFIG).services.db.build.args.DEBIAN_MAIN_SNAPSHOT)')"
@@ -398,16 +399,35 @@ restore_routes=(
   "bookworm|$legacy_bookworm_db_image|trixie|$debian_trixie_db_image"
   "bookworm|$legacy_bookworm_db_image|trixie-gnupg-prune|$trixie_gnupg_db_image"
   "bookworm|$legacy_bookworm_db_image|bookworm|$debian_bookworm_db_image"
+  "trixie|$legacy_trixie_db_image|forky|$forky_candidate_db_image"
+  "bookworm|$legacy_bookworm_db_image|forky|$forky_candidate_db_image"
 )
+if ! docker image inspect "$forky_candidate_db_image" >/dev/null 2>&1; then
+  echo "Same-run Stage 5-tested Forky candidate image was not loaded: $forky_candidate_db_image" >&2
+  exit 1
+fi
+if [[ "$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.base.name"}}' "$forky_candidate_db_image")" != "debian:forky-slim@sha256:98af9d99779532814d4b51c34d50df8d8886286a2a1ab9625a62db59b9cf1b2d" ]]; then
+  echo "Forky candidate base label does not match the reviewed pinned base" >&2
+  exit 1
+fi
 for route in "${restore_routes[@]}"; do
   IFS='|' read -r source_label source_db_image target_label target_db_image <<< "$route"
-  printf 'RUN source=%s image=%s target=%s image=%s\n' "$source_label" "$source_db_image" "$target_label" "$target_db_image"
+  source_image_id="$(docker image inspect --format '{{.Id}}' "$source_db_image")"
+  target_image_id="$(docker image inspect --format '{{.Id}}' "$target_db_image")"
+  printf 'RUN source=%s image=%s image_id=%s target=%s image=%s image_id=%s\n' "$source_label" "$source_db_image" "$source_image_id" "$target_label" "$target_db_image" "$target_image_id"
+  route_report="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/phase4-restore-${source_label}-to-${target_label}.txt"
+  route_compatibility_report="$bookworm_compatibility_report"
+  if [[ "$target_label" == forky ]]; then
+    rm -f "$route_report"
+    route_compatibility_report="$route_report"
+  fi
   if bash scripts/ci/verify-operations-backup-restore.sh \
     "$operations_image" "$app_image" "$target_db_image" "$source_db_image" \
-    "$source_label" "$target_label" "$bookworm_compatibility_report"; then
-    printf 'PASS source=%s source_image=%s target=%s target_image=%s\n' "$source_label" "$source_db_image" "$target_label" "$target_db_image" | tee -a "$restore_matrix_report"
+    "$source_label" "$target_label" "$route_compatibility_report"; then
+    printf 'PASS source=%s source_image=%s source_image_id=%s target=%s target_image=%s target_image_id=%s\n' "$source_label" "$source_db_image" "$source_image_id" "$target_label" "$target_db_image" "$target_image_id" | tee -a "$restore_matrix_report"
+    if [[ "$target_label" == forky ]]; then cat "$route_report" >> "$restore_matrix_report"; fi
   else
-    printf 'FAIL source=%s source_image=%s target=%s target_image=%s\n' "$source_label" "$source_db_image" "$target_label" "$target_db_image" | tee -a "$restore_matrix_report"
+    printf 'FAIL source=%s source_image=%s source_image_id=%s target=%s target_image=%s target_image_id=%s\n' "$source_label" "$source_db_image" "$source_image_id" "$target_label" "$target_db_image" "$target_image_id" | tee -a "$restore_matrix_report"
     restore_probe_failures=1
   fi
 done
@@ -768,7 +788,7 @@ jq -n \
   --arg restoreMatrixSha256 "$trixie_restore_matrix_sha256" \
   --arg restoreMatrix "restore-matrix.txt" \
   --arg trivyReport "debian-trixie-gnupg-prune-database.trivy.json" \
-  '{image:$image,imageId:$imageId,platform:$platform,sourceRevision:$sourceRevision,sourceTree:$sourceTree,parentOperationalImage:$parentOperationalImage,parentOperationalImageId:$parentOperationalImageId,pinnedPostgresBase:$pinnedPostgresBase,candidateLockSha256:$candidateLockSha256,candidateEvidenceFilesSha256:$candidateEvidenceFilesSha256,trivyDatabaseSha256:$trivyDatabaseSha256,restoreMatrix:{path:$restoreMatrix,sha256:$restoreMatrixSha256,requiredRoutes:6},rawTrivyReport:$trivyReport,securityDisposition:"UNRESOLVED_REPORT_ONLY",runtimeClearance:"CANDIDATE_CHECKS_PASSED",cveClearance:"NOT_EVALUATED",productionUse:"NOT_AUTHORIZED"}' \
+  '{image:$image,imageId:$imageId,platform:$platform,sourceRevision:$sourceRevision,sourceTree:$sourceTree,parentOperationalImage:$parentOperationalImage,parentOperationalImageId:$parentOperationalImageId,pinnedPostgresBase:$pinnedPostgresBase,candidateLockSha256:$candidateLockSha256,candidateEvidenceFilesSha256:$candidateEvidenceFilesSha256,trivyDatabaseSha256:$trivyDatabaseSha256,restoreMatrix:{path:$restoreMatrix,sha256:$restoreMatrixSha256,requiredRoutes:8},rawTrivyReport:$trivyReport,securityDisposition:"UNRESOLVED_REPORT_ONLY",runtimeClearance:"CANDIDATE_CHECKS_PASSED",cveClearance:"NOT_EVALUATED",productionUse:"NOT_AUTHORIZED"}' \
   > "$trixie_gnupg_evidence_dir/image-scan-binding.json"
 
 if [[ ! -s "$bookworm_compatibility_report" ]]; then
@@ -841,12 +861,12 @@ gosu_report_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
 cp "$restore_matrix_report" "$gosu_report_dir/restore-matrix.txt"
 {
   printf '\n## Required Debian restore matrix\n\n'
-    printf 'Synthetic backup/restore routes use fresh run-owned resources; all six supported Debian routes are required. Results are in `restore-matrix.txt`.\n\n'
+    printf 'Synthetic backup/restore routes use fresh run-owned resources; all eight supported Debian routes are required. Results are in `restore-matrix.txt`.\n\n'
   cat "$restore_matrix_report"
   printf '\n## Isolated Bookworm GnuPG purge candidate\n\n'
   printf 'The Bookworm candidate report uses its existing reviewed 16-package allowlist and three pinned InRelease hashes. It remains separate from the new Trixie candidate.\n\n'
   printf '## Isolated Trixie GnuPG purge candidate\n\n'
-  printf 'The Trixie candidate layers onto the exact same-run operational image, compares the simulated and actual package delta with the independently reviewed 14 name/version/architecture tuples, preserves sqv, APT, keyrings, PostgreSQL/libpq/libxml2 and gosu, and verifies fresh signed APT updates against four pinned InRelease hashes. All six supported Debian restore routes are required. This is candidate-only evidence; it does not clear CVEs or authorize production use.\n'
+  printf 'The Trixie candidate layers onto the exact same-run operational image, compares the simulated and actual package delta with the independently reviewed 14 name/version/architecture tuples, preserves sqv, APT, keyrings, PostgreSQL/libpq/libxml2 and gosu, and verifies fresh signed APT updates against four pinned InRelease hashes. All eight supported Debian restore routes are required. This is candidate-only evidence; it does not clear CVEs or authorize production use.\n'
 } >> "$gosu_report_dir/README.md"
 check_gosu_image() {
   local image="$1" base_image="$2" binary="$3" report_name="$4" image_id
@@ -883,7 +903,7 @@ if [[ "$restore_probe_failures" != 0 ]]; then
   exit 1
 fi
 restore_pass_count="$(awk '$1 == "PASS" { count++ } END { print count + 0 }' "$restore_matrix_report")"
-if [[ "$restore_pass_count" != 6 ]]; then
-  echo "The supported Debian restore matrix did not produce six passing routes (actual=$restore_pass_count)" >&2
+if [[ "$restore_pass_count" != 8 ]]; then
+  echo "The supported Debian restore matrix did not produce eight passing routes (actual=$restore_pass_count)" >&2
   exit 1
 fi
