@@ -115,6 +115,19 @@ for _ in $(seq 1 90); do
 done
 [[ "$ready" == true ]] || { docker logs "$container_name" > "$evidence_dir/container.log" 2>&1 || true; die 'PostgreSQL Forky candidate did not become healthy'; }
 
+runtime_ssl_enabled="$(docker exec "$container_name" env PGPASSWORD=synthetic-candidate-only-password psql \
+  -h 127.0.0.1 -U taky_candidate -d taky_candidate -v ON_ERROR_STOP=1 -Atc 'SHOW ssl')"
+printf '%s\n' "$runtime_ssl_enabled" > "$evidence_dir/fresh-cluster-ssl-enabled.txt"
+[[ "$runtime_ssl_enabled" == 'off' ]] || die 'Fresh Forky candidate cluster unexpectedly enables PostgreSQL TLS by default'
+runtime_ssl_cert_file="$(docker exec "$container_name" env PGPASSWORD=synthetic-candidate-only-password psql \
+  -h 127.0.0.1 -U taky_candidate -d taky_candidate -v ON_ERROR_STOP=1 -Atc 'SHOW ssl_cert_file')"
+runtime_ssl_key_file="$(docker exec "$container_name" env PGPASSWORD=synthetic-candidate-only-password psql \
+  -h 127.0.0.1 -U taky_candidate -d taky_candidate -v ON_ERROR_STOP=1 -Atc 'SHOW ssl_key_file')"
+printf '%s\n' "$runtime_ssl_cert_file" > "$evidence_dir/fresh-cluster-ssl-cert-file.txt"
+printf '%s\n' "$runtime_ssl_key_file" > "$evidence_dir/fresh-cluster-ssl-key-file.txt"
+[[ "$runtime_ssl_cert_file" == 'server.crt' && "$runtime_ssl_key_file" == 'server.key' ]] \
+  || die 'Fresh Forky candidate cluster TLS paths differ from the PostgreSQL defaults'
+
 docker exec "$container_name" env PGPASSWORD=synthetic-candidate-only-password psql \
   -h 127.0.0.1 -U taky_candidate -d taky_candidate -v ON_ERROR_STOP=1 -Atc \
   'SHOW listen_addresses' > "$evidence_dir/listen-addresses.txt"

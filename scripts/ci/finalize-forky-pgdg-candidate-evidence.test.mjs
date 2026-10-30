@@ -26,6 +26,9 @@ async function fixtures() {
     collationIndexRebuilt: true, imageId,
   }));
   await writeFile(path.join(evidence, 'listen-addresses.txt'), '*\n');
+  await writeFile(path.join(evidence, 'fresh-cluster-ssl-enabled.txt'), 'off\n');
+  await writeFile(path.join(evidence, 'fresh-cluster-ssl-cert-file.txt'), 'server.crt\n');
+  await writeFile(path.join(evidence, 'fresh-cluster-ssl-key-file.txt'), 'server.key\n');
   await writeFile(path.join(evidence, 'gosu-candidate-provenance.json'), JSON.stringify({
     sourceRevision: sha, sourceTree: tree, imageId,
     builderImage: 'golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4',
@@ -72,11 +75,80 @@ test('finalizes only source-matched Forky candidate plus successful ERP Stage 5 
     const result = JSON.parse(await readFile(path.join(f.evidence, 'candidate-acceptance-status.json'), 'utf8'));
     assert.equal(result.status, 'PASS');
     assert.equal(result.erpStage5Verification, true);
+    assert.equal(result.freshClusterTlsDefaultsVerified, true);
     assert.equal(result.gosuBinaryProvenance, true);
     assert.equal(result.gosuGovulncheckNoVulnerabilities, true);
     assert.equal(result.gosuTrivyNoCriticalHigh, true);
     assert.equal(result.migrationCount, 1);
     assert.equal(result.scannerClearance, false);
+    assert.equal(result.productionClearance, false);
+  } finally {
+    await rm(f.temp, { recursive: true, force: true });
+  }
+});
+
+test('refuses candidate acceptance if fresh-cluster PostgreSQL TLS evidence is missing', async () => {
+  const f = await fixtures();
+  try {
+    await rm(path.join(f.evidence, 'fresh-cluster-ssl-key-file.txt'));
+    const run = spawnSync(process.execPath, [finalizer, f.evidence, f.stage5], {
+      encoding: 'utf8', env: { ...process.env, GITHUB_SHA: sha, STAGE5_RUN_RESULT: 'success' },
+    });
+    assert.notEqual(run.status, 0);
+    const result = JSON.parse(await readFile(path.join(f.evidence, 'candidate-acceptance-status.json'), 'utf8'));
+    assert.equal(result.status, 'INCOMPLETE');
+    assert.equal(result.freshClusterTlsDefaultsVerified, false);
+    assert.equal(result.productionClearance, false);
+  } finally {
+    await rm(f.temp, { recursive: true, force: true });
+  }
+});
+
+test('refuses candidate acceptance if fresh-cluster PostgreSQL TLS evidence contradicts the default', async () => {
+  const f = await fixtures();
+  try {
+    await writeFile(path.join(f.evidence, 'fresh-cluster-ssl-enabled.txt'), 'on\n');
+    const run = spawnSync(process.execPath, [finalizer, f.evidence, f.stage5], {
+      encoding: 'utf8', env: { ...process.env, GITHUB_SHA: sha, STAGE5_RUN_RESULT: 'success' },
+    });
+    assert.notEqual(run.status, 0);
+    const result = JSON.parse(await readFile(path.join(f.evidence, 'candidate-acceptance-status.json'), 'utf8'));
+    assert.equal(result.status, 'INCOMPLETE');
+    assert.equal(result.freshClusterTlsDefaultsVerified, false);
+    assert.equal(result.productionClearance, false);
+  } finally {
+    await rm(f.temp, { recursive: true, force: true });
+  }
+});
+
+test('refuses candidate acceptance if the fresh-cluster TLS certificate path differs from the default', async () => {
+  const f = await fixtures();
+  try {
+    await writeFile(path.join(f.evidence, 'fresh-cluster-ssl-cert-file.txt'), '/etc/ssl/certs/ssl-cert-snakeoil.pem\n');
+    const run = spawnSync(process.execPath, [finalizer, f.evidence, f.stage5], {
+      encoding: 'utf8', env: { ...process.env, GITHUB_SHA: sha, STAGE5_RUN_RESULT: 'success' },
+    });
+    assert.notEqual(run.status, 0);
+    const result = JSON.parse(await readFile(path.join(f.evidence, 'candidate-acceptance-status.json'), 'utf8'));
+    assert.equal(result.status, 'INCOMPLETE');
+    assert.equal(result.freshClusterTlsDefaultsVerified, false);
+    assert.equal(result.productionClearance, false);
+  } finally {
+    await rm(f.temp, { recursive: true, force: true });
+  }
+});
+
+test('refuses candidate acceptance if the fresh-cluster TLS key path differs from the default', async () => {
+  const f = await fixtures();
+  try {
+    await writeFile(path.join(f.evidence, 'fresh-cluster-ssl-key-file.txt'), '/etc/ssl/private/ssl-cert-snakeoil.key\n');
+    const run = spawnSync(process.execPath, [finalizer, f.evidence, f.stage5], {
+      encoding: 'utf8', env: { ...process.env, GITHUB_SHA: sha, STAGE5_RUN_RESULT: 'success' },
+    });
+    assert.notEqual(run.status, 0);
+    const result = JSON.parse(await readFile(path.join(f.evidence, 'candidate-acceptance-status.json'), 'utf8'));
+    assert.equal(result.status, 'INCOMPLETE');
+    assert.equal(result.freshClusterTlsDefaultsVerified, false);
     assert.equal(result.productionClearance, false);
   } finally {
     await rm(f.temp, { recursive: true, force: true });

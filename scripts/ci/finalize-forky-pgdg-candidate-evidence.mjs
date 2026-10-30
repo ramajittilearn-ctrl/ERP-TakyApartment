@@ -15,6 +15,7 @@ const result = {
   status: 'INCOMPLETE',
   candidateOnly: true,
   runtimeVerification: false,
+  freshClusterTlsDefaultsVerified: false,
   gosuBinaryProvenance: false,
   gosuGovulncheckNoVulnerabilities: false,
   gosuTrivyNoCriticalHigh: false,
@@ -35,6 +36,9 @@ assertTrue(status.status === 'PASS', 'Forky PostgreSQL base runtime verification
 assertTrue(status.runtimeVerification, 'Forky PostgreSQL runtime checks are absent');
 assertTrue(status.networkListenAddresses, 'PostgreSQL network listener evidence is absent');
 assert.equal((await fs.readFile(path.join(evidenceDir, 'listen-addresses.txt'), 'utf8')).trim(), '*', 'PostgreSQL listen-address evidence does not prove wildcard binding');
+assert.equal((await fs.readFile(path.join(evidenceDir, 'fresh-cluster-ssl-enabled.txt'), 'utf8')).trim(), 'off', 'fresh-cluster runtime evidence does not prove PostgreSQL TLS is off by default');
+assert.equal((await fs.readFile(path.join(evidenceDir, 'fresh-cluster-ssl-cert-file.txt'), 'utf8')).trim(), 'server.crt', 'fresh-cluster runtime evidence has a non-default TLS certificate path');
+assert.equal((await fs.readFile(path.join(evidenceDir, 'fresh-cluster-ssl-key-file.txt'), 'utf8')).trim(), 'server.key', 'fresh-cluster runtime evidence has a non-default TLS key path');
 assertTrue(status.gosuBinaryProvenance, 'Candidate gosu provenance evidence is absent');
 assertTrue(status.gosuGovulncheckNoVulnerabilities, 'Candidate gosu binary vulnerability analysis is absent');
 assertTrue(status.gosuTrivyNoCriticalHigh, 'Candidate gosu Trivy severity gate did not pass');
@@ -95,6 +99,7 @@ assert.ok(Array.isArray(summary.migrations) && summary.migrations.length > 0, 'S
 assert.ok(summary.checks?.some((check) => check.label === 'prisma migrate deploy' && check.result === 'passed'), 'Prisma migration deployment was not verified');
 result.status = 'PASS';
 result.runtimeVerification = true;
+result.freshClusterTlsDefaultsVerified = true;
 result.gosuBinaryProvenance = true;
 result.gosuGovulncheckNoVulnerabilities = true;
 result.gosuTrivyNoCriticalHigh = true;
