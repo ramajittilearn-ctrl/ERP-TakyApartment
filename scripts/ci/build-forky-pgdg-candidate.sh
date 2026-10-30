@@ -11,9 +11,6 @@ readonly tree="$(git -C "$root" rev-parse HEAD^{tree})"
 readonly forky_base='debian:forky-slim@sha256:98af9d99779532814d4b51c34d50df8d8886286a2a1ab9625a62db59b9cf1b2d'
 readonly postgres_entrypoint_source='postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe'
 readonly bookworm_restore_source='postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27'
-readonly expected_postgres='17.11-1.pgdg14+2'
-readonly minimum_libxml='2.15.4+dfsg-1'
-
 mkdir -p "$evidence_dir"
 chmod 0700 "$evidence_dir"
 printf '{"schemaVersion":1,"status":"IN_PROGRESS","runtimeVerification":false,"scannerClearance":false,"cveDisposition":false,"imageSelection":false,"productionClearance":false}\n' > "$evidence_dir/status.json"
@@ -38,42 +35,8 @@ command -v python3 >/dev/null || die 'Python 3 is unavailable'
 command -v dpkg >/dev/null || die 'dpkg is required to compare Debian package versions'
 [[ "$(docker info --format '{{.OSType}}/{{.Architecture}}')" == 'linux/x86_64' ]] || die 'Candidate build requires a Linux amd64 Docker engine'
 
-python3 - "$input_dir" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$expected_postgres" "$minimum_libxml" <<'PY'
-import hashlib, json, pathlib, re, subprocess, sys
-root = pathlib.Path(sys.argv[1]).resolve()
-head, repo, run_id, attempt, pg_version, libxml_floor = sys.argv[2:]
-manifest = json.loads((root / 'provenance.json').read_text())
-verified = json.loads((root / 'verified-inputs.json').read_text())
-if verified.get('repository') != repo or str(verified.get('runId')) != run_id or str(verified.get('runAttempt')) != attempt:
-    raise SystemExit('verified input identity does not match this workflow run')
-if manifest.get('workflow', {}).get('GITHUB_SHA') != head:
-    raise SystemExit('manifest checkout revision differs from candidate checkout')
-packages = manifest.get('dependencyClosure', {}).get('packages')
-if not isinstance(packages, list) or len(packages) != verified.get('packageCount') or len(packages) < 1:
-    raise SystemExit('package closure is incomplete')
-seen = set()
-for row in packages:
-    filename = row.get('filename', '')
-    if pathlib.PurePosixPath(filename).name != filename or filename in seen:
-        raise SystemExit('package filename is unsafe or duplicated')
-    seen.add(filename)
-    data = (root / 'packages' / filename).read_bytes()
-    if len(data) != row.get('size') or hashlib.sha256(data).hexdigest() != row.get('sha256'):
-        raise SystemExit('package bytes failed provenance hash/size verification: ' + filename)
-    if row.get('architecture') != 'amd64' or row.get('indexOrigin') not in {'debian-forky', 'pgdg-forky'}:
-        raise SystemExit('package architecture or authenticated origin is not allowed: ' + filename)
-postgres = [row for row in packages if row.get('package') == 'postgresql-17']
-if len(postgres) != 1 or postgres[0].get('version') != pg_version or postgres[0].get('indexOrigin') != 'pgdg-forky':
-    raise SystemExit('the exact PostgreSQL root package is absent from authenticated PGDG Forky')
-libxml = [row for row in packages if row.get('package') == 'libxml2-16']
-if len(libxml) != 1:
-    raise SystemExit('the authenticated runtime closure must contain exactly one libxml2-16 package')
-subprocess.run(['dpkg', '--compare-versions', libxml[0]['version'], 'ge', libxml_floor], check=True)
-actual_files = {p.name for p in (root / 'packages').glob('*.deb')}
-if actual_files != seen:
-    raise SystemExit('materialized package file set differs from the authenticated manifest')
-print(json.dumps({'packageCount': len(packages), 'postgresql17': postgres[0]['version'], 'libxml2-16': libxml[0]['version'], 'inputDigest': verified['sourceArtifact']['digest']}, sort_keys=True))
-PY
+python3 "$root/scripts/ci/validate_forky_candidate_inputs.py" \
+  "$input_dir" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
 cp -- "$input_dir/verified-inputs.json" "$evidence_dir/verified-inputs.json"
 
 printf 'candidateImage=%s\nbaseImage=%s\nentrypointSource=%s\nrevision=%s\ntree=%s\n' \

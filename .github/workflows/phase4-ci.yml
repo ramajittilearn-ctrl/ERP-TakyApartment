@@ -212,6 +212,8 @@ jobs:
         run: |
           node --check scripts/ci/consume-forky-pgdg-provenance.mjs
           node --test scripts/ci/consume-forky-pgdg-provenance.test.mjs
+          python3 -m py_compile scripts/ci/validate_forky_candidate_inputs.py
+          python3 -m unittest scripts.ci.test_validate_forky_candidate_inputs -v
           python3 scripts/ci/test-forky-pgdg-provenance.py -v
           bash -n scripts/ci/build-forky-pgdg-candidate.sh
           node --check scripts/ci/finalize-forky-pgdg-candidate-evidence.mjs
