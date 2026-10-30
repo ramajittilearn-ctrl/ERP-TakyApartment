@@ -15,6 +15,9 @@ const result = {
   status: 'INCOMPLETE',
   candidateOnly: true,
   runtimeVerification: false,
+  gosuBinaryProvenance: false,
+  gosuGovulncheckNoVulnerabilities: false,
+  gosuTrivyNoCriticalHigh: false,
   logicalRestoreFromTrixie: false,
   logicalRestoreFromBookworm: false,
   collationIndexRebuilt: false,
@@ -32,6 +35,37 @@ assertTrue(status.status === 'PASS', 'Forky PostgreSQL base runtime verification
 assertTrue(status.runtimeVerification, 'Forky PostgreSQL runtime checks are absent');
 assertTrue(status.networkListenAddresses, 'PostgreSQL network listener evidence is absent');
 assert.equal((await fs.readFile(path.join(evidenceDir, 'listen-addresses.txt'), 'utf8')).trim(), '*', 'PostgreSQL listen-address evidence does not prove wildcard binding');
+assertTrue(status.gosuBinaryProvenance, 'Candidate gosu provenance evidence is absent');
+assertTrue(status.gosuGovulncheckNoVulnerabilities, 'Candidate gosu binary vulnerability analysis is absent');
+assertTrue(status.gosuTrivyNoCriticalHigh, 'Candidate gosu Trivy severity gate did not pass');
+const gosuProvenance = JSON.parse(await fs.readFile(path.join(evidenceDir, 'gosu-candidate-provenance.json'), 'utf8'));
+assert.equal(gosuProvenance.sourceRevision, process.env.GITHUB_SHA, 'gosu source revision differs from this candidate revision');
+assert.equal(gosuProvenance.imageId, status.imageId, 'gosu provenance image ID differs from candidate runtime image');
+assert.match(gosuProvenance.sourceTree || '', /^[a-f0-9]{40}$/);
+assert.equal(gosuProvenance.builderImage, 'golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4');
+assert.equal(gosuProvenance.gosuCommit, '6456aaa0f3c854d199d0f037f068eb97515b7513');
+assert.equal(gosuProvenance.userModule, 'v0.4.1');
+assert.equal(gosuProvenance.xSysModule, 'v0.44.0');
+assert.match(gosuProvenance.binarySha256 || '', /^[a-f0-9]{64}$/);
+const candidateImageInspect = JSON.parse(await fs.readFile(path.join(evidenceDir, 'candidate-image-inspect.json'), 'utf8'));
+assert.equal(candidateImageInspect.Id, status.imageId, 'candidate inspect evidence is not bound to the runtime image ID');
+assert.equal(candidateImageInspect.Config?.Labels?.['io.taky.postgres.gosu.builder'], gosuProvenance.builderImage);
+assert.equal(candidateImageInspect.Config?.Labels?.['io.taky.postgres.gosu.commit'], gosuProvenance.gosuCommit);
+assert.equal(candidateImageInspect.Config?.Labels?.['io.taky.postgres.gosu.user-module'], gosuProvenance.userModule);
+assert.equal(candidateImageInspect.Config?.Labels?.['io.taky.postgres.gosu.x-sys-module'], gosuProvenance.xSysModule);
+assert.equal((await fs.readFile(path.join(evidenceDir, 'gosu-candidate-binary.sha256'), 'utf8')).trim(), gosuProvenance.binarySha256, 'gosu binary hash evidence does not match its provenance record');
+const gosuGovulncheck = await fs.readFile(path.join(evidenceDir, 'gosu-candidate-govulncheck.txt'), 'utf8');
+assert.ok(gosuGovulncheck.includes(status.imageId), 'gosu vulnerability report is not bound to the candidate image ID');
+assert.ok(gosuGovulncheck.includes(gosuProvenance.binarySha256), 'gosu vulnerability report is not bound to the extracted binary hash');
+assert.ok(gosuGovulncheck.includes('Command: govulncheck -mode=binary'), 'gosu vulnerability report was not produced by direct binary mode');
+assert.doesNotMatch(gosuGovulncheck, /excluded|exclusion/i, 'gosu vulnerability report contains excluded findings');
+assert.match(gosuGovulncheck, /No vulnerabilities found\./, 'gosu binary vulnerability analysis did not report a clean result');
+const candidateTrivy = JSON.parse(await fs.readFile(path.join(evidenceDir, 'trivy-candidate-image.json'), 'utf8'));
+assert.equal(candidateTrivy.SchemaVersion, 2);
+assert.equal(candidateTrivy.Metadata?.ImageID, status.imageId, 'candidate Trivy scan is not bound to the runtime image ID');
+const gosuTrivyResults = (candidateTrivy.Results || []).filter((entry) => entry.Target === 'usr/local/bin/gosu');
+assert.equal(gosuTrivyResults.length, 1, 'candidate Trivy report must contain exactly one gosu binary target');
+assert.equal(gosuTrivyResults.flatMap((entry) => entry.Vulnerabilities || []).filter((finding) => ['CRITICAL', 'HIGH'].includes(finding.Severity)).length, 0, 'candidate gosu retains raw Trivy Critical/High findings');
 assertTrue(status.logicalRestoreFromTrixie, 'Trixie logical restore evidence is absent');
 assertTrue(status.logicalRestoreFromBookworm, 'Bookworm logical restore evidence is absent');
 assertTrue(status.collationIndexRebuilt, 'Candidate collation/index rebuild evidence is absent');
@@ -53,6 +87,7 @@ const summaryBytes = await fs.readFile(summaries[0]);
 const summary = JSON.parse(summaryBytes.toString('utf8'));
 assert.equal(summary.status, 'passed', 'ERP Stage 5 run summary is not passed');
 assert.equal(summary.source?.checkoutCommit, process.env.GITHUB_SHA, 'Stage 5 checkout differs from this candidate revision');
+assert.equal(gosuProvenance.sourceTree, summary.source?.checkoutTree, 'gosu build tree differs from the Stage 5 source tree');
 assert.ok(summary.checks?.some((check) => check.label === 'fresh database identity checked before migration' && check.result === 'passed'), 'Stage 5 database service connectivity was not verified before migration');
 assert.match(summary.images?.databaseImageReference || '', /^taky-erp-postgres:17\.11-forky-pgdg-candidate-[a-f0-9]{12}$/);
 assert.equal(summary.images?.databaseImageId, status.imageId, 'Stage 5 database container image ID differs from the candidate runtime image');
@@ -60,6 +95,9 @@ assert.ok(Array.isArray(summary.migrations) && summary.migrations.length > 0, 'S
 assert.ok(summary.checks?.some((check) => check.label === 'prisma migrate deploy' && check.result === 'passed'), 'Prisma migration deployment was not verified');
 result.status = 'PASS';
 result.runtimeVerification = true;
+result.gosuBinaryProvenance = true;
+result.gosuGovulncheckNoVulnerabilities = true;
+result.gosuTrivyNoCriticalHigh = true;
 result.logicalRestoreFromTrixie = true;
 result.logicalRestoreFromBookworm = true;
 result.collationIndexRebuilt = true;

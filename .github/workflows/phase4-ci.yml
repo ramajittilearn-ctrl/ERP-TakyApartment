@@ -55,6 +55,9 @@ jobs:
       - name: Run operations tests
         run: npm run test:ops
 
+      - name: Verify embedded Go binary version header parsing
+        run: bash scripts/ci/assert-go-binary-version.test.sh
+
       - name: Lint
         run: npm run lint
 
@@ -229,6 +232,19 @@ jobs:
           SOURCE_ARTIFACT_DIGEST: ${{ needs.forky-pgdg-provenance.outputs.artifact_digest }}
           OUTPUT_DIR: ${{ runner.temp }}/phase4-forky-pgdg-verified-inputs
         run: node scripts/ci/consume-forky-pgdg-provenance.mjs
+
+      - name: Set up Go for exact candidate gosu vulnerability analysis
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.3"
+          check-latest: false
+
+      - name: Install pinned candidate govulncheck
+        env:
+          GOBIN: ${{ runner.temp }}/forky-gosu-tools
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          echo "$GOBIN" >> "$GITHUB_PATH"
 
       - name: Build and verify isolated Forky PostgreSQL runtime candidate
         run: bash scripts/ci/build-forky-pgdg-candidate.sh "$RUNNER_TEMP/phase4-forky-pgdg-verified-inputs" "$RUNNER_TEMP/phase4-forky-pgdg-candidate-evidence"

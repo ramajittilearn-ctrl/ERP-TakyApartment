@@ -1,16 +1,55 @@
 ARG DEBIAN_FORKY_BASE=debian:forky-slim@sha256:98af9d99779532814d4b51c34d50df8d8886286a2a1ab9625a62db59b9cf1b2d
 ARG POSTGRES_ENTRYPOINT_SOURCE=postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe
+ARG GOSU_BUILDER_IMAGE=golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4
+ARG GOSU_COMMIT=6456aaa0f3c854d199d0f037f068eb97515b7513
+ARG GOSU_USER_MODULE_VERSION=v0.4.1
+ARG GOSU_X_SYS_MODULE_VERSION=v0.44.0
 
 FROM ${POSTGRES_ENTRYPOINT_SOURCE} AS postgres-entrypoint-source
+
+FROM ${GOSU_BUILDER_IMAGE} AS gosu-builder
+ARG TARGETOS
+ARG TARGETARCH
+ARG GOSU_COMMIT
+ARG GOSU_USER_MODULE_VERSION
+ARG GOSU_X_SYS_MODULE_VERSION
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends git ca-certificates; \
+    rm -rf /var/lib/apt/lists/*; \
+    git init /src; \
+    git -C /src fetch --depth 1 https://github.com/tianon/gosu.git "$GOSU_COMMIT"; \
+    git -C /src checkout --detach FETCH_HEAD
+WORKDIR /src
+RUN set -eux; \
+    go mod edit -require="github.com/moby/sys/user@${GOSU_USER_MODULE_VERSION}"; \
+    go mod edit -require="golang.org/x/sys@${GOSU_X_SYS_MODULE_VERSION}"; \
+    go mod tidy; \
+    go mod verify; \
+    test "$(go list -m github.com/moby/sys/user)" = "github.com/moby/sys/user ${GOSU_USER_MODULE_VERSION}"; \
+    test "$(go list -m golang.org/x/sys)" = "golang.org/x/sys ${GOSU_X_SYS_MODULE_VERSION}"; \
+    mkdir -p /out; \
+    CGO_ENABLED=0 GOOS="$TARGETOS" GOARCH="$TARGETARCH" \
+      go build -trimpath -buildvcs=false -ldflags='-w' -o /out/gosu .; \
+    chmod 0755 /out/gosu; \
+    /out/gosu --version
 
 FROM ${DEBIAN_FORKY_BASE}
 ARG DEBIAN_FORKY_BASE
 ARG POSTGRES_ENTRYPOINT_SOURCE
+ARG GOSU_BUILDER_IMAGE
+ARG GOSU_COMMIT
+ARG GOSU_USER_MODULE_VERSION
+ARG GOSU_X_SYS_MODULE_VERSION
 ARG CANDIDATE_REVISION
 ARG CANDIDATE_TREE
 COPY --from=postgres-entrypoint-source /usr/local/bin/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-COPY --from=postgres-entrypoint-source /usr/local/bin/gosu /usr/local/bin/gosu
+COPY --from=gosu-builder /out/gosu /usr/local/bin/gosu
 COPY --from=forky-packages /packages/ /tmp/forky-packages/
+
+RUN --network=none set -eux; \
+    gosu --version; \
+    gosu nobody true
 
 RUN --network=none set -eux; \
     test -x /usr/local/bin/docker-entrypoint.sh; \
@@ -77,6 +116,10 @@ CMD ["postgres"]
 LABEL org.opencontainers.image.base.name="${DEBIAN_FORKY_BASE}" \
       org.opencontainers.image.revision="${CANDIDATE_REVISION}" \
       io.taky.candidate.tree="${CANDIDATE_TREE}" \
+      io.taky.postgres.gosu.builder="${GOSU_BUILDER_IMAGE}" \
+      io.taky.postgres.gosu.commit="${GOSU_COMMIT}" \
+      io.taky.postgres.gosu.user-module="${GOSU_USER_MODULE_VERSION}" \
+      io.taky.postgres.gosu.x-sys-module="${GOSU_X_SYS_MODULE_VERSION}" \
       io.taky.postgresql.package="17.11-1.pgdg14+2" \
       io.taky.libxml2.minimum="2.15.4+dfsg-1" \
       io.taky.candidate.only="true" \

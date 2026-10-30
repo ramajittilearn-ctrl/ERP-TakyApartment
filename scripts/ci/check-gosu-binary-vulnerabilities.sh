@@ -47,16 +47,6 @@ awk '$1 == "mod" && $2 == "golang.org/x/vuln" && $3 == "v1.9.0" { vuln = 1 }
   exit 1
 }
 
-wrapper_path="$(mktemp "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/taky-gosu-govulncheck.XXXXXX")"
-trap 'rm -f -- "$wrapper_path"' EXIT
-wrapper_url="https://raw.githubusercontent.com/tianon/gosu/6456aaa/govulncheck-with-excludes.sh"
-wrapper_sha256="be86c30c4a7d14a7f0c473396d5e4b9a7995a77dc9f0f9536b9085e45072681e"
-curl --fail --silent --show-error --location "$wrapper_url" --output "$wrapper_path"
-printf '%s  %s\n' "$wrapper_sha256" "$wrapper_path" | sha256sum --check --status || {
-  echo "Pinned upstream gosu vulnerability wrapper failed SHA-256 verification" >&2
-  exit 1
-}
-
 printf 'Database image: %s\n' "$database_image"
 printf 'Database image ID: %s\n' "$database_image_id"
 printf 'Pinned database base image: %s\n' "$database_base_image"
@@ -64,6 +54,7 @@ printf 'Go toolchain: %s\n' "$go_version"
 printf 'govulncheck module build info:\n%s\n' "$govulncheck_build"
 gosu_build_info="$(go version -m "$gosu_binary")"
 printf 'Gosu binary module build info:\n%s\n' "$gosu_build_info"
+bash "$(dirname "$0")/assert-go-binary-version.sh" "$gosu_binary" go1.27.3
 awk '$1 == "dep" && $2 == "github.com/moby/sys/user" && $3 == "v0.4.1" { found = 1 } END { exit !found }' <<<"$gosu_build_info" || {
   echo "Extracted gosu binary does not use github.com/moby/sys/user v0.4.1" >&2
   exit 1
@@ -72,9 +63,7 @@ awk '$1 == "dep" && $2 == "golang.org/x/sys" && $3 == "v0.44.0" { found = 1 } EN
   echo "Extracted gosu binary does not use golang.org/x/sys v0.44.0" >&2
   exit 1
 }
-printf 'Upstream wrapper: %s\n' "$wrapper_url"
-printf 'Upstream wrapper SHA-256: %s\n' "$wrapper_sha256"
 printf 'Extracted binary SHA-256: '
 sha256sum "$gosu_binary"
-printf 'Command: bash <pinned-upstream-wrapper> -mode=binary <extracted-gosu-binary>\n'
-bash "$wrapper_path" -mode=binary "$gosu_binary"
+printf 'Command: govulncheck -mode=binary <extracted-gosu-binary>\n'
+govulncheck -mode=binary "$gosu_binary"
