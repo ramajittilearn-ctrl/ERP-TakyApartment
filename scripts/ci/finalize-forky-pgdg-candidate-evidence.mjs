@@ -30,6 +30,8 @@ try {
 function assertTrue(value, message) { assert.equal(value, true, message); }
 assertTrue(status.status === 'PASS', 'Forky PostgreSQL base runtime verification did not pass');
 assertTrue(status.runtimeVerification, 'Forky PostgreSQL runtime checks are absent');
+assertTrue(status.networkListenAddresses, 'PostgreSQL network listener evidence is absent');
+assert.equal((await fs.readFile(path.join(evidenceDir, 'listen-addresses.txt'), 'utf8')).trim(), '*', 'PostgreSQL listen-address evidence does not prove wildcard binding');
 assertTrue(status.logicalRestoreFromTrixie, 'Trixie logical restore evidence is absent');
 assertTrue(status.logicalRestoreFromBookworm, 'Bookworm logical restore evidence is absent');
 assertTrue(status.collationIndexRebuilt, 'Candidate collation/index rebuild evidence is absent');
@@ -51,6 +53,7 @@ const summaryBytes = await fs.readFile(summaries[0]);
 const summary = JSON.parse(summaryBytes.toString('utf8'));
 assert.equal(summary.status, 'passed', 'ERP Stage 5 run summary is not passed');
 assert.equal(summary.source?.checkoutCommit, process.env.GITHUB_SHA, 'Stage 5 checkout differs from this candidate revision');
+assert.ok(summary.checks?.some((check) => check.label === 'fresh database identity checked before migration' && check.result === 'passed'), 'Stage 5 database service connectivity was not verified before migration');
 assert.match(summary.images?.databaseImageReference || '', /^taky-erp-postgres:17\.11-forky-pgdg-candidate-[a-f0-9]{12}$/);
 assert.equal(summary.images?.databaseImageId, status.imageId, 'Stage 5 database container image ID differs from the candidate runtime image');
 assert.ok(Array.isArray(summary.migrations) && summary.migrations.length > 0, 'Stage 5 migration evidence is missing');

@@ -77,6 +77,11 @@ done
 [[ "$ready" == true ]] || { docker logs "$container_name" > "$evidence_dir/container.log" 2>&1 || true; die 'PostgreSQL Forky candidate did not become healthy'; }
 
 docker exec "$container_name" env PGPASSWORD=synthetic-candidate-only-password psql \
+  -h 127.0.0.1 -U taky_candidate -d taky_candidate -v ON_ERROR_STOP=1 -Atc \
+  'SHOW listen_addresses' > "$evidence_dir/listen-addresses.txt"
+[[ "$(cat "$evidence_dir/listen-addresses.txt")" == '*' ]] || die 'PostgreSQL Forky candidate does not listen on Docker network interfaces'
+
+docker exec "$container_name" env PGPASSWORD=synthetic-candidate-only-password psql \
   -h 127.0.0.1 -U taky_candidate -d taky_candidate -v ON_ERROR_STOP=1 \
   -c "CREATE TABLE candidate_xml(value xml); INSERT INTO candidate_xml VALUES (XMLPARSE(DOCUMENT '<root><item>xml-ok</item></root>'));" \
   -c "SELECT xpath('/root/item/text()', value)::text FROM candidate_xml;" > "$evidence_dir/xml-smoke.txt"
@@ -243,6 +248,7 @@ cat > "$evidence_dir/status.json" <<EOF
   "xmlXPath": true,
   "dumpRestore": true,
   "restartPersistence": true,
+  "networkListenAddresses": true,
   "logicalRestoreFromTrixie": true,
   "logicalRestoreFromBookworm": true,
   "collationIndexRebuilt": true,
