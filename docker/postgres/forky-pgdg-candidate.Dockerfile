@@ -55,6 +55,13 @@ RUN --network=none set -eux; \
     install -d -o postgres -g postgres /var/lib/postgresql/data; \
     rm -rf /tmp/forky-packages /var/lib/apt/lists/* /var/cache/apt/archives/*.deb
 
+RUN --network=none set -eux; \
+    printf '%s\n' 'en_US.UTF-8 UTF-8' >> /etc/locale.gen; \
+    locale-gen; \
+    locale -a | grep --fixed-strings --line-regexp --quiet 'en_US.utf8'
+
+ENV LANG=en_US.utf8
+
 ENV PATH="/usr/lib/postgresql/17/bin:${PATH}" \
     PGDATA="/var/lib/postgresql/data"
 VOLUME ["/var/lib/postgresql/data"]
