@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "evidenceScope": "authenticated Debian Forky and PGDG package provenance intake only",
+  "architecture": "amd64",
+  "rootPackage": {
+    "name": "postgresql-17",
+    "version": "17.11-1.pgdg14+2",
+    "architecture": "amd64",
+    "requiredOrigin": "apt.postgresql.org"
+  },
+  "debianKeyringTransition": {
+    "bootstrapSuite": "trixie",
+    "bootstrapCodename": "trixie",
+    "bootstrapOrigin": "Debian",
+    "bookwormBootstrapPrimaryFingerprints": [
+      "B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8",
+      "4D64FEC119C2029067D6E791F8D2585B8783D481"
+    ],
+    "bookwormSnapshotMaxAgeSeconds": null,
+    "trixieSnapshotMaxAgeSeconds": null,
+    "maxFutureClockSkewSeconds": 300
+  },
+  "debianForky": {
+    "uri": "https://deb.debian.org/debian",
+    "suite": "forky",
+    "codename": "forky",
+    "origin": "Debian",
+    "primaryFingerprints": [
+      "04B54C3CDCA79751B16BC6B5225629DF75B188BD"
+    ],
+    "fingerprintAuthority": "https://ftp-master.debian.org/keys.html",
+    "component": "main",
+    "maxMetadataAgeSeconds": 604800,
+    "maxFutureClockSkewSeconds": 300
+  },
+  "pgdg": {
+    "uri": "https://apt.postgresql.org/pub/repos/apt",
+    "suite": "forky-pgdg",
+    "codename": "forky-pgdg",
+    "origin": "apt.postgresql.org",
+    "label": "PostgreSQL for Debian/Ubuntu repository",
+    "keyUrl": "https://www.postgresql.org/media/keys/ACCC4CF8.asc",
+    "primaryFingerprint": "B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8",
+    "maxMetadataAgeSeconds": 604800,
+    "maxFutureClockSkewSeconds": 300
+  },
+  "candidateRuntime": {
+    "baseImage": "debian:forky-slim@sha256:98af9d99779532814d4b51c34d50df8d8886286a2a1ab9625a62db59b9cf1b2d",
+    "baseIndexDigest": "sha256:04db4720574d184e24353e77e46dbbe4377edad01c9ba50a67aa1473cef9b9d4",
+    "platform": "linux/amd64",
+    "postgresEntrypointSource": "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe",
+    "requiredRootPackage": {
+      "name": "postgresql-17",
+      "version": "17.11-1.pgdg14+2",
+      "architecture": "amd64",
+      "origin": "apt.postgresql.org"
+    },
+    "minimumRuntimePackage": {
+      "name": "libxml2-16",
+      "versionFloor": "2.15.4+dfsg-1",
+      "comparison": "dpkg-ge"
+    },
+    "candidateOnly": true
+  },
+  "clearance": {
+    "runtimeVerification": false,
+    "imageSelection": false,
+    "scannerClearance": false,
+    "cveDisposition": false,
+    "productionClearance": false
+  }
+}

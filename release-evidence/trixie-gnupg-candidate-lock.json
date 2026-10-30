@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "kind": "reviewed-trixie-gnupg-candidate-lock",
+  "approval": {
+    "state": "APPROVED_FOR_ISOLATED_CANDIDATE_BUILD_ONLY",
+    "reviewer": "package_index_refresh_review",
+    "reviewDate": "2026-10-30",
+    "runtimeClearance": "NOT_EVALUATED",
+    "cveClearance": "NOT_EVALUATED",
+    "productionUse": "NOT_AUTHORIZED"
+  },
+  "discovery": {
+    "runId": 40975998836,
+    "runAttempt": 1,
+    "revision": "4a4979f1963706967b0e7b7befd46ccd1d40b4d3",
+    "tree": "ad8737f66e35b6dca690ac0232a422866e1018f8",
+    "proposalSha256": "f1ea17410b3ac6b8e7388c9e26b3a84c6c9facaf7999755ffac78da613d2f329",
+    "evidenceArtifactId": 12941928688,
+    "evidenceArtifactSha256": "e9b6be07b631d61629ec3e51fecf0ff204a65427474deeb2543b884bbe95b364",
+    "proposalPath": "trixie-gnupg-discovery/gnupg-removal-lock-proposal.json",
+    "baseImage": "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe",
+    "baseImageId": "sha256:82903352d6faf8f8a318bc4353d1cb1db67d4a5ff968d2799b2718e2cb00afa2",
+    "platform": "linux/amd64",
+    "reviewedEvidenceFileCount": 84
+  },
+  "apt": {
+    "verifier": {
+      "path": "/usr/bin/sqv",
+      "version": "sqv 1.3.0 (sequoia-openpgp 2.0.0, using Nettle 3.10 (Cv448: true, OCB: true))"
+    },
+    "signatureConfigSha256": "2ddb220664b76381a735e56c057243a9bfa89fea936217168a24dc2785731acf",
+    "trustedPathsSha256": "611d3a8e9e6f762ce49c49fda19aa11af2f24c743843d7e17b3adf4f7a83fa0c",
+    "sourceTrustEvidenceSha256": "9a0e1a409122a984941b5d862a2e80422d001707e386947e4324e74d453b9b8d",
+    "sourceConfigs": [
+      {
+        "path": "apt-sources/sources.list.d/debian.sources",
+        "sha256": "731731938b163acb5e79d80fcfc79d2e72df9e05a59f4a994ccd7be7a52c12d9"
+      },
+      {
+        "path": "apt-sources/sources.list.d/pgdg.list",
+        "sha256": "52b59def2dfa0d7dbb1533980cceb8348a49596f10b5d4656c039fc7b18ec617"
+      }
+    ],
+    "keyrings": [
+      {
+        "path": "/usr/share/keyrings/debian-archive-keyring.pgp",
+        "sha256": "506b815cbb32d9b6066b4a2aa524071e071761e7e7f68c3ac74f3061ba852017",
+        "sizeBytes": 55918
+      },
+      {
+        "path": "/usr/local/share/keyrings/postgres.gpg.asc",
+        "sha256": "ab3ea5fa18220d88318cd9e41d1e4e709c9003c71494f9022cbd76353ba7c5e1",
+        "sizeBytes": 3979
+      }
+    ]
+  },
+  "releases": [
+    {
+      "codename": "trixie",
+      "suite": "stable",
+      "signedOrigin": "Debian",
+      "baseUri": "http://deb.debian.org/debian/dists/trixie/",
+      "maxAgeSeconds": 7776000,
+      "warnAgeSeconds": 5184000
+    },
+    {
+      "codename": "trixie-pgdg",
+      "suite": "trixie-pgdg",
+      "signedOrigin": "apt.postgresql.org",
+      "baseUri": "http://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/",
+      "maxAgeSeconds": 604800,
+      "warnAgeSeconds": 518400
+    },
+    {
+      "codename": "trixie-security",
+      "suite": "stable-security",
+      "signedOrigin": "Debian",
+      "baseUri": "http://deb.debian.org/debian-security/dists/trixie-security/",
+      "maxAgeSeconds": 604800,
+      "warnAgeSeconds": 518400
+    },
+    {
+      "codename": "trixie-updates",
+      "suite": "stable-updates",
+      "signedOrigin": "Debian",
+      "baseUri": "http://deb.debian.org/debian/dists/trixie-updates/",
+      "maxAgeSeconds": 604800,
+      "warnAgeSeconds": 518400
+    }
+  ],
+  "packageLockPath": "release-evidence/trixie-gnupg-purge-lock.tsv",
+  "releaseLockPath": "release-evidence/trixie-gnupg-release-lock.tsv",
+  "trustLockPath": "release-evidence/trixie-gnupg-trust-lock.tsv",
+  "lockFileSha256": {
+    "package": "358f19903c7e83abb32750ac7e6b882ebafa4b8abfe2b2658754e483f1e320df",
+    "release": "c1ffc96ace74f18569a49a4bc41bdcf3f9e059a5fbd4e638b68f6d5c2876e712",
+    "trust": "b1aea0a58116e60daa4aca97b99d65ffba7f85d77ad6c83596b12cbe5da5c519",
+    "packageIndex": "22a46f9bca323e6a442bfae20c2fde5bacf68c419533512b764e2899e5803f8e"
+  },
+  "releaseFreshnessPolicy": {
+    "maxFutureSkewSeconds": 300
+  },
+  "packageIndexLockPath": "release-evidence/trixie-gnupg-package-index-lock.tsv"
+}

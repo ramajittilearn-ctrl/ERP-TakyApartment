@@ -7,7 +7,7 @@ import { db } from "../src/server/db";
 async function main() {
   if (!process.stdin.isTTY)
     throw new Error(
-      "Use an interactive terminal: docker compose exec app npm run admin:setup",
+      "Use an interactive terminal: docker compose exec app node node_modules/tsx/dist/cli.mjs scripts/admin.ts",
     );
   if (await db.user.count())
     throw new Error(

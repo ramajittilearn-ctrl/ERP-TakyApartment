@@ -1,0 +1,76 @@
+# Trixie signed metadata and package-index lock — follow-up
+
+## Why the lock changed
+
+Exact-head CI on PR #2 at `fe128e4554e5471137a1bba191f0efc85550cabf` failed closed when the signed Trixie security `InRelease` digest changed. Re-pinning a whole `InRelease` digest would make routine signed metadata refreshes fail even when the authenticated package indexes and suite identity remain stable.
+
+The candidate lock now binds the four approved Release identities, suite-scoped source roots, bounded Release freshness policy, and the complete signed SHA-256/size map for every active APT Packages target. The candidate still fails closed on signature, Origin/Codename/Suite, source/trust, package-index, target, purge tuple, or simulation drift. The Debian stable base suite has a 90-day maximum Release age and 60-day warning; security, updates and PGDG have 7-day maximum and 6-day warning. Every Release Date is mandatory, future skew is limited to five minutes, and any Valid-Until must parse and remain valid. This is a candidate-only replay bound; it is not proof that repositories are current or security-cleared.
+
+## Source evidence and lock verification
+
+- Hosted PR run [40909208002](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40909208002), attempt 1, used PR merge checkout `a3b89afae140a78a0f329896647d49f20dd24035`.
+- Container evidence artifact [12912128356](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40909208002/artifacts/12912128356), ZIP SHA-256 `c6b0ec0c42665d27480be56750bc83a5c4d4e75312a5056dacc60e85ee2dc7d1`; discovery proposal SHA-256 `ed6b0d24a278b78d03a6677833d45d806837469907d80cc3572ae5aa7d3f8189`.
+- The artifact's 84 evidence hashes validate. Hosted gpgv accepted all four signatures with return code 0 and the expected suite/signing identities. The 13 locked Packages path/hash/size rows were independently compared with the corresponding signed InRelease SHA256 sections; all 13 matched.
+- The package lock still has the exact 14 reviewed removals and simulation SHA-256 `293214c4d06c49c54de48dbf8815fe2f30ada5ab2f03447ff167cc1e83f6b009`. Trust/source/keyring locks and protected-package constraints remain in force.
+- Independent reviewer `trixie_candidate_review` found no actionable findings after the implementation fixes. The Docker candidate binds each active APT URI to exact Base-URI plus canonical MetaKey, compares the full signed index map, and excludes `Packages.diff/Index`.
+
+## Verification and remaining work
+
+Local focused verification passes: 80 tests across the discovery and evidence-validator suites (one skipped because local gpg/gpgv is unavailable), Python compilation, Docker RUN shell syntax, all lock-file SHA-256 values, and a replay of the Docker signed-index filter against the four artifact InRelease files. That replay produced exactly the 13 locked rows and excluded `Packages.diff/Index`.
+
+The current hosted artifact predates the new discovery schema, so it cannot validate the changed proposal format. A fresh hosted discovery and exact-head candidate build are required after these reviewed changes are committed to the existing PR branch. No local Docker daemon is available. In run 40909208002, required quality, Stage 5 runtime, Agent UAT (90 passed, 0 failed/skipped/flaky), libxml2 source provenance/candidate, and Forky/PGDG provenance succeeded; only container verification failed on the prior exact InRelease digest check.
+
+This change does not clear the raw Critical/High findings, authorize image publication, or authorize production use. PR #2 remains unmerged with GitHub approval required. Production remains **NO-GO**.
+
+
+## Exact-head follow-up — run 40914309070
+
+Commit `1bc90795f8390620c8a90df73791e60032ec0836` reached hosted CI. Six of seven jobs passed: required quality, Stage 5, Agent UAT (90 passed, 0 failed/skipped/flaky), libxml2 source provenance/candidate, and Forky/PGDG provenance. Container verification failed during proposal validation because isolated discovery freshness records omitted `codename`, while the validator compares the exact seven-field record derived from authenticated InRelease metadata. All observed dates and age values matched; this was a schema-shape mismatch, not a signature or index mismatch. Container artifact [12915217372](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40914309070/artifacts/12915217372), ZIP SHA-256 `386a402e4e234d378b6aae92dba7f981cd83e7382d26d4d2da51b62f376095e6`.
+
+The local fix adds `codename` to discovery freshness records and a regression comparing discovery and validator record shapes. The implementer reports 81 focused tests pass with one expected skip; I independently reran both suites and observed 81 passed, 1 skipped. Independent reviewers `/root/apt_purge_lock_review` and `/root/trixie_candidate_review` confirmed no finding. A fresh exact-head run is required to validate the corrected schema and candidate build. Production remains **NO-GO**.
+
+
+## Exact-head follow-up — run 40915676251
+
+Exact-head run [40915676251](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40915676251) passed six jobs: required quality, Stage 5, synthetic Agent UAT (90 passed; zero failed, skipped, or flaky), libxml2 source provenance/candidate, and Forky/PGDG provenance. Container verification passed fresh discovery, candidate build, and NNP lifecycle assertions (fresh initdb, restart health, persisted marker row), then failed while packaging evidence because the verifier required `inrelease-before-purge.tsv` and `inrelease-after-purge.tsv` while the Dockerfile emitted only `inrelease-freshness-*` names. The built candidate digest was `sha256:e70b238749705b9a31166c0357ae50787683314469a5c2ddd7f474c0c86ff5b7`. Container artifact [12915997565](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40915676251/artifacts/12915997565), ZIP SHA-256 `514aa07212e47ed4fcc7afdcb3750a21641beeff15a2450ae621fb62a56b45d1`.
+
+The reviewed local correction makes the Docker producer emit both verifier-required filenames and preserves detailed `release-freshness-*` sidecars. A new producer/consumer contract test is wired into CI. Both focused suites plus this test pass: 82 tests, one skipped because local gpg/gpgv is unavailable. `bash -n`, extracted Docker RUN `sh -n`, Python compilation and `git diff --check` pass; independent review found no findings. A fresh hosted run is required to prove evidence packaging and complete container verification. Production remains **NO-GO**.
+
+
+## Exact-head follow-up — run 40926324907
+
+Commit `a67e44bf738d8b0d442616e5faa82cad703f3753` added fixture-independent libxml2 self-tests to the isolated candidate build. Exact-head PR run [40926324907](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40926324907) passed all seven jobs. The candidate artifact [12921086734](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40926324907/artifacts/12921086734), digest `sha256:6b26e96b01165b6345bd1f4135e439c63fd524e76d0f65ae8fe07b38ba2319ab`, is bound to that run/head. Its job log shows the four tests (`testapi`, `testchar`, `testdict`, `testlimits`) completed with `4 passed`; `testlimits` reports 514 tests with no errors. The targeted `testrecurse` CVE case also passed 1/1. Local harness tests passed 6/6. A reviewer found that the new runner was omitted from the Docker context; it was staged with a SHA-256 check and provenance record, then independently re-reviewed with no further code findings.
+
+The run's Agent UAT is synthetic, not Owner acceptance. Full upstream fixtures and public struct ABI/layout compatibility remain unverified. Raw security findings, CVE disposition, required GitHub approval, production target/recovery/deployment gates remain open; no image was published or deployed.
+
+Independent artifact audit by `libxml2_candidate_ci_audit` confirmed the container artifact's exact run/head/tree binding and compared the raw reports against run 40920320946. The candidate image ID is `sha256:5d4115a851eea43a51c322e3f343a131ca0c870d70b8130b413fc7f35daa936e`; the evidence manifest hash is `18f67b12ee0dd65c1dcc98f4da3ef67237d0ef3107e9af20c4b43f2b5fa490ec`. The Trivy 0.76.1 database hash, severity counts (1 Critical, 54 High instances across 15 High IDs), and exact High-ID set match; CVE-2026-6653 remains Critical on the Trixie libxml2 package with no FixedVersion. Disposition remains `UNRESOLVED_REPORT_ONLY`, clearance `NOT_EVALUATED`, production use `NOT_AUTHORIZED`. The audit also confirmed the lock digest, four Release identities, 13 signed package-index rows, five APT targets, exact 14 removals and zero additions, six restore routes, and NNP lifecycle. It inspected key candidate evidence but did not manually recompute all 64 evidence-file hashes; the hosted verifier passed. No actionable discrepancy was found.
+
+The separate libxml2 candidate artifact [12921086734](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40926324907/artifacts/12921086734) was also independently audited. Base and candidate Trivy scans each report 2 Critical and 86 High findings (2 unique Critical IDs and 41 unique High IDs), with identical finding identity sets and an empty new-high-critical report. CVE-2026-6653 remains Critical on candidate libxml2 with no fixed version; the artifact explicitly retains unresolved/report-only disposition. Candidate image digest: `sha256:375661bc2e1addf970052b07f8291a6e5c25b29f72439fd332ccd0b4ef5e7df5`. This is not CVE clearance.
+
+The next fixture/ABI investigation found GNOME v2.9.14 tag `bd61cd3e2641f73dfeb1477cc96f4fce66695441`, target commit `7846b0a677f8d3ce72486125fa281e92ac9970e8`; the annotated tag object is unsigned. GNOME's published archive SHA-256 is `60d74a257d1ccec0475e749cba2f21559e48139efba6ff28224357c7c798dfee`. This does not prove byte/tree mapping to Debian's DFSG source or establish license basis for omitted fixtures. Do not claim full test suite/ABI coverage or add those fixtures until the gap is reviewed.
+
+
+## Exact-head candidate verification and artifact review — run 40917847776
+
+PR #2 head `b191abc2679c7120796408fdee4fcbc9f4ec20ad` passed all seven Phase 4 CI jobs: required quality, container verification, Stage 5, synthetic Agent UAT, libxml2 source provenance/candidate, and Forky/PGDG provenance. Agent UAT artifact [12916574057](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40917847776/artifacts/12916574057) reports 90 passed, 0 failed/skipped/flaky. Container artifact [12917717414](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40917847776/artifacts/12917717414), ZIP SHA-256 `8da5f62b69b3eb9f852a3ee5b3f8216bcfeca2d93a53fa7f663792b1ffac1408`.
+
+Independent reviewer `/root/trixie_candidate_review` verified artifact/run/head/tree bindings, all 84 discovery evidence hashes and 64 candidate hashes, four accepted signatures, 13 signed package-index variants, five before/after APT targets, unchanged trust map, exact 14 removals, empty added-packages list, unchanged libapt-pkg family, all six restore routes, PostgreSQL XML runtime query and candidate NNP lifecycle. Candidate image ID is `sha256:7c2bbad5e1df3b4c6833b5fe33d1627dfc57b8c953f076f3ca1b6bc8b830080d`; candidate runtime validation is complete for the stated isolated scope.
+
+Security is still **NO-GO**: current Trivy report shows 1 Critical (`CVE-2026-6653`) and 54 High instances across 15 IDs. The artifact labels disposition `UNRESOLVED_REPORT_ONLY`, CVE clearance `NOT_EVALUATED`, and production use `NOT_AUTHORIZED`. PR #2 remains unmerged; one GitHub approval is required. The candidate is not a published/production image, and no production target, recovery/rollback, deployment, or post-deployment evidence is present. Agent UAT is synthetic; per Owner direction, no Owner UAT was performed or claimed.
+
+
+## Exact-head correction and verification — run 40936540480
+
+PR #2 head `fef235432e6408a776f406f324a93eac6584f96f` passed all seven Phase 4 CI jobs in both push run [40936540480](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40936540480) and PR run [40936549649](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40936549649).
+
+The prior run [40934392773](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40934392773) exposed two issues. The ABI baseline probe referenced candidate-only `xmlEntity.flags`; it now measures baseline `owner`/`checked` and shared `xmlParserInput.id`, while candidate-only fields are measured only against candidate headers. GCC `-H` include tracing and compile failures are retained. A code reviewer confirmed the fix; exact baseline and candidate-layout compile checks pass.
+
+The authenticated Trixie security Release updated two package-index variants. The lock now matches both signed hash/size pairs. An independent reviewer confirmed all 13 variants against the signed InRelease rows, all 84 discovery evidence hashes and four signatures, and the unchanged 14-package removal plan. Hosted container verification validates the refreshed lock.
+
+Candidate artifact [12924459805](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40936540480/artifacts/12924459805), SHA-256 `f8523c2858029732f48cb293fe089b91c8bc86a2cbeba8a57fb9e3c88ad86cb3`, records the exact candidate build. Independent review verified 48/48 nested source inputs, expected isolated header include roots, four self-test groups, targeted `testrecurse` 1/1, one-package runtime delta, PostgreSQL XML/XPath and xml2 smoke, and pg_dump/pg_restore. The ABI result is `INCOMPATIBLE_LAYOUT`: `xmlEntity` changes 136→152 bytes and `xmlParserInput` 104→120 bytes. The exported artifact does not contain the development .deb/header bytes for independent recomputation of the package hash; source/build log and in-build manifest remain the evidence basis.
+
+Container artifact [12925338508](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40936540480/artifacts/12925338508), SHA-256 `c13e29d298c8494083eab6496aed7344378b1db747c3a1c828f8997ec1efdfe0), passed independent cross-review: 84/84 evidence hashes, four accepted InRelease signatures, all 13 index variants, exact 14 removals with no upgrades/new installs, unchanged APT trust/tools/`libapt-pkg`/PostgreSQL/gosu invariants, six restore routes, and no-new-privileges lifecycle. It reports 1 Critical/54 High with no new Critical/High identities for this candidate image.
+
+Synthetic Agent UAT artifact [12925252768](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40936540480/artifacts/12925252768), SHA-256 `fd653ce2af042f51b3b41d589ddaa1965fa08b626f5cd42881fa7e95b780e33e`, reports 90 passed and no failures, skips, or flakiness. It is not Owner UAT acceptance.
+
+Security remains **NO-GO**. CVE-2026-6653 remains Critical with no fixed version and `UNRESOLVED_REPORT_ONLY`; candidate CVE clearance is `NOT_EVALUATED` and production use is `NOT_AUTHORIZED`. The ABI layout difference is also unresolved for external consumers. PR #2 is unmerged and one approval is still required; production target, recovery/rollback, publication, deployment and post-deployment evidence are absent. No production/UAT environment was changed.

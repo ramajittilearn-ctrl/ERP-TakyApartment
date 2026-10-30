@@ -1,0 +1,622 @@
+name: Phase 4 CI
+
+on:
+  pull_request:
+    branches:
+      - release/phase4
+  push:
+    branches:
+      - release/phase4
+      - codex/phase4-production-prep
+      - codex/phase4-current-source-20261026
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase4-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  required-quality:
+    name: required-quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run operations tests
+        run: npm run test:ops
+
+      - name: Verify embedded Go binary version header parsing
+        run: bash scripts/ci/assert-go-binary-version.test.sh
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build application
+        run: npm run build
+
+  libxml2-source-provenance:
+    name: libxml2-source-provenance
+    runs-on: ubuntu-24.04
+    needs: required-quality
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      artifact_id: ${{ steps.upload-provenance.outputs.artifact-id }}
+      artifact_digest: ${{ steps.upload-provenance.outputs.artifact-digest }}
+    env:
+      PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify Debian and Ubuntu source provenance
+        run: bash scripts/ci/prepare-libxml2-source-provenance.sh "$RUNNER_TEMP/phase4-libxml2-provenance"
+
+      - name: Upload libxml2 source provenance evidence
+        id: upload-provenance
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: libxml2-source-provenance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/phase4-libxml2-provenance/
+          if-no-files-found: warn
+          retention-days: 30
+
+  forky-pgdg-provenance:
+    name: forky-pgdg-provenance
+    runs-on: ubuntu-24.04
+    needs: [required-quality, libxml2-source-provenance]
+    if: always() && (github.event_name == 'pull_request' || github.event_name == 'push')
+    continue-on-error: true
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      artifact_id: ${{ steps.upload-forky.outputs.artifact-id }}
+      artifact_digest: ${{ steps.upload-forky.outputs.artifact-digest }}
+    env:
+      PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+      QUALITY_RESULT: ${{ needs.required-quality.result }}
+      PROVENANCE_RESULT: ${{ needs.libxml2-source-provenance.result }}
+      SOURCE_ARTIFACT_ID: ${{ needs.libxml2-source-provenance.outputs.artifact_id }}
+      SOURCE_ARTIFACT_DIGEST: ${{ needs.libxml2-source-provenance.outputs.artifact_digest }}
+    steps:
+      - name: Initialize optional provenance evidence
+        if: always()
+        env:
+          OUTPUT_DIR: ${{ runner.temp }}/phase4-forky-pgdg-provenance
+        run: |
+          mkdir -p "$OUTPUT_DIR"
+          python3 - <<'PY'
+          import datetime
+          import json
+          import os
+          from pathlib import Path
+
+          quality = os.environ.get("QUALITY_RESULT", "")
+          provenance = os.environ.get("PROVENANCE_RESULT", "")
+          ready = quality == "success" and provenance == "success"
+          record = {
+              "schemaVersion": 1,
+              "status": "INCONCLUSIVE" if ready else "FAIL",
+              "reason": "provenance collection has not completed" if ready else f"prerequisite jobs did not succeed (quality={quality or 'missing'}, source-provenance={provenance or 'missing'})",
+              "generatedAtUtc": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
+              "prerequisites": {"requiredQuality": quality, "libxml2SourceProvenance": provenance},
+              "runtimeVerification": False,
+              "imageSelection": False,
+              "scannerClearance": False,
+              "cveDisposition": False,
+              "productionClearance": False,
+          }
+          Path(os.environ["OUTPUT_DIR"], "status.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Check out source
+        if: env.QUALITY_RESULT == 'success' && env.PROVENANCE_RESULT == 'success'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        if: env.QUALITY_RESULT == 'success' && env.PROVENANCE_RESULT == 'success'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: Collect authenticated Forky and PGDG package provenance
+        if: env.QUALITY_RESULT == 'success' && env.PROVENANCE_RESULT == 'success'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          UPSTREAM_QUALITY_RESULT: ${{ needs.required-quality.result }}
+          UPSTREAM_PROVENANCE_RESULT: ${{ needs.libxml2-source-provenance.result }}
+          OUTPUT_DIR: ${{ runner.temp }}/phase4-forky-pgdg-provenance
+        run: python3 scripts/ci/prepare-forky-pgdg-provenance.py "$OUTPUT_DIR"
+
+      - name: Upload optional Forky and PGDG provenance evidence
+        id: upload-forky
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forky-pgdg-provenance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/phase4-forky-pgdg-provenance/metadata/**
+            ${{ runner.temp }}/phase4-forky-pgdg-provenance/packages/**
+            ${{ runner.temp }}/phase4-forky-pgdg-provenance/provenance.json
+            ${{ runner.temp }}/phase4-forky-pgdg-provenance/status.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Forky and PGDG provenance diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forky-pgdg-provenance-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/phase4-forky-pgdg-provenance/logs/**
+          if-no-files-found: ignore
+          retention-days: 30
+
+  forky-pgdg-artifact-verification:
+    name: forky-pgdg-artifact-verification
+    runs-on: ubuntu-24.04
+    needs: [required-quality, forky-pgdg-provenance]
+    if: always() && needs.required-quality.result == 'success' && needs.forky-pgdg-provenance.result == 'success'
+    outputs:
+      image_artifact_id: ${{ steps.upload-forky-image.outputs.artifact-id }}
+      image_artifact_digest: ${{ steps.upload-forky-image.outputs.artifact-digest }}
+    timeout-minutes: 90
+    permissions:
+      actions: read
+      contents: read
+    env:
+      PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: Verify consumer and fail-closed package artifact contract
+        env:
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/phase4-python-cache
+        run: |
+          node --check scripts/ci/consume-forky-pgdg-provenance.mjs
+          node --test scripts/ci/consume-forky-pgdg-provenance.test.mjs
+          node --check scripts/ci/consume-forky-image-artifact.mjs
+          node --test scripts/ci/consume-forky-image-artifact.test.mjs
+          python3 -m py_compile scripts/ci/validate_forky_candidate_inputs.py
+          python3 -m unittest scripts.ci.test_validate_forky_candidate_inputs -v
+          python3 scripts/ci/test-forky-pgdg-provenance.py -v
+          bash -n scripts/ci/build-forky-pgdg-candidate.sh
+          node --check scripts/ci/finalize-forky-pgdg-candidate-evidence.mjs
+          node --test scripts/ci/finalize-forky-pgdg-candidate-evidence.test.mjs
+          python3 -m json.tool scripts/ci/forky-pgdg-provenance-policy.json >/dev/null
+
+      - name: Download and validate exact same-run Forky package provenance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_ARTIFACT_ID: ${{ needs.forky-pgdg-provenance.outputs.artifact_id }}
+          SOURCE_ARTIFACT_DIGEST: ${{ needs.forky-pgdg-provenance.outputs.artifact_digest }}
+          OUTPUT_DIR: ${{ runner.temp }}/phase4-forky-pgdg-verified-inputs
+        run: node scripts/ci/consume-forky-pgdg-provenance.mjs
+
+      - name: Set up Go for exact candidate gosu vulnerability analysis
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.3"
+          check-latest: false
+
+      - name: Install pinned candidate govulncheck
+        env:
+          GOBIN: ${{ runner.temp }}/forky-gosu-tools
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          echo "$GOBIN" >> "$GITHUB_PATH"
+
+      - name: Build and verify isolated Forky PostgreSQL runtime candidate
+        run: bash scripts/ci/build-forky-pgdg-candidate.sh "$RUNNER_TEMP/phase4-forky-pgdg-verified-inputs" "$RUNNER_TEMP/phase4-forky-pgdg-candidate-evidence"
+
+      - name: Install locked dependencies and Stage 5 browser/PDF tools
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/forky-candidate-playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libnss3-tools qpdf poppler-utils tesseract-ocr tesseract-ocr-tha
+
+      - name: Run full ERP Stage 5 against the Forky PostgreSQL candidate
+        id: forky-stage5
+        env:
+          CI: "true"
+          NEXT_TELEMETRY_DISABLED: "1"
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          STAGE5_ARTIFACT_ROOT: ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence/stage5-runtime
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/forky-candidate-playwright
+        run: |
+          candidate_image="taky-erp-postgres:17.11-forky-pgdg-candidate-${GITHUB_SHA:0:12}"
+          export STAGE5_FORKY_CANDIDATE_IMAGE="$candidate_image"
+          node scripts/verify-stage5-runtime.mjs
+
+      - name: Export exact Stage 5-tested Forky candidate image
+        if: steps.forky-stage5.outcome == 'success'
+        env:
+          IMAGE_EVIDENCE: ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence
+        run: |
+          set -Eeuo pipefail
+          IMAGE_REF="taky-erp-postgres:17.11-forky-pgdg-candidate-${GITHUB_SHA:0:12}"
+          image_id="$(docker image inspect --format '{{.Id}}' "$IMAGE_REF")"
+          docker save "$IMAGE_REF" | gzip -1 > "$IMAGE_EVIDENCE/candidate-image.tar.gz"
+          tar_sha256="$(sha256sum "$IMAGE_EVIDENCE/candidate-image.tar.gz" | awk '{print $1}')"
+          inspect_sha256="$(sha256sum "$IMAGE_EVIDENCE/candidate-image-inspect.json" | awk '{print $1}')"
+          printf '{"schemaVersion":1,"repository":"%s","runId":"%s","runAttempt":"%s","event":"%s","revision":"%s","tree":"%s","imageRef":"%s","imageId":"%s","tarSha256":"%s","inspectSha256":"%s"}\n' \
+            "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_EVENT_NAME" "$GITHUB_SHA" \
+            "$(git rev-parse 'HEAD^{tree}')" "$IMAGE_REF" "$image_id" "$tar_sha256" "$inspect_sha256" \
+            > "$IMAGE_EVIDENCE/candidate-image-artifact.json"
+
+      - name: Upload exact Stage 5-tested Forky image
+        id: upload-forky-image
+        if: steps.forky-stage5.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forky-pgdg-docker-image-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence/candidate-image.tar.gz
+            ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence/candidate-image-artifact.json
+            ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence/candidate-image-inspect.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Finalize candidate and ERP integration evidence
+        if: always()
+        env:
+          STAGE5_RUN_RESULT: ${{ steps.forky-stage5.outcome }}
+        run: node scripts/ci/finalize-forky-pgdg-candidate-evidence.mjs "$RUNNER_TEMP/phase4-forky-pgdg-candidate-evidence" "$RUNNER_TEMP/phase4-forky-pgdg-candidate-evidence/stage5-runtime"
+
+      - name: Upload Forky candidate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forky-pgdg-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/phase4-forky-pgdg-candidate-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+  libxml2-candidate:
+    name: libxml2-candidate
+    runs-on: ubuntu-24.04
+    needs: [required-quality, libxml2-source-provenance]
+    if: always() && needs.required-quality.result == 'success' && needs.libxml2-source-provenance.result == 'success'
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+    env:
+      PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+      PROVENANCE_RESULT: ${{ needs.libxml2-source-provenance.result }}
+      QUALITY_RESULT: ${{ needs.required-quality.result }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: Check consumer and candidate shell syntax
+        run: |
+          node --check scripts/ci/consume-libxml2-provenance.mjs
+          node --test scripts/ci/consume-libxml2-provenance.test.mjs
+          bash -n scripts/ci/build-libxml2-candidate.sh
+          bash -n scripts/ci/run-libxml2-candidate-self-tests.sh
+          bash -n scripts/ci/probe-libxml2-public-layout.sh
+          python3 -m unittest scripts.ci.test_libxml2_candidate_self_tests -v
+
+      - name: Materialize and verify same-run source artifact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_ARTIFACT_ID: ${{ needs.libxml2-source-provenance.outputs.artifact_id }}
+          SOURCE_ARTIFACT_DIGEST: ${{ needs.libxml2-source-provenance.outputs.artifact_digest }}
+          OUTPUT_DIR: ${{ runner.temp }}/phase4-libxml2-verified-inputs
+        run: node scripts/ci/consume-libxml2-provenance.mjs
+
+      - name: Build and verify isolated libxml2 candidate
+        run: bash scripts/ci/build-libxml2-candidate.sh "$RUNNER_TEMP/phase4-libxml2-verified-inputs"
+
+      - name: Upload candidate build, runtime and scan evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: libxml2-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/phase4-libxml2-candidate-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+  container-verification:
+    name: container-verification
+    runs-on: ubuntu-24.04
+    needs: [required-quality, forky-pgdg-artifact-verification]
+    timeout-minutes: 45
+    permissions:
+      actions: read
+      contents: read
+    env:
+      PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download exact same-run Forky image artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          artifact-ids: ${{ needs.forky-pgdg-artifact-verification.outputs.image_artifact_id }}
+          path: ${{ runner.temp }}/phase4-forky-image-artifact
+          merge-multiple: true
+
+      - name: Verify artifact provenance and load exact candidate image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_ARTIFACT_ID: ${{ needs.forky-pgdg-artifact-verification.outputs.image_artifact_id }}
+          SOURCE_ARTIFACT_DIGEST: ${{ needs.forky-pgdg-artifact-verification.outputs.image_artifact_digest }}
+          ARTIFACT_DIR: ${{ runner.temp }}/phase4-forky-image-artifact
+        run: node scripts/ci/consume-forky-image-artifact.mjs
+
+      - name: Set up Go for exact gosu binary vulnerability analysis
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.3"
+          check-latest: false
+
+      - name: Install pinned govulncheck
+        env:
+          GOBIN: ${{ runner.temp }}/taky-gosu-tools
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          echo "$GOBIN" >> "$GITHUB_PATH"
+
+      - name: Discover authenticated Trixie GnuPG removal plan
+        id: trixie-gnupg-discovery
+        continue-on-error: true
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -m unittest scripts.ci.test_discover_trixie_gnupg_removal -v
+          python3 -m unittest scripts.ci.test_validate_trixie_gnupg_evidence -v
+          python3 -m unittest scripts.ci.test_container_candidate_evidence_contract -v
+          python3 scripts/ci/discover-trixie-gnupg-removal.py
+          python3 scripts/ci/validate-trixie-gnupg-evidence.py validate-proposal \
+            --evidence-dir "$RUNNER_TEMP/trixie-gnupg-discovery" \
+            --diagnostics-dir "$RUNNER_TEMP/trixie-gnupg-signature-diagnostics"
+          python3 scripts/ci/validate-trixie-gnupg-evidence.py validate-candidate-lock \
+            --evidence-dir "$RUNNER_TEMP/trixie-gnupg-discovery" \
+            --lock-file release-evidence/trixie-gnupg-candidate-lock.json
+
+      - name: Build pinned images and verify isolated runtime
+        run: bash scripts/ci/verify-container-images.sh
+
+      - name: Require Trixie GnuPG discovery success
+        if: always()
+        env:
+          DISCOVERY_OUTCOME: ${{ steps.trixie-gnupg-discovery.outcome }}
+        run: |
+          if [[ "$DISCOVERY_OUTCOME" != success ]]; then
+            echo "Authenticated Trixie GnuPG discovery failed; inspect the uploaded evidence." >&2
+            exit 1
+          fi
+
+      - name: Upload current-image vulnerability reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: container-vulnerability-scan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/phase4-container-scan/
+            ${{ runner.temp }}/trixie-gnupg-discovery/
+            ${{ runner.temp }}/trixie-gnupg-signature-diagnostics/
+            ${{ runner.temp }}/phase4-restore-matrix-*.txt
+          if-no-files-found: warn
+          retention-days: 30
+
+  stage5-runtime-verification:
+    name: stage5-runtime-verification
+    runs-on: ubuntu-24.04
+    needs: required-quality
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies and Chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/stage5-playwright-browsers
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libnss3-tools qpdf poppler-utils tesseract-ocr tesseract-ocr-tha
+
+      - name: Run exact-source billing, payment, receipt, and Thai PDF verification
+        env:
+          STAGE5_ARTIFACT_ROOT: ${{ runner.temp }}/stage5-runtime
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/stage5-playwright-browsers
+        run: node scripts/verify-stage5-runtime.mjs
+
+      - name: Upload source-bound Stage 5 runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: stage5-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/stage5-runtime/
+          if-no-files-found: warn
+          retention-days: 30
+
+  agent-uat:
+    name: agent-uat
+    runs-on: ubuntu-24.04
+    needs: required-quality
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Install isolated Chromium runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Build source for browser Agent UAT
+        run: npm run build
+
+      - name: Run isolated synthetic browser Agent UAT
+        id: agent-uat-run
+        shell: bash
+        run: |
+          set +e
+          node scripts/run-remediation-browser.mjs 2>&1 | tee "$RUNNER_TEMP/agent-uat.log"
+          pipeline_status=("${PIPESTATUS[@]}")
+          uat_status=${pipeline_status[0]}
+          tee_status=${pipeline_status[1]}
+          if [[ "$uat_status" == 0 && "$tee_status" != 0 ]]; then uat_status=$tee_status; fi
+          run_id="$(sed -nE 's/.*"runId":"([a-f0-9]{24})".*/\1/p' "$RUNNER_TEMP/agent-uat.log" | tail -n 1)"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          exit "$uat_status"
+
+      - name: Record source-bound Agent UAT report
+        if: always()
+        env:
+          AGENT_UAT_RUN_ID: ${{ steps.agent-uat-run.outputs.run_id }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFile, readFile, writeFile } from 'node:fs/promises';
+          import { execFileSync } from 'node:child_process';
+          import { join } from 'node:path';
+
+          const runId = process.env.AGENT_UAT_RUN_ID;
+          const sourceCommit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          const dir = runId && /^[a-f0-9]{24}$/.test(runId)
+            ? join('evidence/remediation', `browser-${runId}`)
+            : undefined;
+          let execution;
+          let stats;
+          if (dir) {
+            try {
+              execution = JSON.parse(await readFile(join(dir, 'execution.json'), 'utf8'));
+              stats = JSON.parse(await readFile(join(dir, 'results.json'), 'utf8')).stats;
+            } catch {}
+          }
+          let lines = [
+            '# Agent UAT',
+            '',
+            `- Checkout commit: \`${sourceCommit}\``,
+            `- PR head commit: \`${process.env.PR_HEAD_SHA}\``,
+            '- Mode: synthetic browser UAT on an isolated Ubuntu runner; no Owner UAT or production data.',
+            '- Runtime scope: source-built standalone app; pinned container images are covered by the separate container-verification job.',
+          ];
+          let reportPass = false;
+          if (execution && stats && execution.runId === runId) {
+            const passed = stats.expected;
+            const minimumExpected = 89;
+            const validStats = ['expected', 'unexpected', 'skipped', 'flaky']
+              .every((key) => Number.isSafeInteger(stats[key]) && stats[key] >= 0);
+            const result = execution.succeeded === true && execution.browserStarted === true && validStats && passed >= minimumExpected && stats.unexpected === 0 && stats.skipped === 0 && stats.flaky === 0 ? 'PASS' : 'FAIL';
+            reportPass = result === 'PASS';
+            lines.push(
+              `- Result: ${result}`,
+              `- Passed: ${passed} (minimum required: ${minimumExpected}); failed: ${stats.unexpected}; skipped: ${stats.skipped}; flaky: ${stats.flaky}`,
+              `- Run: \`${runId}\``,
+            );
+          } else {
+            lines.push('- Result: INCOMPLETE; no unambiguous run report was produced. Inspect the UAT step logs.');
+          }
+          const report = `${lines.join('\n')}\n`;
+          await appendFile(process.env.GITHUB_STEP_SUMMARY, report);
+          if (dir) await writeFile(join(dir, 'agent-uat-report.md'), report);
+          if (!reportPass) process.exitCode = 1;
+          NODE
+
+      - name: Upload sanitized Agent UAT report
+        if: always() && steps.agent-uat-run.outputs.run_id != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: agent-uat-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            evidence/remediation/browser-${{ steps.agent-uat-run.outputs.run_id }}/agent-uat-report.md
+            evidence/remediation/browser-${{ steps.agent-uat-run.outputs.run_id }}/results.json
+            evidence/remediation/browser-${{ steps.agent-uat-run.outputs.run_id }}/execution.json
+          if-no-files-found: warn
+          retention-days: 30

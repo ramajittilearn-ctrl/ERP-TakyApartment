@@ -1,0 +1,6 @@
+source	sources.list.d/debian.sources	731731938b163acb5e79d80fcfc79d2e72df9e05a59f4a994ccd7be7a52c12d9
+source	sources.list.d/pgdg.list	52b59def2dfa0d7dbb1533980cceb8348a49596f10b5d4656c039fc7b18ec617
+keyring	/usr/share/keyrings/debian-archive-keyring.pgp	506b815cbb32d9b6066b4a2aa524071e071761e7e7f68c3ac74f3061ba852017
+keyring	/usr/local/share/keyrings/postgres.gpg.asc	ab3ea5fa18220d88318cd9e41d1e4e709c9003c71494f9022cbd76353ba7c5e1
+apt-signature-config	apt-signature-config.txt	2ddb220664b76381a735e56c057243a9bfa89fea936217168a24dc2785731acf
+apt-trusted-paths	apt-trusted-paths.tsv	611d3a8e9e6f762ce49c49fda19aa11af2f24c743843d7e17b3adf4f7a83fa0c

@@ -25,7 +25,7 @@ npm ci
 node scripts/configure.mjs
 docker compose up -d --build
 docker compose ps
-docker compose exec app npm run admin:setup
+docker compose exec app node node_modules/tsx/dist/cli.mjs scripts/admin.ts
 ```
 
 The configuration command writes `.env` with cryptographically random database/session secrets, permission 0600 and exclusive creation. It refuses to overwrite an existing file. The setup command prompts for username, email, display name and a hidden password twice. It succeeds only while there are no users; the database advisory lock prevents two simultaneous bootstrap admins. No default credentials or public setup route exist. Open `http://127.0.0.1:3000/login/` and sign in. Configure room rents before operational use; the seed rent is zero, not a sample financial rate.
@@ -33,7 +33,7 @@ The configuration command writes `.env` with cryptographically random database/s
 `docker compose up` applies migrations and seeds only an uninitialized TAKY property. Startup fails if a migration fails; it does not reset an existing database. Verify:
 
 ```sh
-docker compose exec app npx prisma migrate status
+docker compose exec app node node_modules/prisma/build/index.js migrate status
 docker compose exec db psql -U taky -d taky -c 'SELECT number FROM "Room" ORDER BY number;'
 ```
 
@@ -79,15 +79,15 @@ npm run build
 
 Use a separate development database. The default Compose database is reachable only by containers. To run Next on the host, use an explicitly loopback-only development override that publishes `127.0.0.1:5433:5432`, set the host process DATABASE_URL to localhost:5433, and never apply that override to LAN production. Alternatively rebuild the container during development. After setting a reachable development DATABASE_URL: `npm run dev`.
 
-For schema changes, use `npx prisma migrate dev --name descriptive_name` only on the development database, inspect generated SQL, back up operational data, then deploy committed migrations with `docker compose exec app npm run db:migrate`. Existing migrations are additive. Constraints intentionally protect histories; do not remove them merely to force a write.
+For schema changes, use `npx prisma migrate dev --name descriptive_name` only on the development database, inspect generated SQL, back up operational data, then deploy committed migrations with `docker compose exec app node node_modules/prisma/build/index.js migrate deploy`. Existing migrations are additive. Constraints intentionally protect histories; do not remove them merely to force a write.
 
 ## Reproducible isolated verification
 
 ```sh
 node scripts/configure.mjs .env.test
 docker compose --env-file .env.test -p taky-phase2-test -f docker-compose.yml -f docker-compose.test.yml up -d --build
-docker compose --env-file .env.test -p taky-phase2-test -f docker-compose.yml -f docker-compose.test.yml exec -T app npx tsx scripts/test-users.ts
-docker compose --env-file .env.test -p taky-phase2-test -f docker-compose.yml -f docker-compose.test.yml exec -T app npm run test:integration
+docker compose --env-file .env.test -p taky-phase2-test -f docker-compose.yml -f docker-compose.test.yml exec -T app node node_modules/tsx/dist/cli.mjs scripts/test-users.ts
+docker compose --env-file .env.test -p taky-phase2-test -f docker-compose.yml -f docker-compose.test.yml exec -T app node node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts
 npm run test:e2e
 node scripts/verify-persistence.mjs
 ```

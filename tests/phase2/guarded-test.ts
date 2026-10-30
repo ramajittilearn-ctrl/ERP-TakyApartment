@@ -10,7 +10,7 @@ import {
 export { expect };
 export type { APIRequestContext, Page } from "@playwright/test";
 
-function guardedRequest(
+export function guardedRequest(
   request: APIRequestContext,
   origin: string,
 ): APIRequestContext {

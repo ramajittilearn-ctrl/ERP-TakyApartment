@@ -1,7 +1,12 @@
 name: taky-erp
 services:
   db:
-    image: postgres:17-bookworm
+    image: taky-erp-postgres:17.11-trixie-gosu-1.19-user-0.4.1-xsys-0.44.0
+    build:
+      context: .
+      dockerfile: docker/postgres/Dockerfile
+      args:
+        POSTGRES_BASE_IMAGE: postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Generate .env first}
       POSTGRES_USER: ${POSTGRES_USER:?Generate .env first}
@@ -9,7 +14,7 @@ services:
     volumes:
       - database:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 20

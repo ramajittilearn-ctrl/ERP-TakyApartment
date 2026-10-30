@@ -647,6 +647,7 @@ test("deposit persisted mobile native evidence selection keyboard focus and Axe 
     "0.01",
   );
   await dialog.getByRole("button", { name: "ปิด", exact: true }).click();
+  await expect(page).toHaveTitle("Taky Apartment ERP");
   expect(
     (
       await new AxeBuilder({ page })

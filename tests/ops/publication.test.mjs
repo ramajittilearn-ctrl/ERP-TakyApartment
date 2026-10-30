@@ -10,7 +10,7 @@ import {
   acquireAttachmentPublicationSession,
   withAttachmentPublicationSession,
 } from "../../operations/publication.mjs";
-import { filesUnder, copyFiles } from "../../operations/archive.mjs";
+import { filesUnder, copyFiles, chownTree } from "../../operations/archive.mjs";
 
 function fakeSession({ ready = true, respond = true, wrongPid = false } = {}) {
   const child = new EventEmitter();
@@ -180,6 +180,35 @@ test("all retained regular orphans and destination partials are copied without i
       /synthetic ownership loss/,
     );
     assert.deepEqual(await filesUnder(source), before);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+test("restored attachment ownership is recursive, keeps private modes, and rejects links", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taky-restore-owner-"));
+  try {
+    const destination = path.join(root, "attachments"),
+      nested = path.join(destination, "nested"),
+      file = path.join(nested, "evidence.bin");
+    await fs.mkdir(nested, { recursive: true, mode: 0o755 });
+    await fs.chmod(destination, 0o755);
+    await fs.writeFile(file, "synthetic evidence", { mode: 0o644 });
+    await chownTree(destination, process.getuid(), process.getgid());
+    for (const [target, mode] of [
+      [destination, 0o700],
+      [nested, 0o700],
+      [file, 0o600],
+    ]) {
+      const stat = await fs.lstat(target);
+      assert.equal(stat.uid, process.getuid());
+      assert.equal(stat.gid, process.getgid());
+      assert.equal(stat.mode & 0o777, mode);
+    }
+    await fs.symlink(file, path.join(destination, "linked-evidence"));
+    await assert.rejects(
+      chownTree(destination, process.getuid(), process.getgid()),
+      /link or special file/,
+    );
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
