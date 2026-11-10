@@ -27,6 +27,8 @@ case "$mode" in
       go list -m "$1" | awk 'NR == 1 { print $2 }'
     }
     expected_baseline() {
+      [ "$(module_version github.com/andybalholm/brotli)" = v1.2.2 ] || fail "unexpected baseline brotli version"
+      [ "$(module_version github.com/klauspost/compress)" = v1.19.2 ] || fail "unexpected baseline klauspost/compress version"
       [ "$(module_version golang.org/x/crypto)" = v0.57.0 ] || fail "unexpected baseline x/crypto version"
       [ "$(module_version golang.org/x/net)" = v0.60.0 ] || fail "unexpected baseline x/net version"
       [ "$(module_version golang.org/x/sync)" = v0.23.0 ] || fail "unexpected baseline x/sync version"
@@ -38,6 +40,8 @@ case "$mode" in
       [ "$(module_version golang.org/x/telemetry)" = v0.0.0-20260811182544-a038080d80e5 ] || fail "unexpected baseline x/telemetry version"
     }
     expected_fixed() {
+      [ "$(module_version github.com/andybalholm/brotli)" = v1.2.7 ] || fail "unexpected fixed brotli version"
+      [ "$(module_version github.com/klauspost/compress)" = v1.20.2 ] || fail "unexpected fixed klauspost/compress version"
       [ "$(module_version golang.org/x/crypto)" = v0.58.0 ] || fail "unexpected fixed x/crypto version"
       [ "$(module_version golang.org/x/net)" = v0.62.0 ] || fail "unexpected fixed x/net version"
       [ "$(module_version golang.org/x/sync)" = v0.24.0 ] || fail "unexpected fixed x/sync version"
@@ -52,6 +56,8 @@ case "$mode" in
     chi=$(module_version github.com/go-chi/chi/v5)
     [ "$chi" = v5.4.0 ] || fail "expected the reviewed chi v5.4.0 patch, got $chi"
     current_net=$(module_version golang.org/x/net)
+    current_brotli=$(module_version github.com/andybalholm/brotli)
+    current_compress=$(module_version github.com/klauspost/compress)
     case "$current_net" in
       v0.60.0) expected_baseline ;;
       v0.62.0) expected_fixed ;;
@@ -65,35 +71,40 @@ case "$mode" in
     filtered_x_after=$(mktemp)
     trap 'rm -f "$before" "$after" "$filtered_before" "$filtered_after" "$filtered_x_before" "$filtered_x_after"' EXIT HUP INT TERM
     go list -m all | sort > "$before"
-    if [ "$current_net" = v0.60.0 ]; then
-      go mod edit -require=golang.org/x/net@v0.62.0
+    if [ "$current_net" = v0.60.0 ] || [ "$current_brotli" = v1.2.2 ] || [ "$current_compress" = v1.19.2 ]; then
+      go mod edit \
+        -require=github.com/andybalholm/brotli@v1.2.7 \
+        -require=github.com/klauspost/compress@v1.20.2 \
+        -require=golang.org/x/net@v0.62.0
       go mod tidy
       go mod vendor
     fi
     go mod verify
     GOFLAGS=-mod=mod go list -m all | sort > "$after"
     expected_fixed
-    # Only the reviewed x/* MVS closure may change. Every other module must
-    # resolve to the same version, and no module may be added or removed.
-    awk '$1 !~ /^golang.org\/x\// { print }' "$before" > "$filtered_before"
-    awk '$1 !~ /^golang.org\/x\// { print }' "$after" > "$filtered_after"
-    cmp -s "$filtered_before" "$filtered_after" || fail "non-x module graph changed during x/net upgrade"
+    # Only the reviewed x/* closure and the two scanner-confirmed vulnerable
+    # modules may change. Every other module must resolve identically.
+    awk '$1 !~ /^golang.org\/x\// && $1 != "github.com/andybalholm/brotli" && $1 != "github.com/klauspost/compress" { print }' "$before" > "$filtered_before"
+    awk '$1 !~ /^golang.org\/x\// && $1 != "github.com/andybalholm/brotli" && $1 != "github.com/klauspost/compress" { print }' "$after" > "$filtered_after"
+    cmp -s "$filtered_before" "$filtered_after" || fail "unreviewed module graph change during dependency remediation"
     awk '$1 ~ /^golang.org\/x\// && $1 !~ /^golang.org\/x\/(crypto|net|sync|sys|term|text|tools|mod|telemetry)$/ { print }' "$before" > "$filtered_x_before"
     awk '$1 ~ /^golang.org\/x\// && $1 !~ /^golang.org\/x\/(crypto|net|sync|sys|term|text|tools|mod|telemetry)$/ { print }' "$after" > "$filtered_x_after"
     cmp -s "$filtered_x_before" "$filtered_x_after" || fail "unexpected x/* module changed outside the reviewed MVS closure"
     for module in golang.org/x/crypto golang.org/x/net golang.org/x/sync golang.org/x/sys golang.org/x/term golang.org/x/text golang.org/x/tools golang.org/x/mod golang.org/x/telemetry; do
       grep -F "${module} " "$after" >/dev/null || fail "module missing from resolved MVS graph: $module"
     done
-    awk '$2 == "golang.org/x/crypto" && $3 == "v0.58.0" { crypto=1 }
+    awk '$2 == "github.com/andybalholm/brotli" && $3 == "v1.2.7" { brotli=1 }
+         $2 == "github.com/klauspost/compress" && $3 == "v1.20.2" { compress=1 }
+         $2 == "golang.org/x/crypto" && $3 == "v0.58.0" { crypto=1 }
          $2 == "golang.org/x/net" && $3 == "v0.62.0" { net=1 }
          $2 == "golang.org/x/sync" && $3 == "v0.24.0" { sync=1 }
          $2 == "golang.org/x/sys" && $3 == "v0.49.0" { sys=1 }
          $2 == "golang.org/x/term" && $3 == "v0.47.0" { term=1 }
          $2 == "golang.org/x/text" && $3 == "v0.43.0" { text=1 }
          $2 == "golang.org/x/tools" && $3 == "v0.51.0" { tools=1 }
-         END { exit !(crypto && net && sync && sys && term && text && tools) }' "$target/vendor/modules.txt" || fail "vendor/modules.txt does not match the reviewed vendored MVS closure"
-    echo "Resolved and verified the reviewed x/* MVS closure using authenticated Go module and checksum-database resolution."
-    echo "Resolved golang.org/x modules:"
+         END { exit !(crypto && net && sync && sys && term && text && tools && brotli && compress) }' "$target/vendor/modules.txt" || fail "vendor/modules.txt does not match the reviewed dependency closure"
+    echo "Resolved and verified the reviewed Go dependency closure using authenticated module and checksum-database resolution."
+    echo "Resolved Go modules:"
     awk '$1 ~ /^golang.org\/x\// { print }' "$after"
     ;;
   advisory-db)

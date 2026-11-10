@@ -255,10 +255,12 @@ diagnostic_binary_report="${report_path%.txt}-unstripped-binary.txt"
 cp "$diagnostic_symbols" "$diagnostic_symbols_report"
 cat "$diagnostic_build_info"
 awk '$1 == "dep" && $2 == "github.com/go-chi/chi/v5" && $3 == "v5.4.0" { chi = 1 }
+     $1 == "dep" && $2 == "github.com/andybalholm/brotli" && $3 == "v1.2.7" { brotli = 1 }
+     $1 == "dep" && $2 == "github.com/klauspost/compress" && $3 == "v1.20.2" { compress = 1 }
      $1 == "dep" && $2 == "golang.org/x/crypto" && $3 == "v0.58.0" { crypto = 1 }
      $1 == "dep" && $2 == "golang.org/x/net" && $3 == "v0.62.0" { net = 1 }
-     END { exit !(chi && crypto && net) }' "$diagnostic_build_info" || {
-  echo "Unstripped diagnostic build does not embed the fixed chi, x/crypto, and x/net versions" >&2
+     END { exit !(chi && brotli && compress && crypto && net) }' "$diagnostic_build_info" || {
+  echo "Unstripped diagnostic build does not embed the fixed chi, brotli, klauspost/compress, x/crypto, and x/net versions" >&2
   exit 1
 }
 if ! grep -E 'golang\.org/x/crypto/openpgp|github\.com/ProtonMail/go-crypto/openpgp|ClientIPFromXFF' \
