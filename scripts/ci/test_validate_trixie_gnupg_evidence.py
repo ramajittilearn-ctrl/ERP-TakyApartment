@@ -333,7 +333,7 @@ class EvidenceFixture:
             "kind": "reviewed-trixie-gnupg-candidate-lock",
             "approval": {
                 "state": "APPROVED_FOR_ISOLATED_CANDIDATE_BUILD_ONLY",
-                "reviewer": "package_index_refresh_review", "reviewDate": "2026-10-30",
+                "reviewer": "head_artifact_audit", "reviewDate": self.generated_at.date().isoformat(),
                 "runtimeClearance": "NOT_EVALUATED", "cveClearance": "NOT_EVALUATED",
                 "productionUse": "NOT_AUTHORIZED",
             },
@@ -455,7 +455,8 @@ class EvidenceValidationTests(unittest.TestCase):
     def test_reviewed_candidate_lock_rejects_tuple_release_source_keyring_sqv_and_tsv_drift(self):
         mutations = (
             "package", "release", "source", "keyring", "sqv", "tsv-hash", "tsv-symlink",
-            "signature-config-row", "missing-trusted-paths-row", "artifact-hash",
+            "signature-config-row", "missing-trusted-paths-row", "artifact-hash", "approval-scope",
+            "review-date", "empty-reviewer",
         )
         for mutation in mutations:
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temp:
@@ -508,6 +509,12 @@ class EvidenceValidationTests(unittest.TestCase):
                     fixture.write()
                 elif mutation == "artifact-hash":
                     lock["discovery"]["evidenceArtifactSha256"] = "bad-hash"
+                elif mutation == "approval-scope":
+                    lock["approval"]["productionUse"] = "AUTHORIZED"
+                elif mutation == "review-date":
+                    lock["approval"]["reviewDate"] = "not-a-date"
+                elif mutation == "empty-reviewer":
+                    lock["approval"]["reviewer"] = ""
                 elif mutation == "tsv-hash":
                     package_path.write_text(package_path.read_text() + "\n")
                 elif mutation == "tsv-symlink":

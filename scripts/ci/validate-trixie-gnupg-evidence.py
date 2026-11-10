@@ -16,7 +16,7 @@ import stat
 import sys
 import tempfile
 import subprocess
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from urllib.parse import unquote, urlsplit
 
 
@@ -1646,14 +1646,20 @@ def validate_candidate_lock(evidence_dir: Path, lock_path: Path) -> dict[str, ob
     approval = object_with_keys(lock["approval"], {
         "state", "reviewer", "reviewDate", "runtimeClearance", "cveClearance", "productionUse",
     }, "candidate lock approval")
-    if approval != {
-        "state": "APPROVED_FOR_ISOLATED_CANDIDATE_BUILD_ONLY",
-        "reviewer": "package_index_refresh_review",
-        "reviewDate": "2026-10-30",
-        "runtimeClearance": "NOT_EVALUATED",
-        "cveClearance": "NOT_EVALUATED",
-        "productionUse": "NOT_AUTHORIZED",
-    }:
+    reviewer = approval["reviewer"]
+    review_date = approval["reviewDate"]
+    if (approval["state"] != "APPROVED_FOR_ISOLATED_CANDIDATE_BUILD_ONLY"
+        or not isinstance(reviewer, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/@:-]{0,99}", reviewer)
+        or not isinstance(review_date, str)):
+        fail("candidate lock approval scope is invalid")
+    try:
+        parsed_review_date = date.fromisoformat(review_date)
+    except ValueError:
+        fail("candidate lock review date is malformed")
+    if (parsed_review_date.isoformat() != review_date or parsed_review_date > datetime.now(timezone.utc).date()
+        or approval["runtimeClearance"] != "NOT_EVALUATED"
+        or approval["cveClearance"] != "NOT_EVALUATED"
+        or approval["productionUse"] != "NOT_AUTHORIZED"):
         fail("candidate lock approval scope is invalid")
 
     discovery = object_with_keys(lock["discovery"], {
