@@ -215,3 +215,11 @@ These reports do not represent a production deployment or a published registry i
 EOF
 
 echo "Current-checkout vulnerability reports written to $output_dir"
+
+# Grype's independent Debian 14 positive control runs only after all Trivy image
+# reports and integrity checks are complete, so a Grype setup/coverage failure
+# cannot prevent the primary scanner evidence from being retained.
+bash scripts/ci/probe-grype-cve-6653-coverage.sh \
+  "${output_dir}/cve-2026-6653-positive-control" \
+  "${output_dir}/grype-cve-2026-6653-positive-control" \
+  "$revision" "$tree"
