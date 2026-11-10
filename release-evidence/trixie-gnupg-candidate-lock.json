@@ -2,8 +2,8 @@
   "approval": {
     "cveClearance": "NOT_EVALUATED",
     "productionUse": "NOT_AUTHORIZED",
-    "reviewDate": "2026-11-10",
-    "reviewer": "head_artifact_audit",
+    "reviewDate": "2026-11-11",
+    "reviewer": "codex-agent",
     "runtimeClearance": "NOT_EVALUATED",
     "state": "APPROVED_FOR_ISOLATED_CANDIDATE_BUILD_ONLY"
   },
@@ -24,7 +24,7 @@
     "sourceConfigs": [
       {
         "path": "apt-sources/sources.list.d/debian.sources",
-        "sha256": "731731938b163acb5e79d80fcfc79d2e72df9e05a59f4a994ccd7be7a52c12d9"
+        "sha256": "3a246d4d7ba0856ce89d8c4221f00bfd135753f85d08027e9a961521a94b339a"
       },
       {
         "path": "apt-sources/sources.list.d/pgdg.list",
@@ -39,25 +39,25 @@
     }
   },
   "discovery": {
-    "baseImage": "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe",
-    "baseImageId": "sha256:82903352d6faf8f8a318bc4353d1cb1db67d4a5ff968d2799b2718e2cb00afa2",
-    "evidenceArtifactId": 13735550455,
-    "evidenceArtifactSha256": "f2fa6f4f9917d666bee0448ac7be59a9cc1fb4be8d97654da2a009dd1a7c53b8",
+    "baseImage": "postgres:17.11-trixie@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f",
+    "baseImageId": "sha256:eb0fb2377534e65aad04f37838956b3dfb888e1a3dd3c1acf957bc6557eb6c7d",
+    "evidenceArtifactId": 13812867916,
+    "evidenceArtifactSha256": "a66e9a1aae11b492e96e3e19b7690a79a50961179a4cbf2e864d3383cc6c4853",
     "platform": "linux/amd64",
     "proposalPath": "trixie-gnupg-discovery/gnupg-removal-lock-proposal.json",
-    "proposalSha256": "48d3f06bfcaabedbe81373a9e52e680d9110d1206bf9fd75ea0287c765483cee",
+    "proposalSha256": "3c42ebe0e671ffd99f3f3687ea4694679b94734a94340c0351356fdaa861fd1a",
     "reviewedEvidenceFileCount": 84,
-    "revision": "7623146d60fa465962de98dd74166bd3c4924590",
+    "revision": "69f238e014449b143b24be4ace09b47af4e0db57",
     "runAttempt": 1,
-    "runId": 42753456794,
-    "tree": "156c3cd005f97e5bdaaacef2227138f006fa4b8a"
+    "runId": 42922343669,
+    "tree": "af59152c2a5c9d72f43bcfcaedaab64372c7d853"
   },
   "kind": "reviewed-trixie-gnupg-candidate-lock",
   "lockFileSha256": {
     "package": "358f19903c7e83abb32750ac7e6b882ebafa4b8abfe2b2658754e483f1e320df",
     "packageIndex": "f8d379f4b174f4220df50b830f50215d10c643df53f46c020622b1c4775d306c",
     "release": "c1ffc96ace74f18569a49a4bc41bdcf3f9e059a5fbd4e638b68f6d5c2876e712",
-    "trust": "b1aea0a58116e60daa4aca97b99d65ffba7f85d77ad6c83596b12cbe5da5c519"
+    "trust": "f273fa02db87c7de7128d2844029b52f7abb50996c95432394ddb1e40c53788c"
   },
   "packageIndexLockPath": "release-evidence/trixie-gnupg-package-index-lock.tsv",
   "packageLockPath": "release-evidence/trixie-gnupg-purge-lock.tsv",

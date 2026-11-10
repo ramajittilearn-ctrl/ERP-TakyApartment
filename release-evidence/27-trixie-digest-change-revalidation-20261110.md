@@ -114,3 +114,11 @@ it was not a failure of the Trixie digest checks. The corrected 2.14.4 fixture
 was verified locally with pinned Grype 0.121.0 against DB v6.1.10 and is now
 pending exact-head hosted verification. The full container runtime/restore
 pipeline was not rerun locally.
+
+## Candidate lock refresh after PostgreSQL digest change — 2026-11-11
+
+PR run [42922343669](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42922343669), merge revision `69f238e014449b143b24be4ace09b47af4e0db57`, tree `af59152c2a5c9d72f43bcfcaedaab64372c7d853`, pulled the current pinned base `postgres:17.11-trixie@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f`. Its signed discovery validation passed for all four InRelease files. The Trixie InRelease digest is `0584fba32e13e0ab8285fb16c27adea1ec03a73669c18702821094fd6ca86675` (140421 bytes); updates, security, and PGDG digests are `040cf05370e6cfee6213ea735a830d9d817c7b33e19457b534b9775adc35b9e7`, `8cfb86ff1190b904539e1c8c2069e9b373ec8add28f59cdab7f4839edb0cb5b6`, and `ac533f523687800ace432f7c778113abc87f92f3a7655170da834ed98a81149e`.
+
+Reviewed the fresh proposal against the existing candidate lock before refreshing provenance: all 14 package name/version/architecture tuples, all 13 authenticated active Packages variants, the four signed Release identities, keyring hashes, APT signature configuration, and trusted paths match. APT remains `sqv 1.3.0`; the Debian source-file hash changed only because its two snapshot URL comments now carry `20261104T212339Z` instead of `20261020T213255Z`; configured URIs, suites, component, and Signed-By are unchanged. The lock provenance and that source-file hash are refreshed to this exact run/artifact; the purge, Release identity, and package-index lock contents are unchanged.
+
+This review authorizes only the isolated candidate build. Runtime and CVE clearance remain `NOT_EVALUATED`; production use remains `NOT_AUTHORIZED`. The image was not published and the PR was not merged or deployed.
