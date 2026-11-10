@@ -17,8 +17,8 @@ trixie_gnupg_prune_database_image="$8"
 revision="$9"
 tree="${10}"
 output_dir="${11}"
-trivy_version="0.76.1"
-trivy_sha256="c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0"
+trivy_version="0.76.2"
+trivy_sha256="bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf"
 platform="linux/amd64"
 archive="${RUNNER_TEMP:?RUNNER_TEMP is required}/trivy-${trivy_version}-linux-amd64.tar.gz"
 tool_dir="${RUNNER_TEMP}/trivy-${trivy_version}-linux-amd64"
@@ -70,6 +70,11 @@ database_updated_at="$(jq -r '.UpdatedAt' "$database_metadata")"
 database_downloaded_at="$(jq -r '.DownloadedAt' "$database_metadata")"
 database_next_update="$(jq -r '.NextUpdate' "$database_metadata")"
 cp "$database_metadata" "${output_dir}/trivy-db-metadata.json"
+
+bash scripts/ci/probe-trivy-cve-6653-coverage.sh \
+  "$trivy_bin" "$cache_dir" "$output_dir" "$revision" "$tree" \
+  "$database_sha256" "$database_schema_version" "$database_updated_at" \
+  "$database_downloaded_at" "$database_next_update"
 
 scan_image() {
   local name="$1" image="$2" image_id image_platform report
@@ -202,6 +207,7 @@ cat > "${output_dir}/README.md" <<EOF
 - Policy: findings are reported without a general severity threshold; CVE-2026-6653 is a targeted release gate for the Alpine operations/database images
 - Image metadata sidecars record local image IDs (config digests), tags, source identity, and scan time
 - The CI scan fails if CVE-2026-6653 appears in Alpine operations or Alpine database images; installed libxml2 versions come from their image-ID-bound Trivy package inventories in \`alpine-libxml2-versions.txt\`
+- \`cve-2026-6653-positive-control/\` records current-DB Trivy rootfs scans of vulnerable Debian 13 and Debian 14 synthetic package fixtures. The Debian 13 positive control must detect the CVE. The Debian 14 result records whether the known package mapping gap persists; neither result grants candidate/image/production clearance.
 
 Bookworm snapshot/package inputs and full before/after dpkg manifests are in bookworm-candidate-refresh/; image-scan-binding.json binds that evidence to the exact image ID, source revision/tree, platform, and Trivy DB SHA-256. bookworm-pg-compatibility.txt records the source-vs-candidate PostgreSQL and available-extension comparison.
 
