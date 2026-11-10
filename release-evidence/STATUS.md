@@ -1,5 +1,11 @@
 # Phase 4 Production Readiness
 
+## Latest live continuation — 2026-11-10 12:34 Asia/Bangkok
+
+Commit `891db3f8b8ce0b573564f6f80222a85daa63bff1` is on PR #2. Exact PR run [42760262509](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42760262509) passed quality, Stage 5, Agent UAT, source provenance, candidate image builds, and Forky Stage 5. Its revised operations image scan no longer reports GO-2026-6888 or GO-2026-6865; container verification stopped at the stale GO-2026-5932 record hash after upstream added an explicit OpenPGP affected-package entry. The new hash/schema validator is implemented, passed four mutation checks, and independent `/root/head_artifact_audit` approved it. Next: commit/push this narrow validator refresh and rerun hosted exact-head verification.
+
+Production remains **NO-GO**. PR approval, raw Debian Critical/High findings, scanner positive-control coverage, OCI differences, PGDATA TLS/key behavior, production target, target-matched recovery/rollback, publication/deployment and post-deployment evidence remain open.
+
 ## Latest live continuation — 2026-11-10 12:07 Asia/Bangkok
 
 At PR head `7251e93162a347226efdcbfb465e0392a5661cb7`, exact-head push run [42755825818](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42755825818) and PR run [42755833372](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42755833372) both failed closed in container verification after reporting new genuine rclone dependency advisories GO-2026-6888 (brotli v1.2.2; fixed v1.2.7) and GO-2026-6865 (klauspost/compress v1.19.2; fixed v1.20.2). Quality, Stage 5 and Agent UAT passed. A narrow dependency patch is implemented locally and independently approved by `/root/head_artifact_audit`. Local Go 1.27.3 dependency verification, Linux/amd64 build, source scan, binary scan and native `go test ./fs` pass; the raw binary scan still retains GO-2026-5932 only. Exact-image hosted CI/reconstruction remains pending. See [report 24](24-rclone-dependency-vulnerability-remediation-20261110.md).

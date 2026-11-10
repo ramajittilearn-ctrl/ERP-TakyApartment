@@ -100,7 +100,7 @@ awk '$1 == "mod" && $2 == "golang.org/x/vuln" && $3 == "v1.9.0" { vuln = 1 }
 }
 
 go5932_advisory_url="https://vuln.go.dev/ID/GO-2026-5932.json"
-go5932_advisory_sha256="f277b0400996200a7d5034c676661cd8cf18adeab1fdc5d0dc369e456ddf1fad"
+go5932_advisory_sha256="bde8769150ec1368d9a8dbd61fbbde52296de692c57147e02e3ae295e1981f11"
 go5932_advisory_path="${report_path%.txt}-GO-2026-5932.json"
 go5932_advisory_headers="${report_path%.txt}-GO-2026-5932-headers.txt"
 go5932_advisory_metadata="${report_path%.txt}-GO-2026-5932-retrieval.txt"
@@ -133,15 +133,36 @@ record = json.load(open(path, encoding="utf-8"))
 if record.get("id") != "GO-2026-5932":
     raise SystemExit("Official advisory ID did not match GO-2026-5932")
 affected = record.get("affected", [])
-if len(affected) != 1 or affected[0].get("package") != {"name": "golang.org/x/crypto", "ecosystem": "Go"}:
+if len(affected) != 2:
     raise SystemExit("Official GO-2026-5932 module scope changed; review required")
-ranges = affected[0].get("ranges", [])
-if len(ranges) != 1 or ranges[0].get("events") != [{"introduced": "0"}]:
-    raise SystemExit("Official GO-2026-5932 version scope changed; review required")
-imports = affected[0].get("ecosystem_specific", {}).get("imports", [])
-paths = [item.get("path") for item in imports]
-if len(paths) != len(set(paths)) or set(paths) != expected:
-    raise SystemExit("Official GO-2026-5932 affected package paths changed; review required")
+by_name = {}
+for item in affected:
+    package = item.get("package", {})
+    if package.get("ecosystem") != "Go" or package.get("name") in by_name:
+        raise SystemExit("Official GO-2026-5932 package identity changed; review required")
+    by_name[package.get("name")] = item
+if set(by_name) != {"golang.org/x/crypto", "golang.org/x/crypto/openpgp"}:
+    raise SystemExit("Official GO-2026-5932 package scope changed; review required")
+
+module_ranges = by_name["golang.org/x/crypto"].get("ranges", [])
+if len(module_ranges) != 1 or module_ranges[0].get("type") != "SEMVER" or module_ranges[0].get("events") != [
+    {"introduced": "0"},
+    {"fixed": "0.58.1-0.20261009181718-2f1f834330b2"},
+]:
+    raise SystemExit("Official GO-2026-5932 module version scope changed; review required")
+openpgp_ranges = by_name["golang.org/x/crypto/openpgp"].get("ranges", [])
+if len(openpgp_ranges) != 1 or openpgp_ranges[0].get("type") != "SEMVER" or openpgp_ranges[0].get("events") != [{"introduced": "0"}]:
+    raise SystemExit("Official GO-2026-5932 OpenPGP package version scope changed; review required")
+
+for name, item in by_name.items():
+    imports = item.get("ecosystem_specific", {}).get("imports", [])
+    paths = [entry.get("path") for entry in imports]
+    if (
+        len(paths) != len(set(paths))
+        or set(paths) != expected
+        or any(set(entry) != {"path"} for entry in imports)
+    ):
+        raise SystemExit(f"Official GO-2026-5932 affected paths changed for {name}; review required")
 PY
 
 # The public vuln.go.dev index can lag a newly published advisory. Preserve its
