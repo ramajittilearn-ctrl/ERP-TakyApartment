@@ -8,7 +8,6 @@ on:
     branches:
       - release/phase4
       - codex/phase4-production-prep
-      - codex/phase4-current-source-20261026
 
 permissions:
   contents: read
