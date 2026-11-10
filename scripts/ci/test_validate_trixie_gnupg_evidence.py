@@ -37,7 +37,7 @@ def json_bytes(data: dict) -> bytes:
 
 
 class EvidenceFixture:
-    def __init__(self, root: Path):
+    def __init__(self, root: Path, *, trixie_index_revision: str = ""):
         self.root = root
         self.root.mkdir()
         self.generated_at = datetime.now(timezone.utc).replace(microsecond=0)
@@ -133,7 +133,8 @@ class EvidenceFixture:
             local_name = f"repo_dists_{codename}_main_binary-amd64_Packages.lz4"
             meta_key = "main/binary-amd64/Packages"
             signed_path = "main/binary-amd64/Packages.xz"
-            signed_hash = hashlib.sha256(f"signed index {codename}".encode()).hexdigest()
+            index_revision = trixie_index_revision if codename == "trixie" else ""
+            signed_hash = hashlib.sha256(f"signed index {codename}{index_revision}".encode()).hexdigest()
             signed_size = 123 + len(codename)
             canonical_hash = hashlib.sha256(f"canonical index {codename}".encode()).hexdigest()
             canonical_size = signed_size + 1
@@ -560,6 +561,43 @@ class EvidenceValidationTests(unittest.TestCase):
                 lock_path.write_bytes(json_bytes(lock))
                 with self.assertRaises(ValueError):
                     MODULE.validate_candidate_lock(fixture.root, lock_path)
+
+    def test_authenticated_trixie_digest_change_requires_explicit_index_lock_refresh(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            reviewed = EvidenceFixture(root / "reviewed")
+            lock_path = reviewed.candidate_lock(root / "repo")
+            lock_before = {path: path.read_bytes() for path in lock_path.parent.iterdir()}
+            current = EvidenceFixture(root / "current", trixie_index_revision=" refreshed")
+            self.assertNotEqual(
+                reviewed.proposal["isolatedReleaseAcquisitions"][0]["inReleaseSha256"],
+                current.proposal["isolatedReleaseAcquisitions"][0]["inReleaseSha256"],
+            )
+            self.assertEqual(reviewed.proposal["removals"], current.proposal["removals"])
+            MODULE.validate_proposal(current.root)
+            with self.assertRaisesRegex(ValueError, "active Packages variant map differs"):
+                MODULE.validate_candidate_lock(current.root, lock_path)
+            self.assertEqual(lock_before, {path: path.read_bytes() for path in lock_path.parent.iterdir()})
+
+            current.candidate_lock(root / "repo")
+            for path, before in lock_before.items():
+                if path.name not in (lock_path.name, "trixie-gnupg-package-index-lock.tsv"):
+                    self.assertEqual(before, path.read_bytes(), path.name)
+            result = MODULE.validate_candidate_lock(current.root, lock_path)
+            self.assertEqual(result["status"], "VALIDATED_REVIEWED_CANDIDATE_LOCK")
+            self.assertTrue(result["candidateOnly"])
+            self.assertEqual(result["runtimeClearance"], "NOT_EVALUATED")
+            self.assertEqual(result["cveClearance"], "NOT_EVALUATED")
+            self.assertEqual(json.loads(lock_path.read_bytes())["approval"]["productionUse"], "NOT_AUTHORIZED")
+
+    def test_refreshed_digest_lock_cannot_bypass_signature_rejection(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            current = EvidenceFixture(root / "current", trixie_index_revision=" refreshed")
+            lock_path = current.candidate_lock(root / "repo")
+            self.verify_signature_mock.side_effect = ValueError("InRelease signature rejected")
+            with self.assertRaisesRegex(ValueError, "InRelease signature rejected"):
+                MODULE.validate_candidate_lock(current.root, lock_path)
 
     def test_release_freshness_policy_enforces_age_future_and_valid_until(self):
         now = datetime(2026, 10, 29, 12, 0, tzinfo=timezone.utc)
