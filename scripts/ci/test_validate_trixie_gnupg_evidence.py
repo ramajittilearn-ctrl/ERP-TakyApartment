@@ -453,6 +453,24 @@ class EvidenceValidationTests(unittest.TestCase):
             self.assertEqual(result["runtimeClearance"], "NOT_EVALUATED")
             self.assertEqual(result["cveClearance"], "NOT_EVALUATED")
 
+    def test_base_image_digest_change_requires_reviewed_lock_refresh(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            current = EvidenceFixture(root / "current")
+            lock_path = current.candidate_lock(root / "repo")
+            lock = json.loads(lock_path.read_text())
+            old_digest = "sha256:" + "d" * 64
+            lock["discovery"]["baseImage"] = f"postgres:17.11-trixie@{old_digest}"
+            lock_path.write_bytes(json_bytes(lock))
+            lock_before = lock_path.read_bytes()
+
+            # The signed metadata validates and the package proposal still matches,
+            # but the old review is bound to a different PostgreSQL base digest.
+            self.assertEqual(MODULE.validate_proposal(current.root).proposal["removals"], current.proposal["removals"])
+            with self.assertRaisesRegex(ValueError, "candidate lock discovery provenance is malformed or outside the reviewed base"):
+                MODULE.validate_candidate_lock(current.root, lock_path)
+            self.assertEqual(lock_path.read_bytes(), lock_before)
+
     def test_reviewed_candidate_lock_rejects_tuple_release_source_keyring_sqv_and_tsv_drift(self):
         mutations = (
             "package", "release", "source", "keyring", "sqv", "tsv-hash", "tsv-symlink",
