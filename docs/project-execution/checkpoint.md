@@ -1,9 +1,9 @@
-## Latest continuation checkpoint — Correct Debian 14 positive control — 2026-11-10 22:43 Asia/Bangkok
+## Latest continuation checkpoint — Correct Debian 14 positive control — 2026-11-10 23:54 Asia/Bangkok
 
-- PR #2 is OPEN at head `8c79ec10d0a79d4aea7e1dcb3497f226c59d84c7`. Earlier run `42836302716` passed authenticated Trixie discovery, then failed in the Grype positive-control step.
+- PR #2 is OPEN at head `05f338c5fc3460607dcac793a5b2e81b550f71ff`. Earlier run `42836302716` passed authenticated Trixie discovery, then failed in the Grype positive-control step.
 - Root cause: prior synthetic Debian 14 fixture version `libxml2-16 2.15.3+dfsg-1` is fixed for CVE-2026-6653. Debian's tracker records `2.14.5+dfsg-0.1` as the first fixed unstable version and current Forky as fixed. The prior 2.15.3 no-match was expected, so the failure did not show missing Grype coverage.
 - Corrected fixture version is `libxml2-16 2.14.4+dfsg-0exp1`, below the Debian fix threshold. With current Grype DB `v6.1.10`, Grype 0.121.0/0.121.3 and Trivy 0.76.1/0.76.2 each returned one exact Debian 14 match for CVE-2026-6653. Both fixture definitions now use the corrected version. Grype's existing fail-closed exact package/namespace/match-type check remains unchanged.
-- Push workflow `42848605940` passed all 8 jobs, including `container-verification` with authenticated Trixie discovery. PR workflow `42848618784` attempt 1 hit HTTP 503 while downloading the same-run Forky artifact. Attempt 2 reran only the downstream artifact job, which correctly rejected the attempt-1 artifact because producer and consumer attempts must match; container verification was skipped. A full PR workflow attempt is pending. Keep the PR open. Do not publish an image, merge, deploy, or claim scanner/image/production clearance.
+- Exact-head push workflow `42854509110` and PR workflow `42854976437` each passed all 8 jobs, including same-run Forky artifact validation, authenticated Trixie discovery, and `container-verification`. Trixie InRelease signature/digest/proposal validation passed and existing lock remained unchanged. Corrected Debian 14 control passed. Earlier `42848618784` artifact HTTP 503 and stale-attempt rerun are superseded by these full successful runs. Keep the PR open. Do not publish an image, merge, deploy, or claim scanner/image/production clearance.
 
 ## Historical checkpoint — Grype Debian 14 coverage gate — 2026-11-10
 
