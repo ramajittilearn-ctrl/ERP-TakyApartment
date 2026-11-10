@@ -95,15 +95,16 @@ apt_with_state() {
     -o "Dir::State::lists=$state/lists" \
     -o "Dir::Cache::archives=$state/archives" \
     -o 'APT::Get::List-Cleanup=0' \
-    -o 'Acquire::Retries=3' \
-    -o 'Acquire::https::Timeout=45' \
+    -o 'Acquire::Retries=8' \
+    -o 'Acquire::https::Timeout=60' \
     "$@"
 }
 
 record_release_signature() {
   local uri=$1 suite=$2 keyring=$3 name=$4
   local inrelease="$evidence_dir/$name.InRelease"
-  curl --fail --show-error --silent --location --retry 3 --connect-timeout 20 \
+  curl --fail --show-error --silent --location --retry 8 --retry-all-errors \
+    --retry-delay 2 --retry-max-time 180 --connect-timeout 20 --max-time 240 \
     "$uri/dists/$suite/InRelease" --output "$inrelease"
   local status
   status=$(gpgv --status-fd 1 --keyring "$keyring" "$inrelease" 2>"$evidence_dir/$name.gpgv.log") \
@@ -119,7 +120,8 @@ record_release_signature() {
 record_bookworm_bootstrap_release() {
   local uri=$1 suite=$2 name=$3
   local inrelease="$evidence_dir/$name.InRelease"
-  curl --fail --show-error --silent --location --retry 3 --connect-timeout 20 \
+  curl --fail --show-error --silent --location --retry 8 --retry-all-errors \
+    --retry-delay 2 --retry-max-time 180 --connect-timeout 20 --max-time 240 \
     "$uri/dists/$suite/InRelease" --output "$inrelease"
   printf '%s  %s\n' "$(sha256sum "$inrelease" | awk '{print $1}')" "$name.InRelease" \
     >"$evidence_dir/$name.InRelease.sha256"
@@ -296,7 +298,8 @@ debian_signature=$(gpgv --status-fd 1 "${debian_keyrings[@]}" "$debian_dsc" 2>/d
 # The fingerprint is sourced from https://wiki.ubuntu.com/Security/GPG_key_table (Sudhakar Verma).
 readonly key_home="$work_dir/ubuntu-uploader-gnupg"
 mkdir -m 0700 -- "$key_home"
-curl --fail --show-error --silent --location --retry 3 --connect-timeout 20 \
+curl --fail --show-error --silent --location --retry 8 --retry-all-errors \
+  --retry-delay 2 --retry-max-time 180 --connect-timeout 20 --max-time 240 \
   "$UBUNTU_UPLOAD_KEY_URL" --output "$work_dir/ubuntu-uploader.asc"
 gpg --batch --homedir "$key_home" --import "$work_dir/ubuntu-uploader.asc" \
   >"$evidence_dir/ubuntu-uploader-import.log" 2>&1 || die 'could not import the Ubuntu uploader public key'
