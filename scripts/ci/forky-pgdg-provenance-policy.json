@@ -48,7 +48,7 @@
     "baseImage": "debian:forky-slim@sha256:98af9d99779532814d4b51c34d50df8d8886286a2a1ab9625a62db59b9cf1b2d",
     "baseIndexDigest": "sha256:04db4720574d184e24353e77e46dbbe4377edad01c9ba50a67aa1473cef9b9d4",
     "platform": "linux/amd64",
-    "postgresEntrypointSource": "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe",
+    "postgresEntrypointSource": "postgres:17.11-trixie@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f",
     "requiredRootPackage": {
       "name": "postgresql-17",
       "version": "17.11-1.pgdg14+2",

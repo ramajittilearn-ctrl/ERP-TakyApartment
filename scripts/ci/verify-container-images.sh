@@ -87,8 +87,8 @@ for postgres_base_image in "$db_base_image" "$alpine_db_base_image" "$debian_tri
     exit 1
   fi
 done
-if [[ "$db_base_image" != postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe || \
-  "$debian_trixie_db_base_image" != postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe || \
+if [[ "$db_base_image" != postgres:17.11-trixie@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f || \
+  "$debian_trixie_db_base_image" != postgres:17.11-trixie@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f || \
   "$debian_bookworm_db_base_image" != postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27 || \
   "$debian_bookworm_dockerfile" != docker/postgres/bookworm-security-candidate.Dockerfile || \
   "$debian_bookworm_main_snapshot" != 20261026T202550Z || \
@@ -384,7 +384,7 @@ if [[ -e "$trixie_gnupg_evidence_dir" ]]; then
 fi
 echo "Building isolated Trixie GnuPG-prune candidate on operational image $trixie_operational_image_id"
 build_trixie_gnupg_candidate_image "$trixie_gnupg_db_image" "$db_image" "$trixie_operational_image_id" "$trixie_candidate_lock_sha256"
-legacy_trixie_db_image="postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
+legacy_trixie_db_image="postgres:17.11-trixie@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f"
 legacy_bookworm_db_image="postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27"
 pull_pinned_restore_source() {
   local image="$1" pinned_digest image_id platform repo_digests

@@ -42,7 +42,7 @@ readonly runner_ca_sha=$(sha256sum "$runner_ca_bundle" | awk '{print $1}')
 [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]] || die 'GitHub run identity is malformed'
 
 readonly image="taky-libxml2-cve-candidate:${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-readonly base_image='postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe'
+readonly base_image='postgres:17.11-trixie@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f'
 readonly dockerfile="$GITHUB_WORKSPACE/docker/postgres/libxml2-cve-candidate.Dockerfile"
 readonly build_context="$RUNNER_TEMP/phase4-libxml2-candidate-context"
 mkdir -m 0700 -- "$build_context"

@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from datetime import timedelta
 
 
-IMAGE = "postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe"
+IMAGE = "postgres:17.11-trixie@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f"
 PLATFORM = "linux/amd64"
 EVIDENCE_BASE = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "trixie-gnupg-discovery"
 PROTECTED_PREFIXES = (

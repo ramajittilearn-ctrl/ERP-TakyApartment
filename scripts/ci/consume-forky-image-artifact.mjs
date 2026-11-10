@@ -18,7 +18,7 @@ const EXPECTED = {
   'io.taky.postgres.gosu.commit': '6456aaa0f3c854d199d0f037f068eb97515b7513',
   'io.taky.postgres.gosu.user-module': 'v0.4.1',
   'io.taky.postgres.gosu.x-sys-module': 'v0.44.0',
-  'io.taky.postgres.entrypoint.source': 'postgres:17.11-trixie@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe',
+  'io.taky.postgres.entrypoint.source': 'postgres:17.11-trixie@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f',
 };
 function fail(message) { throw new Error(message); }
 function sha256(bytes) { return crypto.createHash('sha256').update(bytes).digest('hex'); }
