@@ -40,6 +40,11 @@ class EvidenceFixture:
     def __init__(self, root: Path):
         self.root = root
         self.root.mkdir()
+        self.generated_at = datetime.now(timezone.utc).replace(microsecond=0)
+        self.release_date = self.generated_at - timedelta(minutes=10)
+        self.valid_until = self.release_date + timedelta(days=7)
+        self.release_date_text = self.release_date.strftime("%a, %d %b %Y %H:%M:%S UTC")
+        self.valid_until_text = self.valid_until.strftime("%a, %d %b %Y %H:%M:%S UTC")
         self.files = {
             "apt-signature-config.txt": b"APT::Key::gpgvcommand \"/usr/bin/sqv\";\n",
             "apt-trusted-paths.tsv": b"trusted\t<unset>\ntrustedParts\t/etc/apt/trusted.gpg.d\n",
@@ -84,7 +89,7 @@ class EvidenceFixture:
             "platform": MODULE.PLATFORM,
             "runtimeClearance": "NOT_EVALUATED",
             "cveClearance": "NOT_EVALUATED",
-            "generatedAt": "2026-10-29T02:00:00+00:00",
+            "generatedAt": self.generated_at.isoformat(),
             "imageId": "sha256:" + "c" * 64,
             "repoDigests": ["postgres@" + MODULE.IMAGE.rsplit("@", 1)[1]],
             "removalCount": 1,
@@ -139,8 +144,8 @@ class EvidenceFixture:
             release_bytes = (
                 "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n"
                 f"Codename: {codename}\nSuite: {suite}\nOrigin: {MODULE.EXPECTED_SIGNED_ORIGINS[codename]}\n"
-                "Date: Thu, 29 Oct 2026 01:00:00 UTC\n"
-                + ("Valid-Until: Fri, 06 Nov 2026 12:00:00 UTC\n" if codename != "trixie" else "")
+                f"Date: {self.release_date_text}\n"
+                + (f"Valid-Until: {self.valid_until_text}\n" if codename != "trixie" else "")
                 + f"SHA256:\n{signed_sha256_lines}"
                 "-----BEGIN PGP SIGNATURE-----\nZmFrZS1zaWduYXR1cmU=\n=abcd\n-----END PGP SIGNATURE-----\n"
             ).encode()
@@ -190,8 +195,8 @@ class EvidenceFixture:
                 "codename": codename, "configuredDist": codename, "suite": suite,
                 "signedCodename": codename, "signedSuite": suite, "sourceUri": source_uri,
                 "signedOrigin": MODULE.EXPECTED_SIGNED_ORIGINS[codename],
-                "releaseDate": "Thu, 29 Oct 2026 01:00:00 UTC",
-                "validUntil": "Fri, 06 Nov 2026 12:00:00 UTC" if codename != "trixie" else None,
+                "releaseDate": self.release_date_text,
+                "validUntil": self.valid_until_text if codename != "trixie" else None,
                 "baseUri": base_uri, "aptVersion": "apt 3.0.3 (amd64)",
                 "runId": self.run["runId"], "runAttempt": self.run["runAttempt"],
                 "revision": self.run["revision"], "tree": self.run["tree"], "image": self.run["image"],
@@ -209,8 +214,8 @@ class EvidenceFixture:
                 "Codename": codename,
                 "Suite": suite,
                 "Origin": MODULE.EXPECTED_SIGNED_ORIGINS[codename],
-                "Date": "Thu, 29 Oct 2026 01:00:00 UTC",
-                **({"Valid-Until": "Fri, 06 Nov 2026 12:00:00 UTC"} if codename != "trixie" else {}),
+                "Date": self.release_date_text,
+                **({"Valid-Until": self.valid_until_text} if codename != "trixie" else {}),
             }, datetime.fromisoformat(self.run["generatedAt"]))
             self.proposal["isolatedReleaseAcquisitions"][-1]["freshness"] = freshness
             self.proposal["releaseFreshnessEvidence"].append({"codename": codename, "inReleaseFile": isolated_name, **freshness})
