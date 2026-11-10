@@ -1,5 +1,11 @@
 # Phase 4 Production Readiness
 
+## Latest live continuation — 2026-11-10 13:05 Asia/Bangkok
+
+Rclone advisory reconciliation is complete on head `8e400fad66e2db841c7b9fe25e6b3b2285aaa732`. Exact-head push run [42763115860](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42763115860) and PR run [42763121303](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42763121303) both passed 8/8. Independent `/root/head_artifact_audit` approved PR scan artifact [13739114117](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42763121303/artifacts/13739114117), confirming source/image/binary bindings, exact rclone rebuild, patched module versions, and current GO-2026-5932 scope. Agent UAT passed; Owner UAT was not run per instruction. Eight synthetic restore routes passed.
+
+Production remains **NO-GO**. Latest raw scan findings: Bookworm 2C/18H, operational Trixie 1C/22H, GnuPG-pruned Trixie 1C/21H, with additional Medium/Low/Unknown findings; CVE-2026-6653 remains Critical in Debian database images, and Bookworm retains CVE-2023-45853. Scanner positive-control coverage, PGDATA TLS/key handling, OCI cross-run differences, required GitHub PR approval, production target/recovery/publication/deployment evidence remain open. See [report 24](24-rclone-dependency-vulnerability-remediation-20261110.md) and backlog rows SEC-IMG-01 / SEC-RCLONE-REACH-01.
+
 ## Latest live continuation — 2026-11-10 12:34 Asia/Bangkok
 
 Commit `891db3f8b8ce0b573564f6f80222a85daa63bff1` is on PR #2. Exact PR run [42760262509](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42760262509) passed quality, Stage 5, Agent UAT, source provenance, candidate image builds, and Forky Stage 5. Its revised operations image scan no longer reports GO-2026-6888 or GO-2026-6865; container verification stopped at the stale GO-2026-5932 record hash after upstream added an explicit OpenPGP affected-package entry. The new hash/schema validator is implemented, passed four mutation checks, and independent `/root/head_artifact_audit` approved it. Next: commit/push this narrow validator refresh and rerun hosted exact-head verification.
