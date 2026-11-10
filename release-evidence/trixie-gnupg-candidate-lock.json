@@ -2,7 +2,7 @@
   "approval": {
     "cveClearance": "NOT_EVALUATED",
     "productionUse": "NOT_AUTHORIZED",
-    "reviewDate": "2026-11-11",
+    "reviewDate": "2026-11-10",
     "reviewer": "codex-agent",
     "runtimeClearance": "NOT_EVALUATED",
     "state": "APPROVED_FOR_ISOLATED_CANDIDATE_BUILD_ONLY"
