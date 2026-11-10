@@ -1,4 +1,11 @@
-## Latest continuation checkpoint — Grype Debian 14 coverage gate — 2026-11-10
+## Latest continuation checkpoint — Correct Debian 14 positive control — 2026-11-10 22:43 Asia/Bangkok
+
+- PR #2 is OPEN at head `62edffd8afea9ca693c2a1632d09f282a3b3569a`. Run `42836302716` passed authenticated Trixie discovery, then failed in the Grype positive-control step.
+- Root cause: prior synthetic Debian 14 fixture version `libxml2-16 2.15.3+dfsg-1` is fixed for CVE-2026-6653. Debian's tracker records `2.14.5+dfsg-0.1` as the first fixed unstable version and current Forky as fixed. The prior 2.15.3 no-match was expected, so the failure did not show missing Grype coverage.
+- Corrected fixture version is `libxml2-16 2.14.4+dfsg-0exp1`, below the Debian fix threshold. With current Grype DB `v6.1.10`, Grype 0.121.0/0.121.3 and Trivy 0.76.1/0.76.2 each returned one exact Debian 14 match for CVE-2026-6653. Both fixture definitions now use the corrected version. Grype's existing fail-closed exact package/namespace/match-type check remains unchanged.
+- Scripts, supporting design, and correction notes are updated locally. Next: syntax and focused control checks, commit/push to the existing PR branch, then inspect exact-head CI and scan evidence. Keep the PR open. Do not publish an image, merge, deploy, or claim scanner/image/production clearance.
+
+## Historical checkpoint — Grype Debian 14 coverage gate — 2026-11-10
 
 - Active worktree: `/Users/ramajittipasutanavin/.codex/worktrees/forky-gosu-remediation`, branch `codex/forky-gosu-remediation-20261030`, local HEAD `4b3837b471be7eaf4dcf50e758cc20556c42bdc8`. PR #2 branch `codex/phase4-current-source-20261026` is OPEN at the same remote head, `REVIEW_REQUIRED`, targeting `release/phase4`. No merge or deployment.
 - Hosted PR run `42791571669`, artifact `13752293411`, disproved the premise that Grype 0.121.0 DB `v6.1.10` detects CVE-2026-6653 on Debian 14. It catalogs exact `libxml2-16 2.15.3+dfsg-1` and has 10 exact Debian feed matches for other libxml2 advisories; target CVE match is absent. Debian 13 control detects it. Artifact inspection and design are recorded in `grype-cve-coverage-design-20261110.md`.

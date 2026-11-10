@@ -1,5 +1,9 @@
 # PR #2 Trixie digest-change revalidation — 2026-11-10
 
+## Follow-up: container-verification failure root cause
+
+The digest-change tests and authenticated Trixie discovery passed. The follow-up Grype gate failure was caused by an invalid Debian 14 positive control: it labeled `libxml2-16 2.15.3+dfsg-1` vulnerable, although Debian records `2.14.5+dfsg-0.1` as the first fixed unstable version and current Forky as fixed. Grype correctly returned no CVE match for 2.15.3. The control now uses `2.14.4+dfsg-0exp1`, below the Debian fix threshold. With current Grype DB `v6.1.10`, pinned Grype 0.121.0 and Grype 0.121.3 each returned one exact Debian 14 CVE-2026-6653 match for that fixture. The old hosted failure is therefore not evidence of a scanner coverage gap. Corrected hosted verification is pending.
+
 ## Finding and lock decision
 
 Investigated PR #2 at head `32f516aa123846a3245aed845f61bd0b11a34109`.
@@ -12,11 +16,14 @@ not authority to refresh a lock or weaken signature checks.
 The latest PR [run 42796905135](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42796905135)
 tested merge revision `7a37f5fdb8d9878f9d7044aed634314d3d0b5291`, tree
 `b14716a635cd0e92fe598f854363da8b0fc375db`. Its authenticated discovery step
-passed. The current container job fails later because the Grype Debian 14
-CVE-2026-6653 control reports `DEBIAN14_COVERAGE_GAP`. The final log says
+passed. The container job failed later because the Grype Debian 14
+CVE-2026-6653 control reported `DEBIAN14_COVERAGE_GAP`. That run used the
+subsequently identified fixed 2.15.3 fixture, so its no-match was expected.
+The final log says
 `Grype Debian 13 calibration passed; Debian 14 CVE-2026-6653 coverage gap recorded. Release gate remains blocked.`
-Commit `32f516aa1238` explicitly preserves that release-blocking behavior.
-This investigation does not resolve the scanner gap or make the full job green.
+Commit `32f516aa1238` explicitly preserves that fail-closed behavior. The
+corrected vulnerable fixture requires exact-head hosted verification before
+the gate can be considered verified.
 
 ## Independently checked evidence
 
@@ -99,6 +106,9 @@ GnuPG is unavailable. Disposable container result with `gpg`, `gpgv`, and
 omitted `gpg-agent`, so key generation in the real-GnuPG test failed; installing
 that test dependency resolved it. `git diff --check` passed.
 
-No image was published, no PR was merged, and nothing was deployed. The full
-container runtime/restore pipeline was not rerun locally. The latest hosted
-container-verification result remains a failure at the preserved scanner gate.
+No image was published, no PR was merged, and nothing was deployed. The hosted
+run's failure was at the Grype control configured with the fixed 2.15.3 fixture;
+it was not a failure of the Trixie digest checks. The corrected 2.14.4 fixture
+was verified locally with pinned Grype 0.121.0 against DB v6.1.10 and is now
+pending exact-head hosted verification. The full container runtime/restore
+pipeline was not rerun locally.

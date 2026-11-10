@@ -292,7 +292,7 @@ jq -e '
   || die 'raw Trivy candidate report does not prove zero Critical/High findings for usr/local/bin/gosu'
 jq -r '[.Results[] as $result | $result.Vulnerabilities[]? | select(.VulnerabilityID == "CVE-2026-6653") | [$result.Type, .PkgName, .InstalledVersion, .FixedVersion, .Severity] | @tsv] | sort | .[]' \
   "$evidence_dir/trivy-candidate-image.json" > "$evidence_dir/candidate-target-cve.tsv"
-printf '%s\n' 'Raw Trivy scan retained for the exact Forky base and candidate image IDs. Trivy 0.76.1 misses CVE-2026-6653 on the documented Debian 14 vulnerable positive control; an absent candidate result is not clearance. Scanner clearance and CVE disposition remain false.' \
+printf '%s\n' 'Raw Trivy scan retained for the exact Forky base and candidate image IDs. The historical Debian 14 control used fixed libxml2 2.15.3; the corrected vulnerable control is checked in same-run positive-control evidence. An absent candidate result is not clearance. Scanner clearance and CVE disposition remain false.' \
   > "$evidence_dir/trivy-disposition.txt"
 cp "$trivy_dir/cache/db/metadata.json" "$evidence_dir/trivy-db-metadata.json"
 sha256sum "$trivy_dir/cache/db/trivy.db" > "$evidence_dir/trivy-db.sha256"

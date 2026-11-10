@@ -207,7 +207,7 @@ cat > "${output_dir}/README.md" <<EOF
 - Policy: findings are reported without a general severity threshold; CVE-2026-6653 is a targeted release gate for the Alpine operations/database images
 - Image metadata sidecars record local image IDs (config digests), tags, source identity, and scan time
 - The CI scan fails if CVE-2026-6653 appears in Alpine operations or Alpine database images; installed libxml2 versions come from their image-ID-bound Trivy package inventories in \`alpine-libxml2-versions.txt\`
-- \`cve-2026-6653-positive-control/\` records current-DB Trivy rootfs scans of vulnerable Debian 13 and Debian 14 synthetic package fixtures. The Debian 13 positive control must detect the CVE. The Debian 14 result records whether the known package mapping gap persists; neither result grants candidate/image/production clearance.
+- \`cve-2026-6653-positive-control/\` records current-DB Trivy rootfs scans of vulnerable Debian 13 and Debian 14 synthetic package fixtures. Both controls must detect the CVE; a miss fails closed. Neither result grants candidate/image/production clearance.
 
 Bookworm snapshot/package inputs and full before/after dpkg manifests are in bookworm-candidate-refresh/; image-scan-binding.json binds that evidence to the exact image ID, source revision/tree, platform, and Trivy DB SHA-256. bookworm-pg-compatibility.txt records the source-vs-candidate PostgreSQL and available-extension comparison.
 

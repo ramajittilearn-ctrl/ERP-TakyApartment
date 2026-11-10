@@ -1,5 +1,7 @@
 # Synthetic Forky Trivy coverage probe — 2026-10-28
 
+> **Correction added 2026-11-10:** The Debian 14 `libxml2-16 2.15.3+dfsg-1` fixture described below was already fixed for CVE-2026-6653. The earlier statement that it was a vulnerable positive control was incorrect; its Trivy no-match cannot establish a coverage gap. Debian's tracker records `2.14.5+dfsg-0.1` as the first fixed unstable version. The CI control now uses `2.14.4+dfsg-0exp1`, below that threshold. Corrected local Trivy 0.76.1 and 0.76.2 scans both detect the target CVE with a current DB; the historical raw scan remains unchanged and is superseded for this conclusion.
+
 ## Purpose and scope
 
 This local experiment checks whether Trivy 0.76.1 can interpret Debian Forky package advisories. It uses minimal synthetic root filesystems with a dpkg status entry; it is not a scan of a Debian Forky or PostgreSQL image and cannot establish candidate security, runtime compatibility, or production readiness.
