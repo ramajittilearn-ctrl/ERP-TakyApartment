@@ -4,6 +4,8 @@
 
 The digest-change tests and authenticated Trixie discovery passed. The follow-up Grype gate failure was caused by an invalid Debian 14 positive control: it labeled `libxml2-16 2.15.3+dfsg-1` vulnerable, although Debian records `2.14.5+dfsg-0.1` as the first fixed unstable version and current Forky as fixed. Grype correctly returned no CVE match for 2.15.3. The control now uses `2.14.4+dfsg-0exp1`, below the Debian fix threshold. With current Grype DB `v6.1.10`, pinned Grype 0.121.0 and Grype 0.121.3 each returned one exact Debian 14 CVE-2026-6653 match for that fixture. The old hosted failure is therefore not evidence of a scanner coverage gap. Corrected hosted verification is pending.
 
+Commit `8c79ec10d0a79d4aea7e1dcb3497f226c59d84c7` passed the complete push workflow [42848605940](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42848605940), including `container-verification`; authenticated Trixie discovery and the corrected Grype control passed. PR workflow attempt 1 [42848618784](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42848618784) failed in its separate Forky artifact download with HTTP 503, before container verification. Retrying only the failed downstream job advanced the run attempt but reused the prior attempt's producer artifact, which the same-run binding correctly rejected. A new full PR workflow run is required to verify matching producer and consumer attempt evidence.
+
 ## Finding and lock decision
 
 Investigated PR #2 at head `32f516aa123846a3245aed845f61bd0b11a34109`.
