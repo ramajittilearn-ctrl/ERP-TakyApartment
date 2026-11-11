@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-if [[ "$#" -ne 11 ]]; then
-  echo "Usage: scan-container-images.sh APP_IMAGE VALIDATOR_IMAGE OPERATIONS_IMAGE OPERATIONAL_DATABASE_IMAGE ALPINE_DATABASE_IMAGE DEBIAN_TRIXIE_DATABASE_IMAGE DEBIAN_BOOKWORM_DATABASE_IMAGE TRIXIE_GNUPG_PRUNE_DATABASE_IMAGE REVISION TREE OUTPUT_DIR" >&2
+if [[ "$#" -ne 12 ]]; then
+  echo "Usage: scan-container-images.sh APP_IMAGE VALIDATOR_IMAGE OPERATIONS_IMAGE OPERATIONAL_DATABASE_IMAGE ALPINE_DATABASE_IMAGE DEBIAN_TRIXIE_DATABASE_IMAGE DEBIAN_BOOKWORM_DATABASE_IMAGE TRIXIE_GNUPG_PRUNE_DATABASE_IMAGE FORKY_PGDG_CANDIDATE_DATABASE_IMAGE REVISION TREE OUTPUT_DIR" >&2
   exit 2
 fi
 
@@ -14,9 +14,10 @@ alpine_database_image="$5"
 debian_trixie_database_image="$6"
 debian_bookworm_database_image="$7"
 trixie_gnupg_prune_database_image="$8"
-revision="$9"
-tree="${10}"
-output_dir="${11}"
+forky_pgdg_candidate_database_image="$9"
+revision="${10}"
+tree="${11}"
+output_dir="${12}"
 trivy_version="0.76.2"
 trivy_sha256="bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf"
 platform="linux/amd64"
@@ -28,7 +29,7 @@ if [[ ! "$revision" =~ ^[a-f0-9]{40}$ || ! "$tree" =~ ^[a-f0-9]{40}$ ]]; then
   echo "Image scan requires full source revision and tree hashes" >&2
   exit 1
 fi
-for image in "$app_image" "$validator_image" "$operations_image" "$operational_database_image" "$alpine_database_image" "$debian_trixie_database_image" "$debian_bookworm_database_image" "$trixie_gnupg_prune_database_image"; do
+for image in "$app_image" "$validator_image" "$operations_image" "$operational_database_image" "$alpine_database_image" "$debian_trixie_database_image" "$debian_bookworm_database_image" "$trixie_gnupg_prune_database_image" "$forky_pgdg_candidate_database_image"; do
   if [[ -z "$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null)" ]]; then
     echo "Required local image is missing: $image" >&2
     exit 1
@@ -127,7 +128,8 @@ scan_image alpine-database "$alpine_database_image"
 scan_image debian-trixie-database "$debian_trixie_database_image"
 scan_image debian-bookworm-database "$debian_bookworm_database_image"
 scan_image debian-trixie-gnupg-prune-database "$trixie_gnupg_prune_database_image"
-for image_name in operations operational-database alpine-database debian-trixie-database debian-bookworm-database debian-trixie-gnupg-prune-database; do
+scan_image forky-pgdg-candidate-database "$forky_pgdg_candidate_database_image"
+for image_name in operations operational-database alpine-database debian-trixie-database debian-bookworm-database debian-trixie-gnupg-prune-database forky-pgdg-candidate-database; do
   report="${output_dir}/${image_name}.trivy.json"
   case "$image_name" in
     operations) image="$operations_image" ;;
@@ -136,6 +138,7 @@ for image_name in operations operational-database alpine-database debian-trixie-
     debian-trixie-database) image="$debian_trixie_database_image" ;;
     debian-bookworm-database) image="$debian_bookworm_database_image" ;;
     debian-trixie-gnupg-prune-database) image="$trixie_gnupg_prune_database_image" ;;
+    forky-pgdg-candidate-database) image="$forky_pgdg_candidate_database_image" ;;
   esac
   image_id="$(jq -r '.imageId' "${output_dir}/${image_name}.metadata.json")"
   current_image_id="$(docker image inspect --format '{{.Id}}' "$image")"
@@ -168,6 +171,31 @@ for image_name in operations operational-database alpine-database debian-trixie-
   elif [[ "$image_name" == operational-database || "$image_name" == debian-trixie-database || "$image_name" == debian-bookworm-database || "$image_name" == debian-trixie-gnupg-prune-database ]]; then
     if ! jq -e --arg image_id "$image_id" '.Metadata.ImageID == $image_id and .Metadata.OS.Family == "debian"' "$report" >/dev/null; then
       echo "The Trivy $image_name report does not identify the exact Debian image" >&2
+      exit 1
+    fi
+  elif [[ "$image_name" == forky-pgdg-candidate-database ]]; then
+    if ! jq -e --arg image_id "$image_id" '
+      .Metadata.ImageID == $image_id and .Metadata.OS.Family == "debian" and
+      any(.Results[]; .Class == "os-pkgs" and .Type == "debian" and any(.Packages[]?; .Name == "libxml2-16"))
+    ' "$report" >/dev/null; then
+      echo "The Trivy Forky report does not bind the exact Debian candidate and libxml2-16 package" >&2
+      exit 1
+    fi
+    minimum_version="$(docker image inspect --format '{{index .Config.Labels "io.taky.libxml2.minimum"}}' "$image")"
+    package_version="$(jq -er '
+      [ .Results[]? | select(.Class == "os-pkgs" and .Type == "debian")
+        | .Packages[]? | select(.Name == "libxml2-16") | .Version ]
+      | unique | if length == 1 then .[0] else error("expected exactly one scanned libxml2-16 version") end
+    ' "$report")"
+    if [[ -z "$minimum_version" ]] || ! dpkg --compare-versions "$package_version" ge "$minimum_version"; then
+      echo "Scanned Forky libxml2-16 version $package_version is below candidate minimum $minimum_version" >&2
+      exit 1
+    fi
+    printf 'image=%s image_id=%s package=libxml2-16 version=%s minimum=%s\n' \
+      "$image" "$image_id" "$package_version" "$minimum_version" \
+      > "${output_dir}/forky-libxml2-version.txt"
+    if ! jq -e '[.Results[] | .Vulnerabilities[]? | select(.VulnerabilityID == "CVE-2026-6653")] | length == 0' "$report" >/dev/null; then
+      echo "CVE-2026-6653 remains in the Forky PostgreSQL candidate image" >&2
       exit 1
     fi
   fi
@@ -203,10 +231,10 @@ cat > "${output_dir}/README.md" <<EOF
 - Vulnerability DB download time: \`${database_downloaded_at}\`
 - Vulnerability DB next update time: \`${database_next_update}\`
 - Vulnerability DB file-content SHA-256: \`${database_sha256}\` (metadata file: \`trivy-db-metadata.json\`; this is not an OCI digest)
-- Scope: local app, validator, operations, and source-built Trixie, Bookworm, and Alpine PostgreSQL images from this checkout; PostgreSQL derivatives use digest-pinned official image bases and replace gosu with source-built gosu using moby/sys/user v0.4.1. Candidate Compose definitions are \`docker-compose.alpine-candidate.yml\`, \`docker-compose.debian-trixie-candidate.yml\`, and \`docker-compose.debian-bookworm-candidate.yml\`.
-- Policy: findings are reported without a general severity threshold; CVE-2026-6653 is a targeted release gate for the Alpine operations/database images
+- Scope: local app, validator, operations, and source-built PostgreSQL images from this checkout, including the same-run Stage 5-tested Forky candidate; PostgreSQL derivatives use digest-pinned bases and replace gosu with source-built gosu. The Forky scan is bound to its exact image ID, confirms the scanned libxml2-16 version meets the candidate minimum, and fails if CVE-2026-6653 remains.
+- Policy: findings are reported without a general severity threshold; CVE-2026-6653 is a targeted release gate for Alpine operations/database and the Forky PostgreSQL candidate
 - Image metadata sidecars record local image IDs (config digests), tags, source identity, and scan time
-- The CI scan fails if CVE-2026-6653 appears in Alpine operations or Alpine database images; installed libxml2 versions come from their image-ID-bound Trivy package inventories in \`alpine-libxml2-versions.txt\`
+- The CI scan fails if CVE-2026-6653 appears in Alpine operations, Alpine database, or the Forky PostgreSQL candidate; the Forky libxml2-16 version is recorded in \`forky-libxml2-version.txt\`
 - \`cve-2026-6653-positive-control/\` records current-DB Trivy rootfs scans of vulnerable Debian 13 and Debian 14 synthetic package fixtures. Both controls must detect the CVE; a miss fails closed. Neither result grants candidate/image/production clearance.
 
 Bookworm snapshot/package inputs and full before/after dpkg manifests are in bookworm-candidate-refresh/; image-scan-binding.json binds that evidence to the exact image ID, source revision/tree, platform, and Trivy DB SHA-256. bookworm-pg-compatibility.txt records the source-vs-candidate PostgreSQL and available-extension comparison.

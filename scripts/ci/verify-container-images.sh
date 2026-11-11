@@ -678,7 +678,7 @@ docker exec "$validator" sh -ec \
 echo "Validator removed temporary inputs after successful parsing."
 
 bash scripts/ci/scan-container-images.sh \
-  "$app_image" "$validator_image" "$operations_image" "$db_image" "$alpine_db_image" "$debian_trixie_db_image" "$debian_bookworm_db_image" "$trixie_gnupg_db_image" \
+  "$app_image" "$validator_image" "$operations_image" "$db_image" "$alpine_db_image" "$debian_trixie_db_image" "$debian_bookworm_db_image" "$trixie_gnupg_db_image" "$forky_candidate_db_image" \
   "$revision" "$tree" "${RUNNER_TEMP:?RUNNER_TEMP is required}/phase4-container-scan"
 
 mkdir -p "$trixie_gnupg_evidence_dir"
