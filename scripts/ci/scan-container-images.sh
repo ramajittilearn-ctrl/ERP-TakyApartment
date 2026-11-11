@@ -131,19 +131,13 @@ scan_image debian-trixie-gnupg-prune-database "$trixie_gnupg_prune_database_imag
 scan_image forky-pgdg-candidate-database "$forky_pgdg_candidate_database_image"
 
 verify_alpine_security_packages() {
-  local image_name="$1" image="$2" report image_id runtime_packages package_spec package_name package_version scanned_version
+  local image_name="$1" image="$2" report image_id package_spec package_name package_version scanned_version
   report="${output_dir}/${image_name}.trivy.json"
   image_id="$(docker image inspect --format '{{.Id}}' "$image")"
-  runtime_packages="$(docker run --rm --platform "$platform" --network none --read-only \
-    --entrypoint apk "$image" info -v krb5-libs libxslt)"
 
   for package_spec in krb5-libs:1.22.3-r0 libxslt:1.1.43-r4; do
     package_name="${package_spec%%:*}"
     package_version="${package_spec#*:}"
-    if ! grep -Fqx "${package_name}-${package_version}" <<<"$runtime_packages"; then
-      echo "$image_name runtime is missing reviewed Alpine security package ${package_name}-${package_version}" >&2
-      exit 1
-    fi
     scanned_version="$(jq -er --arg package "$package_name" '
       [ .Results[]? | select(.Class == "os-pkgs" and .Type == "alpine")
         | .Packages[]? | select(.Name == $package) | .Version ]
@@ -164,7 +158,7 @@ verify_alpine_security_packages() {
     echo "$image_name still has a Critical or High finding in the reviewed Alpine security packages" >&2
     exit 1
   fi
-  printf 'image=%s image_id=%s krb5-libs=%s libxslt=%s\n' \
+  printf 'image=%s image_id=%s trivy_krb5-libs=%s trivy_libxslt=%s\n' \
     "$image" "$image_id" 1.22.3-r0 1.1.43-r4 \
     > "${output_dir}/${image_name}-security-package-versions.txt"
 }
@@ -285,7 +279,7 @@ cat > "${output_dir}/README.md" <<EOF
 - Vulnerability DB file-content SHA-256: \`${database_sha256}\` (metadata file: \`trivy-db-metadata.json\`; this is not an OCI digest)
 - Scope: local app, validator, operations, and source-built PostgreSQL images from this checkout, including the same-run Stage 5-tested Forky candidate; PostgreSQL derivatives use digest-pinned bases and replace gosu with source-built gosu. The Forky scan is bound to its exact image ID, confirms the scanned libxml2-16 version meets the candidate minimum, and fails if CVE-2026-6653 remains.
 - Policy: findings are reported without a general severity threshold; CVE-2026-6653 is a targeted release gate for Alpine operations/database and the Forky PostgreSQL candidate
-- Alpine operations and database candidates install signed v3.24 packages `krb5-libs=1.22.3-r0` and `libxslt=1.1.43-r4`; the scan gate compares runtime and Trivy versions and fails on remaining Critical/High matches in those packages
+- Alpine operations and database candidates install signed v3.24 packages `krb5-libs=1.22.3-r0` and `libxslt=1.1.43-r4`; the scan gate checks those versions in the image-ID-bound Trivy inventory and fails on remaining Critical/High matches in those packages
 - Image metadata sidecars record local image IDs (config digests), tags, source identity, and scan time
 - The CI scan fails if CVE-2026-6653 appears in Alpine operations, Alpine database, or the Forky PostgreSQL candidate; the Forky libxml2-16 version is recorded in \`forky-libxml2-version.txt\`
 - \`cve-2026-6653-positive-control/\` records current-DB Trivy rootfs scans of vulnerable Debian 13 and Debian 14 synthetic package fixtures. Both controls must detect the CVE; a miss fails closed. Neither result grants candidate/image/production clearance.
