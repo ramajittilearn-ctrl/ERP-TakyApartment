@@ -24,15 +24,29 @@ import {
 
 await withTemp("inventory-acceptance", async (directory) => {
   const root = process.getuid() === 0;
-  if (root)
+  const postgresUid = root
+    ? Number(await run("id", ["-u", "postgres"]))
+    : undefined;
+  const postgresGid = root
+    ? Number(await run("id", ["-g", "postgres"]))
+    : undefined;
+  if (root) {
+    assert(
+      Number.isSafeInteger(postgresUid) &&
+        postgresUid >= 0 &&
+        Number.isSafeInteger(postgresGid) &&
+        postgresGid >= 0,
+      "PostgreSQL account has invalid numeric ownership",
+    );
     await fs.chown(
       directory,
-      Number(await run("id", ["-u", "postgres"])),
-      Number(await run("id", ["-g", "postgres"])),
+      postgresUid,
+      postgresGid,
     );
+  }
   const pg = (command, args) =>
     root
-      ? run("runuser", ["-u", "postgres", "--", command, ...args])
+      ? run(command, args, { uid: postgresUid, gid: postgresGid })
       : run(command, args);
   const data = path.join(directory, "data");
   await pg("initdb", [

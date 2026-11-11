@@ -1,0 +1,4 @@
+trixie	stable	Debian	http://deb.debian.org/debian/dists/trixie/	7776000	5184000
+trixie-pgdg	trixie-pgdg	apt.postgresql.org	http://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/	604800	518400
+trixie-security	stable-security	Debian	http://deb.debian.org/debian-security/dists/trixie-security/	604800	518400
+trixie-updates	stable-updates	Debian	http://deb.debian.org/debian/dists/trixie-updates/	604800	518400

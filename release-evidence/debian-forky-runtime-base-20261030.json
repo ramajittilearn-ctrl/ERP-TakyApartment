@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Pinned base-image input for isolated Forky PostgreSQL runtime candidate only",
+  "retrievedAtUtc": "2026-10-29T23:37:11Z",
+  "registry": "registry-1.docker.io",
+  "repository": "library/debian",
+  "tagAtResolution": "forky-slim",
+  "platform": "linux/amd64",
+  "index": {
+    "mediaType": "application/vnd.oci.image.index.v1+json",
+    "digest": "sha256:04db4720574d184e24353e77e46dbbe4377edad01c9ba50a67aa1473cef9b9d4",
+    "bodySha256Verified": true
+  },
+  "platformManifest": {
+    "digest": "sha256:98af9d99779532814d4b51c34d50df8d8886286a2a1ab9625a62db59b9cf1b2d",
+    "bodySha256Verified": true
+  },
+  "clearance": {
+    "runtimeVerification": false,
+    "scannerClearance": false,
+    "cveDisposition": false,
+    "imageSelection": false,
+    "productionClearance": false
+  }
+}

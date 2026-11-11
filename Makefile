@@ -6,8 +6,8 @@ down:
 logs:
 	node scripts/ops.mjs logs
 migrate:
-	docker compose exec app npm run db:migrate
+	docker compose exec app node node_modules/prisma/build/index.js migrate deploy
 seed:
-	docker compose exec app npm run db:seed
+	docker compose exec app node node_modules/tsx/dist/cli.mjs prisma/seed.ts
 test:
 	npm run typecheck && npm test

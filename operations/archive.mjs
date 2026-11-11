@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { createReadStream, createWriteStream } from "node:fs";
+import { constants, createReadStream, createWriteStream } from "node:fs";
 import {
   createCipheriv,
   createDecipheriv,
@@ -163,6 +163,50 @@ export async function copyFiles(source, destination, entries, { signal } = {}) {
     }
     signal?.throwIfAborted();
     await fs.chmod(target, 0o600);
+  }
+}
+export async function chownTree(root, uid = 1000, gid = 1000) {
+  if (
+    !Number.isSafeInteger(uid) ||
+    uid < 0 ||
+    !Number.isSafeInteger(gid) ||
+    gid < 0
+  )
+    throw new Error("Attachment owner must use non-negative safe integers");
+  const paths = [];
+  async function collect(file) {
+    const stat = await fs.lstat(file);
+    if (!stat.isDirectory() && !stat.isFile())
+      throw new Error("Attachment tree contains a link or special file");
+    paths.push(file);
+    if (stat.isDirectory()) {
+      const names = (await fs.readdir(file)).sort((a, b) => a.localeCompare(b));
+      for (const name of names) await collect(path.join(file, name));
+    }
+  }
+  await collect(root);
+  for (const file of paths) {
+    const stat = await fs.lstat(file);
+    if (!stat.isDirectory() && !stat.isFile())
+      throw new Error("Attachment tree contains a link or special file");
+    const flags =
+      constants.O_RDONLY |
+      constants.O_NOFOLLOW |
+      constants.O_NONBLOCK |
+      (stat.isDirectory() ? constants.O_DIRECTORY : 0);
+    const handle = await fs.open(file, flags);
+    try {
+      const opened = await handle.stat();
+      if (
+        stat.isDirectory() !== opened.isDirectory() ||
+        stat.isFile() !== opened.isFile()
+      )
+        throw new Error("Attachment tree changed during ownership update");
+      await handle.chown(uid, gid);
+      await handle.chmod(opened.isDirectory() ? 0o700 : 0o600);
+    } finally {
+      await handle.close();
+    }
   }
 }
 export async function unpack(encrypted, key, directory) {

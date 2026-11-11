@@ -12,7 +12,11 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { loadRemediationPlan } from "../../scripts/remediation-plan.mjs";
+import {
+  attestPlanBeforeCleanupRegistration,
+  loadRemediationPlan,
+} from "../../scripts/remediation-plan.mjs";
+import { cleanupFailedRemediationProject } from "../../scripts/remediation-compose.mjs";
 
 const runId = "1234567890abcdef12345678";
 const runner = resolve("scripts/run-remediation-browser.mjs");
@@ -89,6 +93,55 @@ test("valid plan loads only matching private run-specific identity", async (t) =
   assert.equal(plan.database, "taky_phase2_test");
 });
 
+test("validated plan is registered for cleanup before database attestation", async () => {
+  const plan = { project: `taky-remediation-browser-${runId}` };
+  let cleanupPlan;
+  await assert.rejects(
+    attestPlanBeforeCleanupRegistration(
+      plan,
+      async () => {
+        assert.equal(cleanupPlan, plan);
+        throw new Error("database attestation failed");
+      },
+      (validated) => {
+        cleanupPlan = validated;
+      },
+    ),
+    /database attestation failed/,
+  );
+  assert.equal(cleanupPlan, plan);
+});
+
+test("failed provisioning cleanup targets its generated project without deleting volumes", () => {
+  const calls = [];
+  const result = cleanupFailedRemediationProject(
+    `taky-remediation-browser-${runId}`,
+    `.local/remediation-${runId}-compose.json`,
+    (...args) => {
+      calls.push(args);
+      return { status: 0 };
+    },
+  );
+  assert.equal(result.status, 0);
+  assert.deepEqual(calls, [
+    [
+      "docker",
+      [
+        "compose",
+        "-p",
+        `taky-remediation-browser-${runId}`,
+        "-f",
+        `.local/remediation-${runId}-compose.json`,
+        "down",
+        "--remove-orphans",
+      ],
+      { encoding: "utf8" },
+    ],
+  ]);
+  assert.ok(!calls[0][1].includes("-v"));
+  assert.ok(!calls[0][1].includes("--volumes"));
+});
+
 for (const [name, mutate] of [
   [
     "database endpoint",
@@ -109,6 +162,30 @@ for (const [name, mutate] of [
       text.replace(
         "APP_ORIGIN=http://127.0.0.1:3820",
         "APP_ORIGIN=http://127.0.0.1:3700",
+      ),
+  ],
+  [
+    "evidence directory",
+    (text) =>
+      text.replace(
+        `.local/remediation-evidence-${runId}`,
+        `.local/remediation-evidence-other`,
+      ),
+  ],
+  [
+    "validator origin",
+    (text) =>
+      text.replace(
+        "EVIDENCE_VALIDATOR_ORIGIN=http://127.0.0.1:3835",
+        "EVIDENCE_VALIDATOR_ORIGIN=http://127.0.0.1:3701",
+      ),
+  ],
+  [
+    "validator token",
+    (text) =>
+      text.replace(
+        /EVIDENCE_VALIDATOR_TOKEN=[a-f0-9]{64}/,
+        `EVIDENCE_VALIDATOR_TOKEN=${"b".repeat(64)}`,
       ),
   ],
 ])
@@ -146,6 +223,53 @@ for (const [name, mutate] of [
       compose.services.db.volumes = ["/existing:/var/lib/postgresql/data"];
     },
   ],
+  [
+    "validator published port directly",
+    (compose) => {
+      compose.services["evidence-validator"].ports = ["0.0.0.0:3835:3835"];
+    },
+  ],
+  [
+    "validator bridge exposed beyond loopback",
+    (compose) => {
+      compose.services["validator-host-bridge"].ports = ["0.0.0.0:3835:3835"];
+    },
+  ],
+  [
+    "overlapping validator subnet",
+    (compose) => {
+      compose.networks["evidence-validation"].ipam.config[0].subnet =
+        compose.networks.default.ipam.config[0].subnet;
+    },
+  ],
+  [
+    "internal database network",
+    (compose) => {
+      compose.networks.default.internal = true;
+    },
+  ],
+  [
+    "masquerading validator publish network",
+    (compose) => {
+      compose.networks["validator-publish"].driver_opts[
+        "com.docker.network.bridge.enable_ip_masquerade"
+      ] = "true";
+    },
+  ],
+  [
+    "overlapping validator publish subnet",
+    (compose) => {
+      compose.networks["validator-publish"].ipam.config[0].subnet =
+        compose.networks.default.ipam.config[0].subnet;
+    },
+  ],
+  [
+    "invalid validator subnet",
+    (compose) => {
+      compose.networks["evidence-validation"].ipam.config[0].subnet =
+        "192.168.1.0/24";
+    },
+  ],
 ])
   test(`mismatched ${name} cannot execute cleanup or migration`, async (t) => {
     const value = await fixture(t);
@@ -162,5 +286,14 @@ for (const [name, mutate] of [
 test("unsafe plan permissions fail before any command", async (t) => {
   const value = await fixture(t);
   await chmod(join(value.directory, `.local/remediation-${runId}.env`), 0o644);
+  await rejectedWithoutMutation(value);
+});
+
+test("unsafe evidence directory permissions fail before any command", async (t) => {
+  const value = await fixture(t);
+  await chmod(
+    join(value.directory, ".local", `remediation-evidence-${runId}`),
+    0o755,
+  );
   await rejectedWithoutMutation(value);
 });

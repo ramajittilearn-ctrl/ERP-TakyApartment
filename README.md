@@ -30,7 +30,7 @@ Fresh installations seed exactly 15 rooms: 101–105, 201–205 and 301–305, a
 - Validated property/floor CRUD APIs and ADMIN account-creation API.
 - Docker app/database with health checks, restart policies, private attachment storage and persistent database volume. PostgreSQL has no published port.
 
-Dashboard, billing, payments, expenses, reports, maintenance and settings retain explicitly labeled Phase 1 demonstrations. They are separate from live tenant/lease records; their figures are not operational accounting. Full billing/payment workflows, file upload, account-management UI and password recovery are deferred. Backup/status/recovery are operator commands, not a redesigned settings screen.
+The application also includes persisted workflows for billing periods, utility rates and readings, invoices, payments and receipts, deposits, OPEX/CAPEX expenses, dashboard summaries, and monthly financial reports. Dashboard and reports are read-only. Maintenance and Settings remain explicitly labeled demonstrations; their figures and actions are not live operational records. Backup/status/recovery are operator commands, not a Settings screen. An ADMIN account-creation API exists, but there is no account-management UI or password-recovery flow.
 
 ## Environment and LAN access
 
@@ -43,9 +43,9 @@ The base Compose file retains the Phase 2 development HTTP configuration. For no
 ## Commands
 
 ```sh
-docker compose exec app npm run db:migrate
-docker compose exec app npx prisma migrate status
-docker compose exec app npm run db:seed
+docker compose exec app node node_modules/prisma/build/index.js migrate deploy
+docker compose exec app node node_modules/prisma/build/index.js migrate status
+docker compose exec app node node_modules/tsx/dist/cli.mjs prisma/seed.ts
 docker compose logs --tail=100 app
 docker compose down                        # keeps named volumes
 npm run db:generate
@@ -67,8 +67,8 @@ Integration and browser tests use a separate Compose project and database:
 ```sh
 node scripts/configure.mjs .env.test
 docker compose --env-file .env.test -p taky-phase2-test -f docker-compose.yml -f docker-compose.test.yml up -d --build
-docker compose --env-file .env.test -p taky-phase2-test -f docker-compose.yml -f docker-compose.test.yml exec -T app npx tsx scripts/test-users.ts
-docker compose --env-file .env.test -p taky-phase2-test -f docker-compose.yml -f docker-compose.test.yml exec -T app npm run test:integration
+docker compose --env-file .env.test -p taky-phase2-test -f docker-compose.yml -f docker-compose.test.yml exec -T app node node_modules/tsx/dist/cli.mjs scripts/test-users.ts
+docker compose --env-file .env.test -p taky-phase2-test -f docker-compose.yml -f docker-compose.test.yml exec -T app node node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts
 npm run test:e2e
 ```
 
@@ -103,7 +103,7 @@ Use an existing private `.env.test` generated through the test setup documented 
 ```sh
 APP_PORT=3400 APP_ORIGIN=http://127.0.0.1:3400 docker compose --env-file .env.test -p taky-phase26-test -f docker-compose.yml -f docker-compose.test.yml up -d --build --wait
 docker compose --env-file .env.test -p taky-phase26-test -f docker-compose.yml -f docker-compose.test.yml exec -T app node --import tsx scripts/test-users.ts
-docker compose --env-file .env.test -p taky-phase26-test -f docker-compose.yml -f docker-compose.test.yml exec -T app npm run test:integration
+docker compose --env-file .env.test -p taky-phase26-test -f docker-compose.yml -f docker-compose.test.yml exec -T app node node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts
 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3400 SCREENSHOT_DIR=tmp/phase26/screenshots npm run test:e2e
 APP_PORT=3400 APP_ORIGIN=http://127.0.0.1:3400 TEST_PROJECT=taky-phase26-test PLAYWRIGHT_BASE_URL=http://127.0.0.1:3400 node scripts/verify-persistence.mjs
 node scripts/verify-phase26.mjs

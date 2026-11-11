@@ -71,7 +71,7 @@ dc() {
 Keep the old schema-matching restore path available. After the verified backup, writer fencing and clone rehearsal, start only the verified database service if necessary. Run migration as a deliberate one-off with `--no-deps`; this must not start the new app or scheduler before the database is ready.
 
 ```sh
-dc run --rm --no-deps app npm run db:migrate
+dc run --rm --no-deps app node node_modules/prisma/build/index.js migrate deploy
 ```
 
 On an existing target, do not run `db:seed`. A fresh empty installation is a different procedure and needs its own identity, account setup and seed decision. Verify applied migration names/checksums, integrity guards and expected schema against the rehearsal before starting the app.

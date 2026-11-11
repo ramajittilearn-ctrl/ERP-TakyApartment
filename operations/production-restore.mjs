@@ -5,6 +5,7 @@ import {
   unpack,
   readKey,
   copyFiles,
+  chownTree,
   filesUnder,
   run,
   sha256,
@@ -63,17 +64,7 @@ export async function restoreProduction(name) {
       target,
       set.manifest.attachments,
     );
-    async function ownership(directory) {
-      await fs.chown(directory, 1000, 1000);
-      for (const entry of await fs.readdir(directory, {
-        withFileTypes: true,
-      })) {
-        const file = path.join(directory, entry.name);
-        if (entry.isDirectory()) await ownership(file);
-        else await fs.chown(file, 1000, 1000);
-      }
-    }
-    await ownership(target);
+    await chownTree(target);
     assert.deepEqual(await filesUnder(target), set.manifest.attachments);
     await assertInventory(set.manifest.inventory);
     console.info(

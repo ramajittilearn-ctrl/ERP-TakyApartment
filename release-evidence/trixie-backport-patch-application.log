@@ -1,0 +1,178 @@
+# Disposable-source patch application record
+# Debian source version: 2.12.7+dfsg+really2.9.14-2.1+deb13u3
+# Debian orig tar SHA-256: 4fe913dec8b1ab89d13b489b419a8203176ea39e931eaa0d25b17eafb9c279e9
+# Debian debian.tar.xz SHA-256: 3b6d265f482d6a8fbe3c056d2006fb3b563b4a838f7258b388ac5f0b29206921
+# Ubuntu jammy-security CVE-2026-6653.patch SHA-256: b4cc290c275b250c3170259386887a679857d97e760e114f6fb1f0d2c617c82c
+# Source archive hashes match the downloaded .dsc fields. The .dsc OpenPGP signature was not verified.
+# Patch tool: patch 2.0-12u11-Apple
+# Method: apply all debian/patches/series entries in order with patch --batch --forward -p1,
+# then apply CVE-2026-6653.patch with the same options, in disposable extracted source copies.
+
+[1] install-html.patch exit=0
+patching file 'doc/Makefile.am'
+
+[2] xml2-config-fix.patch exit=0
+patching file xml2-config.in
+
+[3] python3-unicode-errors.patch exit=0
+patching file 'python/libxml.c'
+
+[4] CVE-2022-40303-Fix-integer-overflows-with-XML_PARSE_.patch exit=0
+patching file parser.c
+
+[5] CVE-2022-40304-Fix-dict-corruption-caused-by-entity-.patch exit=0
+patching file entities.c
+
+[6] schemas-Fix-null-pointer-deref-in-xmlSchemaCheckCOSS.patch exit=0
+patching file 'result/schemas/oss-fuzz-51295_0_0.err'
+patching file 'test/schemas/oss-fuzz-51295_0.xml'
+patching file 'test/schemas/oss-fuzz-51295_0.xsd'
+patching file xmlschemas.c
+
+[7] CVE-2023-28484-Fix-null-deref-in-xmlSchemaFixupCompl.patch exit=0
+patching file 'result/schemas/issue491_0_0.err'
+patching file 'test/schemas/issue491_0.xml'
+patching file 'test/schemas/issue491_0.xsd'
+patching file xmlschemas.c
+
+[8] CVE-2023-29469-Hashing-of-empty-dict-strings-isn-t-d.patch exit=0
+patching file dict.c
+
+[9] Reset-nsNr-in-xmlCtxtReset.patch exit=0
+patching file parser.c
+
+[10] Also-reset-nsNr-in-htmlCtxtReset.patch exit=0
+patching file HTMLparser.c
+
+[11] python3.13.patch exit=0
+patching file 'python/libxml.c'
+
+[12] CVE-2022-49043.patch exit=0
+patching file xinclude.c
+
+[13] CVE-2024-34459.patch exit=0
+patching file xmllint.c
+
+[14] CVE-2024-56171.patch exit=0
+patching file xmlschemas.c
+
+[15] CVE-2025-24928-pre1.patch exit=0
+patching file valid.c
+
+[16] CVE-2025-24928.patch exit=0
+patching file valid.c
+
+[17] CVE-2025-27113.patch exit=0
+patching file pattern.c
+
+[18] CVE-2023-39615_1.patch exit=0
+patching file parser.c
+
+[19] CVE-2023-39615_2.patch exit=0
+patching file SAX2.c
+patching file parser.c
+
+[20] CVE-2023-45322.patch exit=0
+patching file tree.c
+
+[21] CVE-2024-25062.patch exit=0
+patching file xmlreader.c
+
+[22] CVE-2025-32414-bug-889-v2.10.4-and-below.patch exit=0
+patching file 'python/libxml.c'
+
+[23] CVE-2025-32415.patch exit=0
+patching file xmlschemas.c
+
+[24] CVE-2025-6021.patch exit=0
+patching file tree.c
+
+[25] CVE-2025-49794_49796.patch exit=0
+patching file 'result/schematron/cve-2025-49794_0'
+patching file 'result/schematron/cve-2025-49794_0.err'
+patching file 'result/schematron/cve-2025-49796_0'
+patching file 'result/schematron/cve-2025-49796_0.err'
+patching file schematron.c
+patching file 'test/schematron/cve-2025-49794.sct'
+patching file 'test/schematron/cve-2025-49794_0.xml'
+patching file 'test/schematron/cve-2025-49796.sct'
+patching file 'test/schematron/cve-2025-49796_0.xml'
+
+[26] CVE-2025-6170.patch exit=0
+patching file debugXML.c
+patching file 'result/scripts/long_command'
+patching file 'test/scripts/long_command.script'
+patching file 'test/scripts/long_command.xml'
+
+[27] CVE-2025-7425.patch exit=0
+patching file HTMLparser.c
+patching file SAX2.c
+patching file 'include/libxml/tree.h'
+patching file parser.c
+patching file runxmlconf.c
+patching file tree.c
+patching file valid.c
+patching file xmlreader.c
+patching file xmlschemas.c
+patching file xmlschemastypes.c
+
+[28] CVE-2025-9714.patch exit=0
+patching file xpath.c
+
+[29] CVE-2026-1757.patch exit=0
+patching file debugXML.c
+
+[30] 0030-Fix-memory-leak-of-prefix-in-xmlTextWriterStartEleme.patch exit=0
+patching file xmlwriter.c
+
+[31] CVE-2025-8732.patch exit=0
+patching file catalog.c
+patching file 'result/catalogs/recursive'
+patching file 'test/catalogs/recursive.sgml'
+
+[32] CVE-2026-0990.patch exit=0
+patching file catalog.c
+
+[33] CVE-2026-0992/01-4af23b523.patch exit=0
+patching file catalog.c
+
+[34] CVE-2026-0992/02-096402c94.patch exit=0
+patching file catalog.c
+
+[35] 0035-testcatalog-Add-new-tests-for-catalog.c.patch exit=0
+patching file Makefile.am
+patching file catalog.c
+patching file 'include/libxml/catalog.h'
+patching file 'test/catalogs/catalog-recursive.xml'
+patching file 'test/catalogs/repeated-next-catalog.xml'
+patching file testcatalog.c
+
+[36] CVE-2026-0989.patch exit=0
+patching file 'include/libxml/relaxng.h'
+patching file relaxng.c
+patching file runtest.c
+patching file 'test/relaxng/include/include-limit.rng'
+patching file 'test/relaxng/include/include-limit_1.rng'
+patching file 'test/relaxng/include/include-limit_2.rng'
+patching file 'test/relaxng/include/include-limit_3.rng'
+
+[37] 0037-use-duplicating-variant-in-relaxng-to-mitigate-UAF.patch exit=0
+patching file relaxng.c
+
+[38] 0038-fix-memory-leak-in-issue-1054.patch exit=0
+patching file xmlwriter.c
+
+[39] 0039-schematron-fix-additional-memory-leaks-on-error-path.patch exit=0
+patching file schematron.c
+
+[40] 0040-catalog-fix-stack-overflow-from-self-referencing-SGM.patch exit=0
+patching file catalog.c
+
+[Ubuntu CVE patch] exit=0
+patching file SAX2.c
+patching file entities.c
+patching file 'include/libxml/entities.h'
+patching file 'include/libxml/parser.h'
+patching file parser.c
+patching file parserInternals.c
+patching file testrecurse.c

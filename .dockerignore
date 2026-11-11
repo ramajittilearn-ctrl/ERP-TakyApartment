@@ -15,5 +15,6 @@ PHASE_2_6_IMPLEMENTATION_REPORT.md
 *.pdf
 *.tsbuildinfo
 .local
+evidence/remediation/
 *.taky.enc
 *.backup-key

@@ -5,7 +5,7 @@ services:
       APP_ORIGIN: https://${LAN_HOST:?Run operations initialization}:${HTTPS_PORT:-443}
       COOKIE_SECURE: "true"
   caddy:
-    image: caddy:2.11.7-alpine
+    image: caddy@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
     environment:
       LAN_HOST: ${LAN_HOST:?Run operations initialization}
     ports:

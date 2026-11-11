@@ -7,8 +7,10 @@ import net from "node:net";
 import {
   loadRemediationPlan,
   attestRemediationDatabase,
+  attestPlanBeforeCleanupRegistration,
 } from "./remediation-plan.mjs";
 import { browserTargetProxy } from "./browser-target-proxy.mjs";
+import { acquireRemediationRunLock } from "./remediation-run-lock.mjs";
 
 const reproduce = process.argv[2] === "--reproduce";
 const preparedIndex = process.argv.indexOf("--prepared-run");
@@ -60,6 +62,7 @@ if (!reproduce)
     JSON.stringify({ runId, started: new Date().toISOString() }),
     { flag: "wx" },
   );
+const releaseRunLock = await acquireRemediationRunLock(runId);
 const logged = (label, command, ...args) =>
   run("node", [
     "scripts/remediation-log.mjs",
@@ -78,8 +81,13 @@ try {
   if (!reproduce && !preparedRun)
     await run("node", ["scripts/provision-remediation.mjs", "browser", runId]);
   const plan = preparedPlan ?? (await loadRemediationPlan(runId));
-  const identity = await attestRemediationDatabase(plan);
-  validatedPlan = plan;
+  const identity = await attestPlanBeforeCleanupRegistration(
+    plan,
+    attestRemediationDatabase,
+    (validated) => {
+      validatedPlan = validated;
+    },
+  );
   Object.assign(process.env, plan.env);
   await writeFile(
     `${evidence}/database-identity.json`,
@@ -89,9 +97,9 @@ try {
   if (!reproduce) {
     if (failSetup)
       throw new Error("Injected isolated setup failure before migrations");
-    await logged("migrate", "npx", "prisma", "migrate", "deploy");
-    await logged("seed", "npm", "run", "db:seed");
-    await logged("users", "npx", "tsx", "scripts/test-users.ts");
+    await logged("migrate", "node", "node_modules/prisma/build/index.js", "migrate", "deploy");
+    await logged("seed", "node", "node_modules/tsx/dist/cli.mjs", "prisma/seed.ts");
+    await logged("users", "node", "node_modules/tsx/dist/cli.mjs", "scripts/test-users.ts");
     proxy = browserTargetProxy("http://127.0.0.1:3820");
     await new Promise((resolve, reject) => {
       proxy.once("error", reject);
@@ -173,7 +181,7 @@ try {
     server.kill("SIGTERM");
     const exit = await closed;
     for (const [key, value] of Object.entries(process.env))
-      if (/PASSWORD|SECRET|DATABASE_URL/.test(key) && value)
+      if (/PASSWORD|SECRET|TOKEN|DATABASE_URL/.test(key) && value)
         serverOutput = serverOutput.split(value).join("[REDACTED]");
     await writeFile(
       `${evidence}/standalone-${Date.now()}.log`,
@@ -190,17 +198,34 @@ try {
       JSON.stringify({ runId, browserStarted, succeeded }),
       { flag: "wx" },
     );
-    if (validatedPlan)
+    if (validatedPlan) {
+      await logged(
+        "validator",
+        "docker",
+        "compose",
+        "-p",
+        validatedPlan.project,
+        "-f",
+        validatedPlan.composePath,
+        "logs",
+        "--no-color",
+        "evidence-validator",
+      );
       await logged(
         "cleanup",
         "docker",
         "compose",
+        "-p",
+        validatedPlan.project,
         "-f",
         validatedPlan.composePath,
         "down",
+        "--remove-orphans",
       );
+    }
   }
   console.info(
     JSON.stringify({ runId, succeeded, evidence, volumes: "retained" }),
   );
+  await releaseRunLock();
 }

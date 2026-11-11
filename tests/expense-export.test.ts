@@ -49,6 +49,21 @@ const data: ExpenseExportDto = {
 };
 import { parseCsv } from "./helpers/expense-csv";
 describe("expense CSV contract", () => {
+  it("parses a final record without a line terminator", () => {
+    expect(parseCsv('\uFEFF"month","amount"\r\n"2027-03","1234.50"')).toEqual([
+      ["month", "amount"],
+      ["2027-03", "1234.50"],
+    ]);
+  });
+
+  it("keeps an empty quoted field in a final record", () => {
+    expect(parseCsv('""')).toEqual([[""]]);
+  });
+
+  it("rejects an unterminated quoted field", () => {
+    expect(() => parseCsv('"incomplete')).toThrow("Incomplete CSV record");
+  });
+
   it("exports exact money, escaped text, complete immutable reversal history and summary", () => {
     const raw = expenseCsv(data);
     expect(raw.startsWith("\uFEFF")).toBe(true);

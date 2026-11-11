@@ -1,5 +1,6 @@
 import {
   expect,
+  guardedRequest,
   test,
   type APIRequestContext,
   type Page,
@@ -7,9 +8,10 @@ import {
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { getRooms } from "./fixtures";
+import { browserTestTarget } from "../../src/server/browser-test-target";
 import { historySchema, overviewSchema } from "@/features/meters/contracts";
 
-const origin = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3300";
+const origin = browserTestTarget().origin;
 const headers = { Origin: origin };
 const timestamps = new Intl.DateTimeFormat("th-TH", {
   dateStyle: "medium",
@@ -66,15 +68,16 @@ async function overview(request: APIRequestContext, periodId: string) {
 }
 
 async function prepare(page: Page) {
+  const request = guardedRequest(page.request, origin);
   await page.clock.install({ time: new Date("2026-10-22T05:00:00.000Z") });
-  await signIn(page.request);
-  const rooms = await getRooms(page.request);
+  await signIn(request);
+  const rooms = await getRooms(request);
   const propertyId = rooms[0]?.floor.propertyId;
   if (!propertyId) throw new Error("Expected seeded test property");
-  await ensurePeriod(page.request, propertyId, "2026-07");
-  const august = await ensurePeriod(page.request, propertyId, "2026-08");
-  const september = await ensurePeriod(page.request, propertyId, "2026-09");
-  const room = (await overview(page.request, august)).rooms
+  await ensurePeriod(request, propertyId, "2026-07");
+  const august = await ensurePeriod(request, propertyId, "2026-08");
+  const september = await ensurePeriod(request, propertyId, "2026-09");
+  const room = (await overview(request, august)).rooms
     .toReversed()
     .find(
       (candidate) =>
@@ -86,7 +89,7 @@ async function prepare(page: Page) {
       "Expected unused floor-three meter fixture; use a fresh isolated target",
     );
   for (const kind of ["WATER", "ELECTRICITY"]) {
-    const response = await page.request.post("/api/v1/meters/", {
+    const response = await request.post("/api/v1/meters/", {
       headers,
       data: {
         roomId: room.id,
@@ -99,7 +102,7 @@ async function prepare(page: Page) {
     });
     expect(response.status()).toBe(201);
   }
-  const rendered = await page.request.get("/meters/");
+  const rendered = await request.get("/meters/");
   expect(rendered.status()).toBe(200);
   const serverSelectors =
     (await rendered.text()).match(/<select\b[^>]*>/g) ?? [];
@@ -123,7 +126,7 @@ async function prepare(page: Page) {
     "2026-08-01",
   );
   await expect(page).toHaveTitle(/Taky Apartment ERP/);
-  return { room, august, september };
+  return { room, august, september, request };
 }
 
 function utility(page: Page, kind: "น้ำ" | "ไฟฟ้า") {
@@ -149,7 +152,8 @@ async function history(request: APIRequestContext, roomId: string) {
 }
 
 async function checkHistoryTimes(page: Page, roomId: string) {
-  const actual = await history(page.request, roomId);
+  const request = guardedRequest(page.request, origin);
+  const actual = await history(request, roomId);
   await page.getByRole("button", { name: "ประวัติ", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "ประวัติมิเตอร์" });
   await expect(dialog).toBeVisible();
@@ -199,7 +203,7 @@ async function checkHistoryTimes(page: Page, roomId: string) {
 test("3C4 latest overview wins and unrelated drafts survive reload and filter navigation", async ({
   page,
 }) => {
-  const { room, august, september } = await prepare(page);
+  const { room, august, september, request } = await prepare(page);
   await fillReading(page, "น้ำ", "105.125", "2026-08-15");
   await fillReading(page, "ไฟฟ้า", "540.500", "2026-08-16");
   let draftPosts = 0;
@@ -279,7 +283,7 @@ test("3C4 latest overview wins and unrelated drafts survive reload and filter na
     "540.500",
   );
   expect(mutations).toBe(0);
-  const persisted = await overview(page.request, august);
+  const persisted = await overview(request, august);
   const electric = persisted.rooms
     .find((candidate) => candidate.id === room.id)
     ?.meters.find((slot) => slot.kind === "ELECTRICITY");
@@ -343,7 +347,7 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    const { room, august, september } = await prepare(page);
+    const { room, august, september, request } = await prepare(page);
     await fillReading(page, "น้ำ", "90.000", "2026-08-15");
     const rejected = page.waitForResponse(
       (response) =>
@@ -406,8 +410,8 @@ for (const width of [1440, 390]) {
     await expect(page.getByLabel("เลขมิเตอร์น้ำปัจจุบัน")).toHaveValue("2.500");
     await checkHistoryTimes(page, room.id);
 
-    const before = await history(page.request, room.id);
-    await signIn(page.request, true);
+    const before = await history(request, room.id);
+    await signIn(request, true);
     await page.reload();
     await page.getByLabel("รอบเรียกเก็บ").selectOption(september);
     await page
@@ -432,12 +436,12 @@ for (const width of [1440, 390]) {
     );
     if (!waterReading)
       throw new Error("Missing confirmed water correction fixture");
-    const denied = await page.request.post(
+    const denied = await request.post(
       `/api/v1/meter-readings/${waterReading.id}/corrections/`,
       { headers, data: { value: "107.000", reason: "STAFF must not correct" } },
     );
     expect(denied.status()).toBe(403);
-    const after = await history(page.request, room.id);
+    const after = await history(request, room.id);
     expect(after.corrections).toEqual(before.corrections);
     expect(after.replacements).toEqual(before.replacements);
     expect(

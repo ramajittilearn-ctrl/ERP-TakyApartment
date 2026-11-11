@@ -1,0 +1,300 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if [[ "$#" -ne 12 ]]; then
+  echo "Usage: scan-container-images.sh APP_IMAGE VALIDATOR_IMAGE OPERATIONS_IMAGE OPERATIONAL_DATABASE_IMAGE ALPINE_DATABASE_IMAGE DEBIAN_TRIXIE_DATABASE_IMAGE DEBIAN_BOOKWORM_DATABASE_IMAGE TRIXIE_GNUPG_PRUNE_DATABASE_IMAGE FORKY_PGDG_CANDIDATE_DATABASE_IMAGE REVISION TREE OUTPUT_DIR" >&2
+  exit 2
+fi
+
+app_image="$1"
+validator_image="$2"
+operations_image="$3"
+operational_database_image="$4"
+alpine_database_image="$5"
+debian_trixie_database_image="$6"
+debian_bookworm_database_image="$7"
+trixie_gnupg_prune_database_image="$8"
+forky_pgdg_candidate_database_image="$9"
+revision="${10}"
+tree="${11}"
+output_dir="${12}"
+trivy_version="0.76.2"
+trivy_sha256="bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf"
+platform="linux/amd64"
+archive="${RUNNER_TEMP:?RUNNER_TEMP is required}/trivy-${trivy_version}-linux-amd64.tar.gz"
+tool_dir="${RUNNER_TEMP}/trivy-${trivy_version}-linux-amd64"
+cache_dir="${RUNNER_TEMP}/phase4-container-trivy-cache"
+
+if [[ ! "$revision" =~ ^[a-f0-9]{40}$ || ! "$tree" =~ ^[a-f0-9]{40}$ ]]; then
+  echo "Image scan requires full source revision and tree hashes" >&2
+  exit 1
+fi
+for image in "$app_image" "$validator_image" "$operations_image" "$operational_database_image" "$alpine_database_image" "$debian_trixie_database_image" "$debian_bookworm_database_image" "$trixie_gnupg_prune_database_image" "$forky_pgdg_candidate_database_image"; do
+  if [[ -z "$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null)" ]]; then
+    echo "Required local image is missing: $image" >&2
+    exit 1
+  fi
+done
+if [[ -e "$archive" || -e "$tool_dir" || -e "$cache_dir" || -e "$output_dir" ]]; then
+  echo "Refusing to overwrite pre-existing scanner output or tool files" >&2
+  exit 1
+fi
+mkdir -p "$tool_dir" "$cache_dir" "$output_dir"
+
+curl --fail --location --silent --show-error \
+  "https://github.com/aquasecurity/trivy/releases/download/v${trivy_version}/trivy_${trivy_version}_Linux-64bit.tar.gz" \
+  --output "$archive"
+printf '%s  %s\n' "$trivy_sha256" "$archive" | sha256sum --check --status
+tar -xzf "$archive" -C "$tool_dir" trivy
+trivy_bin="${tool_dir}/trivy"
+chmod 0755 "$trivy_bin"
+version_output="$($trivy_bin --version)"
+if [[ "$version_output" != *"Version: ${trivy_version}"* ]]; then
+  echo "Downloaded Trivy binary reports an unexpected version: $version_output" >&2
+  exit 1
+fi
+
+"$trivy_bin" --cache-dir "$cache_dir" image \
+  --disable-telemetry \
+  --skip-version-check \
+  --download-db-only
+database_file="${cache_dir}/db/trivy.db"
+database_metadata="${cache_dir}/db/metadata.json"
+if [[ ! -s "$database_file" || ! -s "$database_metadata" ]]; then
+  echo "Trivy did not produce its vulnerability database and metadata" >&2
+  exit 1
+fi
+jq -e 'type == "object" and (.Version | type == "number") and (.UpdatedAt | type == "string") and (.DownloadedAt | type == "string") and (.NextUpdate | type == "string")' "$database_metadata" >/dev/null
+database_sha256="$(sha256sum "$database_file" | awk '{print $1}')"
+database_schema_version="$(jq -r '.Version' "$database_metadata")"
+database_updated_at="$(jq -r '.UpdatedAt' "$database_metadata")"
+database_downloaded_at="$(jq -r '.DownloadedAt' "$database_metadata")"
+database_next_update="$(jq -r '.NextUpdate' "$database_metadata")"
+cp "$database_metadata" "${output_dir}/trivy-db-metadata.json"
+
+bash scripts/ci/probe-trivy-cve-6653-coverage.sh \
+  "$trivy_bin" "$cache_dir" "$output_dir" "$revision" "$tree" \
+  "$database_sha256" "$database_schema_version" "$database_updated_at" \
+  "$database_downloaded_at" "$database_next_update"
+
+scan_image() {
+  local name="$1" image="$2" image_id image_platform report
+  image_id="$(docker image inspect --format '{{.Id}}' "$image")"
+  image_platform="$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$image")"
+  if [[ "$image_platform" != "$platform" ]]; then
+    echo "Refusing to scan $image with unexpected platform $image_platform" >&2
+    return 1
+  fi
+  report="${output_dir}/${name}.trivy.json"
+  echo "Scanning local $platform image $image ($image_id)"
+  "$trivy_bin" --cache-dir "$cache_dir" image \
+    --disable-telemetry \
+    --skip-version-check \
+    --skip-db-update \
+    --image-src docker \
+    --platform "$platform" \
+    --scanners vuln \
+    --list-all-pkgs \
+    --format json \
+    --output "$report" \
+    --exit-code 0 \
+    "$image"
+  jq -e 'type == "object" and .SchemaVersion == 2 and (.ArtifactName | type == "string" and length > 0) and (.Metadata.ImageID | type == "string" and length > 0) and (.Results | type == "array")' "$report" >/dev/null
+  jq -n \
+    --arg name "$name" \
+    --arg image "$image" \
+    --arg imageId "$image_id" \
+    --arg platform "$platform" \
+    --arg revision "$revision" \
+    --arg tree "$tree" \
+    --arg scannerVersion "$trivy_version" \
+    --argjson vulnerabilityDbSchemaVersion "$database_schema_version" \
+    --arg vulnerabilityDbUpdatedAt "$database_updated_at" \
+    --arg vulnerabilityDbDownloadedAt "$database_downloaded_at" \
+    --arg vulnerabilityDbNextUpdate "$database_next_update" \
+    --arg vulnerabilityDbSha256 "$database_sha256" \
+    --arg vulnerabilityDbMetadata "trivy-db-metadata.json" \
+    --arg scannedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg report "${name}.trivy.json" \
+    '{name:$name,image:$image,imageId:$imageId,platform:$platform,sourceRevision:$revision,sourceTree:$tree,scanner:"Trivy",scannerVersion:$scannerVersion,vulnerabilityDbSchemaVersion:$vulnerabilityDbSchemaVersion,vulnerabilityDbUpdatedAt:$vulnerabilityDbUpdatedAt,vulnerabilityDbDownloadedAt:$vulnerabilityDbDownloadedAt,vulnerabilityDbNextUpdate:$vulnerabilityDbNextUpdate,vulnerabilityDbSha256:$vulnerabilityDbSha256,vulnerabilityDbMetadata:$vulnerabilityDbMetadata,scannedAt:$scannedAt,report:$report}' \
+    > "${output_dir}/${name}.metadata.json"
+}
+
+scan_image app "$app_image"
+scan_image validator "$validator_image"
+scan_image operations "$operations_image"
+scan_image operational-database "$operational_database_image"
+scan_image alpine-database "$alpine_database_image"
+scan_image debian-trixie-database "$debian_trixie_database_image"
+scan_image debian-bookworm-database "$debian_bookworm_database_image"
+scan_image debian-trixie-gnupg-prune-database "$trixie_gnupg_prune_database_image"
+scan_image forky-pgdg-candidate-database "$forky_pgdg_candidate_database_image"
+
+verify_alpine_security_packages() {
+  local image_name="$1" image="$2" report image_id package_spec package_name package_version scanned_version
+  report="${output_dir}/${image_name}.trivy.json"
+  image_id="$(docker image inspect --format '{{.Id}}' "$image")"
+
+  for package_spec in krb5-libs:1.22.3-r0 libxslt:1.1.43-r4; do
+    package_name="${package_spec%%:*}"
+    package_version="${package_spec#*:}"
+    scanned_version="$(jq -er --arg package "$package_name" '
+      [ .Results[]? | select(.Class == "os-pkgs" and .Type == "alpine")
+        | .Packages[]? | select(.Name == $package) | .Version ]
+      | unique | if length == 1 then .[0] else error("expected exactly one scanned package version") end
+    ' "$report")"
+    if [[ "$scanned_version" != "$package_version" ]]; then
+      echo "$image_name Trivy inventory has $package_name=$scanned_version, expected $package_version" >&2
+      exit 1
+    fi
+  done
+
+  if ! jq -e '
+    [ .Results[]? | .Vulnerabilities[]?
+      | select((.PkgName == "krb5-libs" or .PkgName == "libxslt")
+        and (.Severity == "CRITICAL" or .Severity == "HIGH")) ]
+    | length == 0
+  ' "$report" >/dev/null; then
+    echo "$image_name still has a Critical or High finding in the reviewed Alpine security packages" >&2
+    exit 1
+  fi
+  printf 'image=%s image_id=%s trivy_krb5-libs=%s trivy_libxslt=%s\n' \
+    "$image" "$image_id" 1.22.3-r0 1.1.43-r4 \
+    > "${output_dir}/${image_name}-security-package-versions.txt"
+}
+
+verify_alpine_security_packages operations "$operations_image"
+verify_alpine_security_packages alpine-database "$alpine_database_image"
+
+for image_name in operations operational-database alpine-database debian-trixie-database debian-bookworm-database debian-trixie-gnupg-prune-database forky-pgdg-candidate-database; do
+  report="${output_dir}/${image_name}.trivy.json"
+  case "$image_name" in
+    operations) image="$operations_image" ;;
+    operational-database) image="$operational_database_image" ;;
+    alpine-database) image="$alpine_database_image" ;;
+    debian-trixie-database) image="$debian_trixie_database_image" ;;
+    debian-bookworm-database) image="$debian_bookworm_database_image" ;;
+    debian-trixie-gnupg-prune-database) image="$trixie_gnupg_prune_database_image" ;;
+    forky-pgdg-candidate-database) image="$forky_pgdg_candidate_database_image" ;;
+  esac
+  image_id="$(jq -r '.imageId' "${output_dir}/${image_name}.metadata.json")"
+  current_image_id="$(docker image inspect --format '{{.Id}}' "$image")"
+  if [[ "$image_id" != "$current_image_id" ]]; then
+    echo "Scanned $image_name image changed after Trivy inspection" >&2
+    exit 1
+  fi
+  if ! jq -e --arg image_id "$image_id" '.Metadata.ImageID == $image_id' "$report" >/dev/null; then
+    echo "The Trivy $image_name report does not match the exact inspected image" >&2
+    exit 1
+  fi
+  if ! jq -e 'all(.Results[]; (.Vulnerabilities == null or (.Vulnerabilities | type == "array")))' "$report" >/dev/null; then
+    echo "The Trivy $image_name report has a malformed vulnerability list" >&2
+    exit 1
+  fi
+  if [[ "$image_name" == operations || "$image_name" == alpine-database ]]; then
+    if ! jq -e --arg image_id "$image_id" '
+      .Metadata.ImageID == $image_id and
+      .Metadata.OS.Family == "alpine" and
+      (.Metadata.OS.Name | startswith("3.24")) and
+      any(.Results[]; .Class == "os-pkgs" and .Type == "alpine" and any(.Packages[]?; .Name == "libxml2"))
+    ' "$report" >/dev/null; then
+      echo "The Trivy $image_name report does not prove the exact Alpine libxml2 package was scanned" >&2
+      exit 1
+    fi
+    if ! jq -e '[.Results[] | .Vulnerabilities[]? | select(.VulnerabilityID == "CVE-2026-6653")] | length == 0' "$report" >/dev/null; then
+      echo "CVE-2026-6653 remains in the Alpine $image_name image" >&2
+      exit 1
+    fi
+  elif [[ "$image_name" == operational-database || "$image_name" == debian-trixie-database || "$image_name" == debian-bookworm-database || "$image_name" == debian-trixie-gnupg-prune-database ]]; then
+    if ! jq -e --arg image_id "$image_id" '.Metadata.ImageID == $image_id and .Metadata.OS.Family == "debian"' "$report" >/dev/null; then
+      echo "The Trivy $image_name report does not identify the exact Debian image" >&2
+      exit 1
+    fi
+  elif [[ "$image_name" == forky-pgdg-candidate-database ]]; then
+    if ! jq -e --arg image_id "$image_id" '
+      .Metadata.ImageID == $image_id and .Metadata.OS.Family == "debian" and
+      any(.Results[]; .Class == "os-pkgs" and .Type == "debian" and any(.Packages[]?; .Name == "libxml2-16"))
+    ' "$report" >/dev/null; then
+      echo "The Trivy Forky report does not bind the exact Debian candidate and libxml2-16 package" >&2
+      exit 1
+    fi
+    minimum_version="$(docker image inspect --format '{{index .Config.Labels "io.taky.libxml2.minimum"}}' "$image")"
+    scanner_version="$(jq -er '
+      [ .Results[]? | select(.Class == "os-pkgs" and .Type == "debian")
+        | .Packages[]? | select(.Name == "libxml2-16") | .Version ]
+      | unique | if length == 1 then .[0] else error("expected exactly one scanned libxml2-16 version") end
+    ' "$report")"
+    if [[ "$minimum_version" =~ ^(.+)-[0-9]+$ ]]; then
+      upstream_floor="${BASH_REMATCH[1]}"
+    else
+      echo "Forky candidate has an unsupported libxml2 version floor: $minimum_version" >&2
+      exit 1
+    fi
+    runtime_version="$(docker run --rm --platform "$platform" --entrypoint dpkg-query "$image" \
+      --show --showformat='${Version}' libxml2-16)"
+    if ! dpkg --compare-versions "$scanner_version" ge "$upstream_floor" || \
+      ! dpkg --compare-versions "$runtime_version" ge "$minimum_version"; then
+      echo "Forky libxml2 versions are below candidate minimum: Trivy=$scanner_version runtime=$runtime_version minimum=$minimum_version" >&2
+      exit 1
+    fi
+    printf 'image=%s image_id=%s package=libxml2-16 trivy_version=%s runtime_version=%s minimum=%s\n' \
+      "$image" "$image_id" "$scanner_version" "$runtime_version" "$minimum_version" \
+      > "${output_dir}/forky-libxml2-version.txt"
+    if ! jq -e '[.Results[] | .Vulnerabilities[]? | select(.VulnerabilityID == "CVE-2026-6653")] | length == 0' "$report" >/dev/null; then
+      echo "CVE-2026-6653 remains in the Forky PostgreSQL candidate image" >&2
+      exit 1
+    fi
+  fi
+done
+{
+  for image_name in operations alpine-database; do
+    if [[ "$image_name" == operations ]]; then image="$operations_image"; else image="$alpine_database_image"; fi
+    image_id="$(jq -r '.imageId' "${output_dir}/${image_name}.metadata.json")"
+    libxml2_version="$(jq -er '
+      [ .Results[]? | select(.Class == "os-pkgs" and .Type == "alpine")
+        | .Packages[]? | select(.Name == "libxml2") | .Version ]
+      | unique | if length == 1 then .[0] else error("expected one scanned libxml2 version") end
+    ' "${output_dir}/${image_name}.trivy.json")"
+    printf '%s image=%s image_id=%s package=libxml2 version=%s\n' \
+      "$image_name" "$image" "$image_id" "$libxml2_version"
+  done
+} > "${output_dir}/alpine-libxml2-versions.txt"
+database_sha256_after="$(sha256sum "$database_file" | awk '{print $1}')"
+if [[ "$database_sha256_after" != "$database_sha256" ]]; then
+  echo "Trivy vulnerability database changed during the image scans" >&2
+  exit 1
+fi
+
+cat > "${output_dir}/README.md" <<EOF
+# Isolated container image vulnerability scan
+
+- Source revision: \`${revision}\`
+- Source tree: \`${tree}\`
+- Platform: \`${platform}\`
+- Scanner: Trivy \`${trivy_version}\` (official release archive SHA-256 verified by the CI script)
+- Vulnerability DB schema version: \`${database_schema_version}\`
+- Vulnerability DB UpdatedAt field: \`${database_updated_at}\`
+- Vulnerability DB download time: \`${database_downloaded_at}\`
+- Vulnerability DB next update time: \`${database_next_update}\`
+- Vulnerability DB file-content SHA-256: \`${database_sha256}\` (metadata file: \`trivy-db-metadata.json\`; this is not an OCI digest)
+- Scope: local app, validator, operations, and source-built PostgreSQL images from this checkout, including the same-run Stage 5-tested Forky candidate; PostgreSQL derivatives use digest-pinned bases and replace gosu with source-built gosu. The Forky scan is bound to its exact image ID, confirms the scanned libxml2-16 version meets the candidate minimum, and fails if CVE-2026-6653 remains.
+- Policy: findings are reported without a general severity threshold; CVE-2026-6653 is a targeted release gate for Alpine operations/database and the Forky PostgreSQL candidate
+- Alpine operations and database candidates install signed v3.24 packages `krb5-libs=1.22.3-r0` and `libxslt=1.1.43-r4`; the scan gate checks those versions in the image-ID-bound Trivy inventory and fails on remaining Critical/High matches in those packages
+- Image metadata sidecars record local image IDs (config digests), tags, source identity, and scan time
+- The CI scan fails if CVE-2026-6653 appears in Alpine operations, Alpine database, or the Forky PostgreSQL candidate; the Forky libxml2-16 version is recorded in \`forky-libxml2-version.txt\`
+- \`cve-2026-6653-positive-control/\` records current-DB Trivy rootfs scans of vulnerable Debian 13 and Debian 14 synthetic package fixtures. Both controls must detect the CVE; a miss fails closed. Neither result grants candidate/image/production clearance.
+
+Bookworm snapshot/package inputs and full before/after dpkg manifests are in bookworm-candidate-refresh/; image-scan-binding.json binds that evidence to the exact image ID, source revision/tree, platform, and Trivy DB SHA-256. bookworm-pg-compatibility.txt records the source-vs-candidate PostgreSQL and available-extension comparison.
+
+These reports do not represent a production deployment or a published registry image.
+EOF
+
+echo "Current-checkout vulnerability reports written to $output_dir"
+
+# Grype's independent Debian 14 positive control runs only after all Trivy image
+# reports and integrity checks are complete, so a Grype setup/coverage failure
+# cannot prevent the primary scanner evidence from being retained.
+bash scripts/ci/probe-grype-cve-6653-coverage.sh \
+  "${output_dir}/cve-2026-6653-positive-control" \
+  "${output_dir}/grype-cve-2026-6653-positive-control" \
+  "$revision" "$tree"

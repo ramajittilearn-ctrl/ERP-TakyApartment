@@ -1,0 +1,39 @@
+# Isolated Trixie GnuPG-prune candidate. The build must use the operational
+# image constructed by this same verification run and a separate data volume.
+name: taky-erp-trixie-gnupg-prune-candidate
+services:
+  db:
+    image: ${TRIXIE_CANDIDATE_IMAGE:-taky-erp-postgres:17.11-trixie-gnupg-prune-candidate}
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: docker/postgres/trixie-gnupg-prune-candidate.Dockerfile
+      args:
+        TRIXIE_OPERATIONAL_IMAGE: ${TRIXIE_OPERATIONAL_IMAGE:-}
+        TRIXIE_OPERATIONAL_IMAGE_ID: ${TRIXIE_OPERATIONAL_IMAGE_ID:-}
+        TRIXIE_SOURCE_REVISION: ${TRIXIE_SOURCE_REVISION:-}
+        TRIXIE_SOURCE_TREE: ${TRIXIE_SOURCE_TREE:-}
+        TRIXIE_GOSU_COMMIT: ${TRIXIE_GOSU_COMMIT:-}
+        TRIXIE_GOSU_USER_MODULE_VERSION: ${TRIXIE_GOSU_USER_MODULE_VERSION:-}
+        TRIXIE_GOSU_X_SYS_MODULE_VERSION: ${TRIXIE_GOSU_X_SYS_MODULE_VERSION:-}
+        TRIXIE_CANDIDATE_LOCK_SHA256: ${TRIXIE_CANDIDATE_LOCK_SHA256:-}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Generate .env first}
+      POSTGRES_USER: ${POSTGRES_USER:?Generate .env first}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate .env first}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    networks: [private]
+networks:
+  private:
+    driver: bridge
+volumes:
+  database:
+    name: taky-erp-trixie-gnupg-prune-candidate-database

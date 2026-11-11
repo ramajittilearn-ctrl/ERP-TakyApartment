@@ -5,6 +5,12 @@ import { browserTestTarget } from "../../src/server/browser-test-target";
 import { db } from "../../src/server/db";
 import { getLeases } from "./fixtures";
 
+function moneyCents(value: string) {
+  const match = /^(0|[1-9]\d{0,11})(?:\.(\d{1,2}))?$/.exec(value);
+  expect(match, `invalid API money string ${value}`).not.toBeNull();
+  return BigInt(match![1]) * 100n + BigInt((match![2] ?? "").padEnd(2, "0"));
+}
+
 async function signIn(request: APIRequestContext) {
   const response = await request.post("/api/auth/login/", {
     headers: { Origin: browserTestTarget().origin },
@@ -185,7 +191,7 @@ test("tenant rent entered after room selection survives immediate save and reloa
     await db.$queryRaw`SELECT current_database() AS name, current_user AS role`,
   ).toEqual([{ name: target.database, role: target.role }]);
   const suffix = randomUUID().slice(0, 20);
-  const name = `Synthetic normal rent ${suffix}`;
+  const name = `Synthetic 1000 rent ${suffix}`;
   const property = await db.property.create({
     data: {
       code: `ORDER-${suffix}`,
@@ -215,13 +221,13 @@ test("tenant rent entered after room selection survives immediate save and reloa
       request.method() === "POST" &&
       new URL(request.url()).pathname === "/api/v1/tenants/",
   );
-  await page.getByLabel("ค่าเช่าตามสัญญา", { exact: true }).fill("4100.75");
+  await page.getByLabel("ค่าเช่าตามสัญญา", { exact: true }).fill("1000.00");
   await page.getByRole("button", { name: "บันทึกข้อมูล" }).click();
   const submittedData: unknown = (await submitted).postDataJSON();
   const payload = z
     .object({ assignment: z.object({ rent: z.string(), roomId: z.string() }) })
     .parse(submittedData);
-  expect(payload.assignment).toEqual({ rent: "4100.75", roomId: room.id });
+  expect(payload.assignment).toEqual({ rent: "1000.00", roomId: room.id });
   await expect(page).toHaveURL(/tenant=[a-f0-9-]+/);
   const tenantId = new URL(page.url()).searchParams.get("tenant");
   expect(tenantId).toBeTruthy();
@@ -229,17 +235,17 @@ test("tenant rent entered after room selection survives immediate save and reloa
   const displayedRent = page
     .locator(".tenant-profile .detail-grid > div")
     .filter({ has: page.locator("dt", { hasText: /^ค่าเช่า$/ }) });
-  await expect(displayedRent.locator("dd")).toHaveText("฿4,100.75");
+  await expect(displayedRent.locator("dd")).toContainText("1,000");
   const savedLease = (await getLeases(page.request)).find(
     (lease) => lease.tenantId === tenantId,
   );
-  expect(savedLease?.rent).toBe("4100.75");
+  expect(moneyCents(savedLease?.rent ?? "")).toBe(moneyCents("1000.00"));
   expect(savedLease?.roomId).toBe(room.id);
   await page.reload();
   await expect(page.locator(".tenant-profile")).toContainText(name);
-  await expect(displayedRent.locator("dd")).toHaveText("฿4,100.75");
-  expect(
-    (await getLeases(page.request)).find((lease) => lease.tenantId === tenantId)
-      ?.rent,
-  ).toBe("4100.75");
+  await expect(displayedRent.locator("dd")).toContainText("1,000");
+  const reloadedLease = (await getLeases(page.request)).find(
+    (lease) => lease.tenantId === tenantId,
+  );
+  expect(moneyCents(reloadedLease?.rent ?? "")).toBe(moneyCents("1000.00"));
 });

@@ -1,0 +1,10 @@
+# Stage 5 uses a fresh randomized Compose project and database volume. Exercise
+# the Alpine database candidate there without changing the operational stack.
+services:
+  db:
+    image: taky-erp-postgres:17.11-alpine3.24-gosu-1.19-user-0.4.1-xsys-0.44.0
+    build:
+      context: .
+      dockerfile: docker/postgres/Dockerfile
+      args:
+        POSTGRES_BASE_IMAGE: postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b

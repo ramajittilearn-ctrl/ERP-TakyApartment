@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
-import { test, expect } from "./guarded-test";
+import { guardedRequest, test, expect } from "./guarded-test";
+import { browserTestTarget } from "../../src/server/browser-test-target";
 
 test("API contexts reject unauthorized destinations and redirects before following them", async ({
   request,
@@ -21,6 +22,18 @@ test("API contexts reject unauthorized destinations and redirects before followi
     "http://production.invalid/api/auth/login/",
   );
   expect(response.status()).toBe(403);
+});
+
+test("page-bound API contexts also reject off-origin requests and redirects", async ({
+  page,
+}) => {
+  const request = guardedRequest(page.request, browserTestTarget().origin);
+  await expect(
+    request.get("http://127.0.0.1:3700/api/health/"),
+  ).rejects.toThrow("Unauthorized browser destination");
+  await expect(request.get("/api/health")).rejects.toThrow(
+    "Browser API redirects are forbidden",
+  );
 });
 
 test("browser rejects an off-origin redirect without reaching its destination", async ({
@@ -57,8 +70,10 @@ test("browser rejects an off-origin redirect without reaching its destination", 
       fetchedStatus = response.status();
       await route.fulfill({ response });
     });
-    await expect(page.goto("/guard-fetch/")).rejects.toThrow(
-      "ERR_HTTP_RESPONSE_CODE_FAILURE",
+    const navigationResponse = await page.goto("/guard-fetch/");
+    expect(navigationResponse?.status()).toBe(403);
+    expect(navigationResponse?.url()).toBe(
+      `${browserTestTarget().origin}/guard-fetch/`,
     );
     expect(fetchedStatus).toBe(403);
     expect(requests).toBe(0);

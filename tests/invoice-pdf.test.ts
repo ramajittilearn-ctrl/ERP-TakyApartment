@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  invoicePdfRoundingAdjustment,
   invoicePdfFilename,
   renderInvoicePdf,
   type InvoicePdfDocument,
@@ -39,12 +40,25 @@ const sample: InvoicePdfDocument = {
       amount: "876.75",
     },
   ],
+  reconciliationDelta: "0.00",
   total: "9439.75",
   voidedAt: null,
   voidReason: null,
 };
 
 describe("invoice PDF rendering", () => {
+  it("adds signed rounding reconciliation only when display lines do not match the total", () => {
+    expect(invoicePdfRoundingAdjustment("-0.01")).toEqual({
+      label: "ส่วนต่างการปัดเศษ / Rounding adjustment",
+      amount: "-฿0.01",
+    });
+    expect(invoicePdfRoundingAdjustment("0.01")).toEqual({
+      label: "ส่วนต่างการปัดเศษ / Rounding adjustment",
+      amount: "+฿0.01",
+    });
+    expect(invoicePdfRoundingAdjustment("0.00")).toBeNull();
+  });
+
   it("creates an A4 PDF with embedded Thai and Latin fonts and the snapshot values", async () => {
     const bytes = await renderInvoicePdf(sample);
     const pdf = Buffer.from(bytes).toString("latin1");

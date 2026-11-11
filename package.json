@@ -62,6 +62,7 @@
     "vitest": "4.1.12"
   },
   "overrides": {
-    "compression": "1.8.2"
+    "compression": "1.8.2",
+    "fast-uri": "3.1.9"
   }
 }

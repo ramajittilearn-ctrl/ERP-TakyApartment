@@ -1,0 +1,6 @@
+# Optional Stage 5 override used only by the isolated Forky candidate job.
+# The candidate image is built and scanned before this file is selected.
+services:
+  db:
+    image: ${STAGE5_FORKY_CANDIDATE_IMAGE:?The isolated Forky candidate image is required}
+    build: !reset null
