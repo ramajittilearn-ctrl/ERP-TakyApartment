@@ -1,19 +1,19 @@
 # Stage 10 — Go-Live Closure
 
-**Status: NOT CLOSED. No Go-Live is claimed.**
+**Status: NOT CLOSED. Production remains NO-GO. No Go-Live is claimed.**
 
 ## Candidate release record
 
-- Candidate PR: [#2](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/pull/2), OPEN/Draft, source `codex/phase4-current-source-20261026` at `70ae6569c136d1b93f9f56bdcf92db823832471a`.
-- Exact-head PR and push CI: all four required jobs passed; see [PR run](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450971948) and [push run](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/40450966334).
-- Synthetic Stage 5: 52 checks / 17 migrations passed. Agent UAT: 90/90 passed with independent review. These are not production deployment evidence or Owner acceptance.
+- Candidate PR: [#2](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/pull/2), OPEN, source `codex/phase4-current-source-20261026` at `e3cca7285ff874b4694ed7d05456b57cd7c68afe`; GitHub reports `REVIEW_REQUIRED` and `BLOCKED`.
+- Exact-head PR CI [run 42926011154](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42926011154): all eight jobs passed, including container verification against PostgreSQL Trixie digest `sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f` and authenticated Trixie metadata. The run's signed discovery and reviewed candidate lock remain isolated-candidate evidence.
+- Synthetic Stage 5 and Agent UAT passed on this exact PR run. The same-run Forky candidate passed 17 migrations and synthetic Trixie/Bookworm restore checks. These do not constitute production deployment evidence or Owner acceptance.
 - Existing protected release branch and RC1 tag remain at `89a15a1aa88e8bc1ac42ce38f653448b1a32a645`. No current candidate tag, published release, or registry image exists.
 - Stage 7 current verdict is NO-GO. Stage 8 cutover was not performed; Stage 9 is not applicable yet.
 - Deployment timestamp, deployed commit/image digests, production migration state, production recovery evidence and operator handover are absent because there was no deployment.
 
 ## Closure criteria still open
 
-1. Resolve or accept the operational Trixie Critical/High findings and the raw operations `GO-2026-5932` finding through reviewed evidence.
+1. Resolve or formally disposition the operational image findings. The current scan reports 1 Critical (`CVE-2026-6653`) and 122 High package findings for Trixie, 2 Critical and 102 High for Bookworm, and 1 Critical plus 115 High for the GnuPG-pruned Trixie candidate. Exact operations-binary analysis also reports `GO-2026-5932` for review.
 2. Identify and attest the exact production target, HTTPS origin, service ownership and release scope.
 3. Pass target-specific backup/restore, no-seed migration and rollback rehearsals, including attachment/key/off-device recovery.
 4. Obtain the required independent GitHub PR approval and integrate the reviewed candidate safely.
