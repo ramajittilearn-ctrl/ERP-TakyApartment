@@ -81,6 +81,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Use canonical Ubuntu archive mirror
+        run: sudo sed -i 's#azure.archive.ubuntu.com#archive.ubuntu.com#g' /etc/apt/apt-mirrors.txt
+
       - name: Verify Debian and Ubuntu source provenance
         run: bash scripts/ci/prepare-libxml2-source-provenance.sh "$RUNNER_TEMP/phase4-libxml2-provenance"
 
@@ -258,6 +261,7 @@ jobs:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/forky-candidate-playwright
         run: |
           npm ci
+          sudo sed -i 's#azure.archive.ubuntu.com#archive.ubuntu.com#g' /etc/apt/apt-mirrors.txt
           npx playwright install --with-deps chromium
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends libnss3-tools qpdf poppler-utils tesseract-ocr tesseract-ocr-tha
@@ -488,6 +492,7 @@ jobs:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/stage5-playwright-browsers
         run: |
           npm ci
+          sudo sed -i 's#azure.archive.ubuntu.com#archive.ubuntu.com#g' /etc/apt/apt-mirrors.txt
           npx playwright install --with-deps chromium
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends libnss3-tools qpdf poppler-utils tesseract-ocr tesseract-ocr-tha
@@ -536,7 +541,9 @@ jobs:
         run: npm run db:generate
 
       - name: Install isolated Chromium runtime
-        run: npx playwright install --with-deps chromium
+        run: |
+          sudo sed -i 's#azure.archive.ubuntu.com#archive.ubuntu.com#g' /etc/apt/apt-mirrors.txt
+          npx playwright install --with-deps chromium
 
       - name: Build source for browser Agent UAT
         run: npm run build

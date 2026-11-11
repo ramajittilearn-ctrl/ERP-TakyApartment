@@ -21,7 +21,7 @@ const runId = randomBytes(12).toString("hex");
 const project = `taky-stage5-${runId}`;
 const ownerLabel = "com.taky.stage5.run";
 const CADDY_IMAGE =
-  "caddy@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f";
+  "caddy@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9";
 const outRoot = resolve(
   process.env.STAGE5_ARTIFACT_ROOT ?? "/tmp/taky-stage5-artifacts",
 );
