@@ -55,7 +55,7 @@ cat > "$tmp/bin/docker" <<'DOCKER'
 #!/usr/bin/env bash
 set -Eeuo pipefail
 if [[ "$1" == pull ]]; then
-  [[ $# == 4 && "$2" == --platform && "$3" == linux/amd64 && "$4" == 'golang:1.27.3-alpine3.24@sha256:b8c9b82affbbb82a020bbcf998dad2ba9516944ac7e883524642a481a9505e9c' ]] || {
+  [[ $# == 4 && "$2" == --platform && "$3" == linux/amd64 && "$4" == 'golang:1.27.4-alpine3.24@sha256:0a5f7fe796599ff487605987432e7619ae45beeb2fba4c2ce0b907879932aebf' ]] || {
     echo "unexpected builder pull command: $*" >&2
     exit 35
   }
@@ -98,7 +98,7 @@ if [[ "$1" == run ]]; then
   mkdir -p "$out/tmp" "$out/gocache" "$out/gomodcache" "$out/gopath" "$out/home"
   printf 'cache fixture\n' > "$out/gocache/cache-file"
   [[ "${FIXTURE_RUN_MODE:-success}" != fail ]] || exit 42
-  printf 'go version go1.27.3 linux/amd64\n' > "$out/go-version.txt"
+  printf 'go version go1.27.4 linux/amd64\n' > "$out/go-version.txt"
   printf 'linux\namd64\nv1\n0\nlocal\n\n\n\noff\n\noff\n/out/gocache\n/out/gomodcache\n/out/gopath\n' > "$out/go-env.txt"
   printf 'test stripped binary\n' > "$out/rclone-rebuilt-stripped"
   if [[ "$FIXTURE_BINARY_MODE" == match ]]; then
@@ -148,7 +148,7 @@ assert env["path"].endswith("/go-environment.txt"), env
 assert env["sha256"], env
 assert d["builder"]["pullCommand"] == [
     "docker", "pull", "--platform", "linux/amd64",
-    "golang:1.27.3-alpine3.24@sha256:b8c9b82affbbb82a020bbcf998dad2ba9516944ac7e883524642a481a9505e9c",
+    "golang:1.27.4-alpine3.24@sha256:0a5f7fe796599ff487605987432e7619ae45beeb2fba4c2ce0b907879932aebf",
 ], d["builder"]
 PY
 

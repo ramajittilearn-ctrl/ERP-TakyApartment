@@ -31,7 +31,7 @@ actual_database_base_image="$(docker image inspect --format '{{index .Config.Lab
 }
 
 go_version="$(go version)"
-[[ "$go_version" == "go version go1.27.3 linux/amd64" ]] || {
+[[ "$go_version" == "go version go1.27.4 linux/amd64" ]] || {
   echo "Unexpected Go toolchain for binary vulnerability analysis: $go_version" >&2
   exit 1
 }
@@ -54,7 +54,7 @@ printf 'Go toolchain: %s\n' "$go_version"
 printf 'govulncheck module build info:\n%s\n' "$govulncheck_build"
 gosu_build_info="$(go version -m "$gosu_binary")"
 printf 'Gosu binary module build info:\n%s\n' "$gosu_build_info"
-bash "$(dirname "$0")/assert-go-binary-version.sh" "$gosu_binary" go1.27.3
+bash "$(dirname "$0")/assert-go-binary-version.sh" "$gosu_binary" go1.27.4
 awk '$1 == "dep" && $2 == "github.com/moby/sys/user" && $3 == "v0.4.1" { found = 1 } END { exit !found }' <<<"$gosu_build_info" || {
   echo "Extracted gosu binary does not use github.com/moby/sys/user v0.4.1" >&2
   exit 1

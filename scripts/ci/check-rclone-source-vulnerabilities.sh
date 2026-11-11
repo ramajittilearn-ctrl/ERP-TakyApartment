@@ -85,7 +85,7 @@ baseline_root="$temp_root/baseline-source"
 cp -a "$source_root" "$baseline_root"
 
 go_version="$(go version)"
-[[ "$go_version" == "go version go1.27.3 linux/amd64" ]] || {
+[[ "$go_version" == "go version go1.27.4 linux/amd64" ]] || {
   echo "Unexpected Go toolchain for source vulnerability analysis: $go_version" >&2
   exit 1
 }

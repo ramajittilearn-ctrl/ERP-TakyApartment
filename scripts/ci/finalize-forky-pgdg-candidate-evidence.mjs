@@ -46,7 +46,7 @@ const gosuProvenance = JSON.parse(await fs.readFile(path.join(evidenceDir, 'gosu
 assert.equal(gosuProvenance.sourceRevision, process.env.GITHUB_SHA, 'gosu source revision differs from this candidate revision');
 assert.equal(gosuProvenance.imageId, status.imageId, 'gosu provenance image ID differs from candidate runtime image');
 assert.match(gosuProvenance.sourceTree || '', /^[a-f0-9]{40}$/);
-assert.equal(gosuProvenance.builderImage, 'golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4');
+assert.equal(gosuProvenance.builderImage, 'golang:1.27.4-trixie@sha256:b54b2639de8c1bfe538ec5ffc45f29b1932235ac5f6d63c059853646677112d9');
 assert.equal(gosuProvenance.gosuCommit, '6456aaa0f3c854d199d0f037f068eb97515b7513');
 assert.equal(gosuProvenance.userModule, 'v0.4.1');
 assert.equal(gosuProvenance.xSysModule, 'v0.44.0');

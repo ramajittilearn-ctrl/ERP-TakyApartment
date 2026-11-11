@@ -1,5 +1,5 @@
 FROM node:22.23.4-alpine3.24@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS node
-FROM --platform=$BUILDPLATFORM golang:1.27.3-alpine3.24@sha256:b8c9b82affbbb82a020bbcf998dad2ba9516944ac7e883524642a481a9505e9c AS rclone-build
+FROM --platform=$BUILDPLATFORM golang:1.27.4-alpine3.24@sha256:0a5f7fe796599ff487605987432e7619ae45beeb2fba4c2ce0b907879932aebf AS rclone-build
 ARG TARGETOS
 ARG TARGETARCH
 ADD --checksum=sha256:fa64537e7276196310dbb0bcea6330f03b40e5790197b88f14cce6a19f40eb67 https://github.com/rclone/rclone/releases/download/v1.75.2/rclone-v1.75.2.tar.gz /tmp/rclone-source.tar.gz

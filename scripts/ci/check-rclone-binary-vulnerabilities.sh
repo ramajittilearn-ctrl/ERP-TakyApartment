@@ -39,7 +39,7 @@ image_tree="$(docker image inspect --format '{{index .Config.Labels "org.opencon
 }
 
 go_version="$(go version)"
-[[ "$go_version" == "go version go1.27.3 linux/amd64" ]] || {
+[[ "$go_version" == "go version go1.27.4 linux/amd64" ]] || {
   echo "Unexpected Go toolchain for binary vulnerability analysis: $go_version" >&2
   exit 1
 }

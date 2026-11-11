@@ -87,7 +87,7 @@ operations_image_id_before=""
 operations_image_id_after=""
 operations_image_revision=""
 operations_image_tree=""
-builder_image_ref="golang:1.27.3-alpine3.24@sha256:b8c9b82affbbb82a020bbcf998dad2ba9516944ac7e883524642a481a9505e9c"
+builder_image_ref="golang:1.27.4-alpine3.24@sha256:0a5f7fe796599ff487605987432e7619ae45beeb2fba4c2ce0b907879932aebf"
 builder_image_id=""
 builder_platform=""
 go_version=""
@@ -351,7 +351,7 @@ docker run --pull=never --rm --network none --platform linux/amd64 --read-only \
   --env GOPROXY=off --env GOSUMDB=off --env GOCACHE=/out/gocache \
   --env GOMODCACHE=/out/gomodcache --env GOPATH=/out/gopath \
   "$builder_image_ref" sh -ec '
-    test "$(go version)" = "go version go1.27.3 linux/amd64"
+    test "$(go version)" = "go version go1.27.4 linux/amd64"
     go version | tee /out/go-version.txt
     go env GOOS GOARCH GOAMD64 CGO_ENABLED GOTOOLCHAIN GOWORK GOENV GOFLAGS GOPROXY GOSUMDB GOCACHE GOMODCACHE GOPATH > /out/go-env.txt
     go build -mod=vendor -trimpath -ldflags="-s -w -X github.com/rclone/rclone/fs.Version=v1.75.2" -o /out/rclone-rebuilt-stripped .
@@ -362,7 +362,7 @@ docker run --pull=never --rm --network none --platform linux/amd64 --read-only \
   ' > >(tee -a "$log_path") 2> >(tee -a "$log_path" >&2) || fail "pinned-builder reconstruction command failed"
 
 go_version="$(cat "$build_dir/go-version.txt")"
-[[ "$go_version" == "go version go1.27.3 linux/amd64" ]] || fail "reconstruction used an unexpected Go toolchain"
+[[ "$go_version" == "go version go1.27.4 linux/amd64" ]] || fail "reconstruction used an unexpected Go toolchain"
 mv "$build_dir/rclone-rebuilt-stripped" "$stripped_path"
 mv "$build_dir/rclone-rebuilt-unstripped" "$unstripped_path"
 mv "$build_dir/import-paths.txt" "$import_path"

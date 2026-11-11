@@ -22,7 +22,7 @@ gosu_debian_trixie_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-debian-tri
 gosu_debian_bookworm_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-debian-bookworm-gosu"
 gosu_trixie_gnupg_candidate_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-trixie-gnupg-candidate-gosu"
 rclone_operations_binary="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/${project}-operations-rclone"
-gosu_builder_image="golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4"
+gosu_builder_image="golang:1.27.4-trixie@sha256:b54b2639de8c1bfe538ec5ffc45f29b1932235ac5f6d63c059853646677112d9"
 gosu_commit="6456aaa0f3c854d199d0f037f068eb97515b7513"
 gosu_user_module_version="v0.4.1"
 gosu_x_sys_module_version="v0.44.0"
@@ -501,7 +501,7 @@ docker run --rm --platform linux/amd64 --read-only \
     ! command -v gosu >/dev/null
     rclone_version="$(rclone version)"
     printf "%s\n" "$rclone_version" | grep -F "rclone v1.75.2" >/dev/null
-    printf "%s\n" "$rclone_version" | grep -F "go1.27.3" >/dev/null
+    printf "%s\n" "$rclone_version" | grep -F "go1.27.4" >/dev/null
     node operations/cli.mjs status
   '
 

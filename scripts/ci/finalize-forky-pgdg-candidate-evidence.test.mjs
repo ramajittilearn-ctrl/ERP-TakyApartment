@@ -31,7 +31,7 @@ async function fixtures() {
   await writeFile(path.join(evidence, 'fresh-cluster-ssl-key-file.txt'), 'server.key\n');
   await writeFile(path.join(evidence, 'gosu-candidate-provenance.json'), JSON.stringify({
     sourceRevision: sha, sourceTree: tree, imageId,
-    builderImage: 'golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4',
+    builderImage: 'golang:1.27.4-trixie@sha256:b54b2639de8c1bfe538ec5ffc45f29b1932235ac5f6d63c059853646677112d9',
     gosuCommit: '6456aaa0f3c854d199d0f037f068eb97515b7513',
     userModule: 'v0.4.1', xSysModule: 'v0.44.0', binarySha256: gosuHash,
   }));
@@ -40,7 +40,7 @@ async function fixtures() {
   await writeFile(path.join(evidence, 'candidate-image-inspect.json'), JSON.stringify({
     Id: imageId,
     Config: { Labels: {
-      'io.taky.postgres.gosu.builder': 'golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4',
+      'io.taky.postgres.gosu.builder': 'golang:1.27.4-trixie@sha256:b54b2639de8c1bfe538ec5ffc45f29b1932235ac5f6d63c059853646677112d9',
       'io.taky.postgres.gosu.commit': '6456aaa0f3c854d199d0f037f068eb97515b7513',
       'io.taky.postgres.gosu.user-module': 'v0.4.1',
       'io.taky.postgres.gosu.x-sys-module': 'v0.44.0',

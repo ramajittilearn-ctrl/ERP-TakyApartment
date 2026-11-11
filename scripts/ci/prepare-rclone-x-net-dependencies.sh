@@ -16,7 +16,7 @@ case "$mode" in
   prepare)
     [ -d "$target" ] && [ -f "$target/go.mod" ] || fail "source root has no go.mod: $target"
     go_version=$(go version)
-    [ "$(printf '%s\n' "$go_version" | awk '{print $3}')" = go1.27.3 ] || fail "expected Go 1.27.3, got: $go_version"
+    [ "$(printf '%s\n' "$go_version" | awk '{print $3}')" = go1.27.4 ] || fail "expected Go 1.27.4, got: $go_version"
     export GOTOOLCHAIN=local GOWORK=off GOENV=off GOSUMDB=sum.golang.org
     export GOPROXY=https://proxy.golang.org,direct
     export GOPRIVATE= GONOSUMDB= GOINSECURE=
