@@ -182,17 +182,26 @@ for image_name in operations operational-database alpine-database debian-trixie-
       exit 1
     fi
     minimum_version="$(docker image inspect --format '{{index .Config.Labels "io.taky.libxml2.minimum"}}' "$image")"
-    package_version="$(jq -er '
+    scanner_version="$(jq -er '
       [ .Results[]? | select(.Class == "os-pkgs" and .Type == "debian")
         | .Packages[]? | select(.Name == "libxml2-16") | .Version ]
       | unique | if length == 1 then .[0] else error("expected exactly one scanned libxml2-16 version") end
     ' "$report")"
-    if [[ -z "$minimum_version" ]] || ! dpkg --compare-versions "$package_version" ge "$minimum_version"; then
-      echo "Scanned Forky libxml2-16 version $package_version is below candidate minimum $minimum_version" >&2
+    if [[ "$minimum_version" =~ ^(.+)-[0-9]+$ ]]; then
+      upstream_floor="${BASH_REMATCH[1]}"
+    else
+      echo "Forky candidate has an unsupported libxml2 version floor: $minimum_version" >&2
       exit 1
     fi
-    printf 'image=%s image_id=%s package=libxml2-16 version=%s minimum=%s\n' \
-      "$image" "$image_id" "$package_version" "$minimum_version" \
+    runtime_version="$(docker run --rm --platform "$platform" --entrypoint dpkg-query "$image" \
+      --show --showformat='${Version}' libxml2-16)"
+    if ! dpkg --compare-versions "$scanner_version" ge "$upstream_floor" || \
+      ! dpkg --compare-versions "$runtime_version" ge "$minimum_version"; then
+      echo "Forky libxml2 versions are below candidate minimum: Trivy=$scanner_version runtime=$runtime_version minimum=$minimum_version" >&2
+      exit 1
+    fi
+    printf 'image=%s image_id=%s package=libxml2-16 trivy_version=%s runtime_version=%s minimum=%s\n' \
+      "$image" "$image_id" "$scanner_version" "$runtime_version" "$minimum_version" \
       > "${output_dir}/forky-libxml2-version.txt"
     if ! jq -e '[.Results[] | .Vulnerabilities[]? | select(.VulnerabilityID == "CVE-2026-6653")] | length == 0' "$report" >/dev/null; then
       echo "CVE-2026-6653 remains in the Forky PostgreSQL candidate image" >&2
