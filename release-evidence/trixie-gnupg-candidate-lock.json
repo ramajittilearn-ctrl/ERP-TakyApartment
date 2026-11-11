@@ -2,7 +2,7 @@
   "approval": {
     "cveClearance": "NOT_EVALUATED",
     "productionUse": "NOT_AUTHORIZED",
-    "reviewDate": "2026-11-10",
+    "reviewDate": "2026-11-11",
     "reviewer": "codex-agent",
     "runtimeClearance": "NOT_EVALUATED",
     "state": "APPROVED_FOR_ISOLATED_CANDIDATE_BUILD_ONLY"
@@ -41,21 +41,21 @@
   "discovery": {
     "baseImage": "postgres:17.11-trixie@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f",
     "baseImageId": "sha256:eb0fb2377534e65aad04f37838956b3dfb888e1a3dd3c1acf957bc6557eb6c7d",
-    "evidenceArtifactId": 13812867916,
-    "evidenceArtifactSha256": "a66e9a1aae11b492e96e3e19b7690a79a50961179a4cbf2e864d3383cc6c4853",
+    "evidenceArtifactId": 13839752648,
+    "evidenceArtifactSha256": "cb4cd688f09c863079d78ba35ccc2a552705c24634978d13a16e2bb9cb5218b7",
     "platform": "linux/amd64",
     "proposalPath": "trixie-gnupg-discovery/gnupg-removal-lock-proposal.json",
-    "proposalSha256": "3c42ebe0e671ffd99f3f3687ea4694679b94734a94340c0351356fdaa861fd1a",
+    "proposalSha256": "6789b2ce9fcaa40466c41003dce07381d1187e61c1fbc3f18d6df6785f816667",
     "reviewedEvidenceFileCount": 84,
-    "revision": "69f238e014449b143b24be4ace09b47af4e0db57",
+    "revision": "e07f2d8f8a50938fd7f88809edc0b80db62cd4d9",
     "runAttempt": 1,
-    "runId": 42922343669,
-    "tree": "af59152c2a5c9d72f43bcfcaedaab64372c7d853"
+    "runId": 42985184060,
+    "tree": "91015fbe4721a92529dfb8b8cf680245f28ffc17"
   },
   "kind": "reviewed-trixie-gnupg-candidate-lock",
   "lockFileSha256": {
     "package": "358f19903c7e83abb32750ac7e6b882ebafa4b8abfe2b2658754e483f1e320df",
-    "packageIndex": "f8d379f4b174f4220df50b830f50215d10c643df53f46c020622b1c4775d306c",
+    "packageIndex": "e474994548c5ed05e50c8ba09fb4aed86ffa2190eaf8e2ad6c200ce9b90f9a24",
     "release": "c1ffc96ace74f18569a49a4bc41bdcf3f9e059a5fbd4e638b68f6d5c2876e712",
     "trust": "f273fa02db87c7de7128d2844029b52f7abb50996c95432394ddb1e40c53788c"
   },
