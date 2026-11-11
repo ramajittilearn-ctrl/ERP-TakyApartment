@@ -41,7 +41,14 @@ FROM ${POSTGRES_BASE_IMAGE}
 ARG POSTGRES_BASE_IMAGE
 ARG GOSU_BUILDER_IMAGE
 COPY --from=gosu-builder /out/gosu /usr/local/bin/gosu
-RUN set -eux; gosu --version; gosu nobody true
+RUN set -eux; \
+    if [ -r /etc/alpine-release ]; then \
+      apk add --no-cache --upgrade \
+        krb5-libs=1.22.3-r0 \
+        libxslt=1.1.43-r4; \
+    fi; \
+    gosu --version; \
+    gosu nobody true
 ARG GOSU_COMMIT
 ARG GOSU_USER_MODULE_VERSION
 ARG GOSU_X_SYS_MODULE_VERSION

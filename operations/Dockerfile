@@ -19,7 +19,10 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     -o /out/rclone .
 
 FROM postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
-RUN apk add --no-cache ca-certificates flock libatomic libstdc++
+RUN apk add --no-cache --upgrade \
+    ca-certificates flock libatomic libstdc++ \
+    krb5-libs=1.22.3-r0 \
+    libxslt=1.1.43-r4
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=rclone-build /out/rclone /usr/local/bin/rclone
 RUN rm -f /usr/local/bin/gosu
