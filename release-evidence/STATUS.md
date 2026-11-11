@@ -1,5 +1,11 @@
 # Phase 4 Production Readiness
 
+## Current PR verification — 2026-11-11
+
+PR #2 head `7c5b4cb48d512874b9bd2cdeb2d7f40ca0098ea9` passed all eight jobs in [run 42940424788](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42940424788). Container verification revalidated the signed Trixie metadata/lock and digest `sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f`, all restore routes and Debian 13/14 positive controls. Its same-run Forky image report is bound to image ID `sha256:dce9e0d923a46aee13297a0121458f2a1e38e0d42ce8c839756d26f578fdd613`; report SHA-256 `326b543f5261aa6d4bcb5b6cd0d7fab67b03b8c293a44892566d418052e37749`; Trivy DB SHA-256 `cf7fa3086682e8f77298ca8178419a530f97d7c4bd3ac203a64f2977f82e94a6`. Trivy returned zero matches for 122 packages but identifies this OS as `forky/sid`, outside its documented Debian 7–12 coverage; this is not scanner clearance.
+
+Latest raw reports remain Trixie 1 Critical/122 High, Bookworm 2 Critical/102 High, and operations 18 High/7 Medium/2 Unknown. PR #2 remains OPEN/`REVIEW_REQUIRED`; production remains **NO-GO**. No image publication, merge, or deployment occurred. Four practical gates remain: security disposition, target and recovery rehearsal, reviewed PR and immutable image pull, authorized cutover and handover. See [Stage 10 closure](10-go-live-closure.md).
+
 ## Latest exact-head continuation — 2026-11-11 08:37 Asia/Bangkok
 
 PR #2 head `a4211f4c190c9f709add1b165a2a06ad2a83d5df` passed all eight jobs in [run 42936912518](https://github.com/ramajittilearn-ctrl/ERP-TakyApartment/actions/runs/42936912518), including signed Trixie metadata/lock validation, Stage 5, synthetic Agent UAT, candidate runtime checks, and all eight synthetic restore routes. This run also scans the exact same-run Stage 5-tested Forky image. The regression suite passed 87 tests; one host-only GnuPG test was skipped because local `gpg/gpgv` is unavailable. Shell syntax and `git diff --check` passed.
